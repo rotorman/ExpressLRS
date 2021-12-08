@@ -927,16 +927,6 @@ void ProcessMSPPacket(mspPacket_t *packet)
 #if defined(GPIO_PIN_BACKPACK_EN) && GPIO_PIN_BACKPACK_EN != UNDEF_PIN
 void startPassthrough()
 {
-  // reset 8285
-  digitalWrite(GPIO_PIN_BACKPACK_EN, LOW);
-  delay(100);
-  digitalWrite(GPIO_PIN_BACKPACK_EN, HIGH);
-
-  // wait for the line to go HIGH
-  while(!digitalRead(0)) {
-    delay(100);
-  }
-
   // stop everyhting
   Radio.End();
   hwTimer.stop();
@@ -947,10 +937,23 @@ void startPassthrough()
   LoggingBackpack.begin(460800, SERIAL_8N1, GPIO_PIN_DEBUG_RX, GPIO_PIN_DEBUG_TX);
   disableLoopWDT();
 
+  // reset 8285
+  digitalWrite(GPIO_PIN_BACKPACK_EN, LOW);
+  delay(100);
+  digitalWrite(GPIO_PIN_BACKPACK_EN, HIGH);
+
   // go hard!
+  uint8_t buf[64];
   for(;;) {
-    if(CRSF::Port.available()) LoggingBackpack.write(CRSF::Port.read());
-    if(LoggingBackpack.available()) CRSF::Port.write(LoggingBackpack.read());
+    int r = CRSF::Port.available();
+    if (r>sizeof(buf)) r=sizeof(buf);
+    r = CRSF::Port.readBytes(buf, r);
+    LoggingBackpack.write(buf, r);
+
+    r = LoggingBackpack.available();
+    if (r>sizeof(buf)) r=sizeof(buf);
+    r = LoggingBackpack.readBytes(buf, r);
+    CRSF::Port.write(buf, r);
   }
 }
 #endif
