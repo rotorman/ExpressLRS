@@ -703,7 +703,7 @@ static void HandleWebUpdate()
 
 void HandleMSP2WIFI()
 {
-  #if defined(USE_MSP_WIFI)
+  #if defined(USE_MSP_WIFI) && defined(TARGET_RX)
   // check is there is any data to write out
   if (crsf.crsf2msp.FIFOout.peekSize() > 0)
   {
