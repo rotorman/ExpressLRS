@@ -842,9 +842,8 @@ bool CRSF::RXhandleUARTout()
     // don't write more than 128 bytes at a time to avoid RX buffer overflow
     #define maxBytesPerCall 128
     uint32_t bytesWritten = 0;
-    #if defined(PLATFORM_ESP8266)
-        #if defined(USE_MSP_WIFI)
-        while (msp2crsf.FIFOout.size() > 0 && bytesWritten < maxBytesPerCall)
+    #if defined(PLATFORM_ESP8266) && defined(USE_MSP_WIFI)
+        while (msp2crsf.FIFOout.size() > msp2crsf.FIFOout.peek() && (bytesWritten + msp2crsf.FIFOout.peek()) < maxBytesPerCall)
         {
             uint8_t OutPktLen = msp2crsf.FIFOout.pop();
             uint8_t OutData[OutPktLen];
@@ -853,28 +852,24 @@ bool CRSF::RXhandleUARTout()
             bytesWritten += OutPktLen;
             retVal = true;
         }
-        #endif
     #endif
-    
-    while (SerialOutFIFO.peek() > 0 && bytesWritten < maxBytesPerCall)
+
+    while (SerialOutFIFO.size() > SerialOutFIFO.peek() && (bytesWritten + SerialOutFIFO.peek()) < maxBytesPerCall)
     {
-        if (SerialOutFIFO.size() > SerialOutFIFO.peek())
-        {
-            noInterrupts();
-            uint8_t OutPktLen = SerialOutFIFO.pop();
-            uint8_t OutData[OutPktLen];
-            SerialOutFIFO.popBytes(OutData, OutPktLen);
-            interrupts();
-            this->_dev->write(OutData, OutPktLen); // write the packet out
-            bytesWritten += OutPktLen;
-            retVal = true;
-        }
+        noInterrupts();
+        uint8_t OutPktLen = SerialOutFIFO.pop();
+        uint8_t OutData[OutPktLen];
+        SerialOutFIFO.popBytes(OutData, OutPktLen);
+        interrupts();
+        this->_dev->write(OutData, OutPktLen); // write the packet out
+        bytesWritten += OutPktLen;
+        retVal = true;
     }
 #endif // CRSF_RCVR_NO_SERIAL
     return retVal;
 }
 
-void ICACHE_RAM_ATTR CRSF::sendLinkStatisticsToFC()
+void CRSF::sendLinkStatisticsToFC()
 {
 #if !defined(CRSF_RCVR_NO_SERIAL) && !defined(DEBUG_CRSF_NO_OUTPUT)
     constexpr uint8_t outBuffer[4] = {
@@ -890,8 +885,6 @@ void ICACHE_RAM_ATTR CRSF::sendLinkStatisticsToFC()
     SerialOutFIFO.pushBytes(outBuffer, sizeof(outBuffer));
     SerialOutFIFO.pushBytes((byte *)&LinkStatistics, LinkStatisticsFrameLength);
     SerialOutFIFO.push(crc);
-
-    //this->_dev->write(outBuffer, LinkStatisticsFrameLength + 4);
 #endif // CRSF_RCVR_NO_SERIAL
 }
 
