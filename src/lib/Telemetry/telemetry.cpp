@@ -2,6 +2,13 @@
 #include <cstring>
 #include "telemetry.h"
 
+#if defined(USE_MSP_WIFI) && defined(TARGET_RX)  //enable MSP2WIFI for RX only at the moment
+#include "tcpsocket.h"
+#include "CRSF.h"
+extern TCPSOCKET wifi2tcp;
+extern CRSF crsf;
+#endif
+
 #if defined(UNIT_TEST)
 #include <iostream>
 using namespace std;
@@ -246,20 +253,29 @@ bool Telemetry::AppendTelemetryPackage(uint8_t *package)
             targetIndex = payloadTypesCount - 2;
             targetFound = true;
 
-            // larger msp resonses are sent in two chunks so special handling is needed so both get sent
-            if (header->type == CRSF_FRAMETYPE_MSP_RESP)
+            // this probbably needs refactoring in the future, I think we should have this telemetry class inside the crsf module
+            if (wifi2tcp.hasClient() && (header->type == CRSF_FRAMETYPE_MSP_RESP || header->type == CRSF_FRAMETYPE_MSP_REQ)) // if we have a client we probs wanna talk to it
             {
-                // there is already another response stored
-                if (payloadTypes[targetIndex].updated)
+                DBGLN("Got MSP frame, forwarding to client, len: %d", currentTelemetryByte);
+                crsf.crsf2msp.parse(package);
+            }
+            else // if no TCP client we just want to forward MSP over the link
+            {
+                // larger msp resonses are sent in two chunks so special handling is needed so both get sent
+                if (header->type == CRSF_FRAMETYPE_MSP_RESP)
                 {
-                    // use other slot
-                    targetIndex = payloadTypesCount - 1;
-                }
+                    // there is already another response stored
+                    if (payloadTypes[targetIndex].updated)
+                    {
+                        // use other slot
+                        targetIndex = payloadTypesCount - 1;
+                    }
 
-                // if both slots are taked do not overwrite other data since the first chunk would be lost
-                if (payloadTypes[targetIndex].updated)
-                {
-                    targetFound = false;
+                    // if both slots are taked do not overwrite other data since the first chunk would be lost
+                    if (payloadTypes[targetIndex].updated)
+                    {
+                        targetFound = false;
+                    }
                 }
             }
         }

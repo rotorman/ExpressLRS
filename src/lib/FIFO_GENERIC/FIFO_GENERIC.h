@@ -131,7 +131,12 @@ public:
         }
     }
 
-    uint32_t size()
+    uint16_t free()
+    {
+        return FIFO_SIZE - numElements;
+    }
+
+    uint16_t size()
     {
         return numElements;
     }
@@ -142,22 +147,22 @@ public:
         push((size >> 8) & 0xFF);
     }
 
-    int32_t peekSize()
+    uint16_t peekSize()
     {
         if (size() > 1)
         {
-            return (int32_t)buffer[head] + ((int32_t)buffer[(head + 1) % FIFO_SIZE] << 8);
+            return (uint16_t)buffer[head] + ((uint16_t)buffer[(head + 1) % FIFO_SIZE] << 8);
         }
-        return -1;
+        return 0;
     }
 
-    int32_t popSize()
+    uint16_t popSize()
     {
         if (size() > 1)
         {
-            return (int32_t)pop() + ((int32_t)pop() << 8);
+            return (uint16_t)pop() + ((uint16_t)pop() << 8);
         }
-        return -1;
+        return 0;
     }
 
     void flush()

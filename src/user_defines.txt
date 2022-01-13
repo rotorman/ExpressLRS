@@ -105,3 +105,5 @@
 
 # These debugging options send extra information to BetaFlight in the LinkStatistics packet
 #-DDEBUG_BF_LINK_STATS
+
+-D USE_MSP_WIFI

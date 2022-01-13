@@ -27,7 +27,7 @@ Stream *CRSF::PortSecondary;
 
 GENERIC_CRC8 crsf_crc(CRSF_CRC_POLY);
 
-#if defined(PLATFORM_ESP8266) && defined(CRSF_RX_MODULE)
+#if defined(PLATFORM_ESP8266) && defined(CRSF_RX_MODULE) && defined(USE_MSP_WIFI)
 CROSSFIRE2MSP CRSF::crsf2msp;
 MSP2CROSSFIRE CRSF::msp2crsf;
 #endif
@@ -839,10 +839,11 @@ bool CRSF::RXhandleUARTout()
 {
     bool retVal = false;
 #if !defined(CRSF_RCVR_NO_SERIAL)
-    // don't write more than 256 bytes at a time to aviod RX buffer overflow
-    #define maxBytesPerCall 256
+    // don't write more than 128 bytes at a time to avoid RX buffer overflow
+    #define maxBytesPerCall 128
     uint32_t bytesWritten = 0;
     #if defined(PLATFORM_ESP8266)
+        #if defined(USE_MSP_WIFI)
         while (msp2crsf.FIFOout.size() > 0 && bytesWritten < maxBytesPerCall)
         {
             uint8_t OutPktLen = msp2crsf.FIFOout.pop();
@@ -852,6 +853,7 @@ bool CRSF::RXhandleUARTout()
             bytesWritten += OutPktLen;
             retVal = true;
         }
+        #endif
     #endif
     
     while (SerialOutFIFO.peek() > 0 && bytesWritten < maxBytesPerCall)
