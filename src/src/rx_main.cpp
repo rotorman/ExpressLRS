@@ -1151,7 +1151,7 @@ static void setupSerial()
 #endif
 
 #if defined(PLATFORM_ESP8266)
-    Serial.begin(firmwareOptions.uart_baud);
+    Serial.begin(firmwareOptions.uart_baud, SERIAL_8E2);
     if (firmwareOptions.invert_tx)
     {
         USC0(UART0) |= BIT(UCTXI);

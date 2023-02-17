@@ -132,7 +132,7 @@ void CRSF::Begin()
     }
 #elif defined(PLATFORM_ESP8266)
     // Uses default UART pins
-    CRSF::Port.begin(TxToHandsetBauds[UARTcurrentBaudIdx]);
+    CRSF::Port.begin(TxToHandsetBauds[UARTcurrentBaudIdx], SERIAL_8E2);
     // Invert RX/TX (not done, connection is full duplex uninverted)
     //USC0(UART0) |= BIT(UCRXI) | BIT(UCTXI);
     // No log message because this is our only UART
@@ -982,9 +982,9 @@ void CRSF::sendLinkStatisticsToFC()
 
         if (SerialOutFIFO.ensure(outBuffer[0] + 1))
         {
-            SerialOutFIFO.pushBytes(outBuffer, sizeof(outBuffer));
-            SerialOutFIFO.pushBytes((byte *)&LinkStatistics, LinkStatisticsFrameLength);
-            SerialOutFIFO.push(crc);
+            //SerialOutFIFO.pushBytes(outBuffer, sizeof(outBuffer));
+            //SerialOutFIFO.pushBytes((byte *)&LinkStatistics, LinkStatisticsFrameLength);
+            //SerialOutFIFO.push(crc);
         }
     }
 #endif // DEBUG_CRSF_NO_OUTPUT
@@ -996,11 +996,8 @@ void CRSF::sendRCFrameToFC()
     if (OPT_CRSF_RCVR_NO_SERIAL || firmwareOptions.is_airport)
         return;
 
-    constexpr uint8_t outBuffer[] = {
-        // No need for length prefix as we aren't using the FIFO
-        CRSF_ADDRESS_FLIGHT_CONTROLLER,
-        RCframeLength + 2,
-        CRSF_FRAMETYPE_RC_CHANNELS_PACKED
+    constexpr uint8_t sbusheader[] = {
+        0x0F // S.BUS Header
     };
 
     crsf_channels_s PackedRCdataOut;
@@ -1021,14 +1018,14 @@ void CRSF::sendRCFrameToFC()
     PackedRCdataOut.ch14 = ChannelData[14];
     PackedRCdataOut.ch15 = ChannelData[15];
 
-    uint8_t crc = crsf_crc.calc(outBuffer[2]);
-    crc = crsf_crc.calc((byte *)&PackedRCdataOut, RCframeLength, crc);
+    constexpr uint8_t sbusfooter[] = {
+        0x00,
+        0x00
+    };
 
-    //SerialOutFIFO.push(RCframeLength + 4);
-    //SerialOutFIFO.pushBytes(outBuffer, RCframeLength + 4);
-    this->_dev->write(outBuffer, sizeof(outBuffer));
+    this->_dev->write(sbusheader, sizeof(sbusheader));
     this->_dev->write((byte *)&PackedRCdataOut, RCframeLength);
-    this->_dev->write(crc);
+    this->_dev->write(sbusfooter, sizeof(sbusfooter));
 #endif // CRSF_RCVR_NO_SERIAL
 }
 
@@ -1041,8 +1038,8 @@ void CRSF::sendMSPFrameToFC(uint8_t* data)
         if (totalBufferLen <= CRSF_FRAME_SIZE_MAX)
         {
             data[0] = CRSF_ADDRESS_FLIGHT_CONTROLLER;
-            SerialOutFIFO.push(totalBufferLen);
-            SerialOutFIFO.pushBytes(data, totalBufferLen);
+            //SerialOutFIFO.push(totalBufferLen);
+            //SerialOutFIFO.pushBytes(data, totalBufferLen);
         }
     }
 #endif // DEBUG_CRSF_NO_OUTPUT
