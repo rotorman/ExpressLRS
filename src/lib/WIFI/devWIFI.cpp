@@ -4,24 +4,14 @@
 
 #include <AsyncJson.h>
 #include <ArduinoJson.h>
-#if defined(PLATFORM_ESP8266)
-#include <FS.h>
-#else
 #include <SPIFFS.h>
-#endif
 
-#if defined(PLATFORM_ESP32)
 #include <WiFi.h>
 #include <ESPmDNS.h>
 #include <Update.h>
 #include <esp_partition.h>
 #include <esp_ota_ops.h>
 #include <soc/uart_pins.h>
-#else
-#include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h>
-#define wifi_mode_t WiFiMode_t
-#endif
 #include <DNSServer.h>
 
 #include <set>
@@ -69,11 +59,6 @@ static const byte DNS_PORT = 53;
 static IPAddress netMsk(255, 255, 255, 0);
 static DNSServer dnsServer;
 static IPAddress ipAddress;
-
-#if defined(PLATFORM_ESP8266)
-static bool scanComplete = false;
-#endif
-
 static AsyncWebServer server(80);
 static bool servicesStarted = false;
 static constexpr uint32_t STALE_WIFI_SCAN = 20000;
@@ -476,14 +461,7 @@ static void WebUpdateSendNetworks(AsyncWebServerRequest *request)
   } else {
     if (WiFi.scanComplete() != WIFI_SCAN_RUNNING)
     {
-      #if defined(PLATFORM_ESP8266)
-      scanComplete = false;
-      WiFi.scanNetworksAsync([](int){
-        scanComplete = true;
-      });
-      #else
       WiFi.scanNetworks(true);
-      #endif
       lastScanTimeMS = millis();
     }
     request->send(204, "application/json", "[]");
@@ -610,18 +588,10 @@ static void WebUploadResponseHandler(AsyncWebServerRequest *request) {
 static void WebUploadDataHandler(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
   force_update = force_update || request->hasArg("force");
   if (index == 0) {
-    #if defined(PLATFORM_ESP32)
-      WifiJoystick::StopJoystickService();
-    #endif
+    WifiJoystick::StopJoystickService();
 
     size_t filesize = request->header("X-FileSize").toInt();
     DBGLN("Update: '%s' size %u", filename.c_str(), filesize);
-    #if defined(PLATFORM_ESP8266)
-    Update.runAsync(true);
-    uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-    DBGLN("Free space = %u", maxSketchSpace);
-    UNUSED(maxSketchSpace); // for warning
-    #endif
     if (!Update.begin(filesize, U_FLASH)) { // pass the size provided
       Update.printError(LOGGING_UART);
     }
@@ -672,9 +642,7 @@ static void WebUploadForceUpdateHandler(AsyncWebServerRequest *request) {
   if (request->arg("action").equals("confirm")) {
     WebUploadResponseHandler(request);
   } else {
-    #if defined(PLATFORM_ESP32)
-      Update.abort();
-    #endif
+    Update.abort();
     request->send(200, "application/json", "{\"status\": \"ok\", \"msg\": \"Update cancelled\"}");
   }
 }
@@ -726,12 +694,10 @@ static size_t getFirmwareChunk(uint8_t *data, size_t len, size_t pos)
 }
 
 static void WebUpdateGetFirmware(AsyncWebServerRequest *request) {
-  #if defined(PLATFORM_ESP32)
   const esp_partition_t *running = esp_ota_get_running_partition();
   if (running) {
       firmwareOffset = running->address;
   }
-  #endif
   const size_t firmwareTrailerSize = 4096;  // max number of bytes for the options/hardware layout json
   AsyncWebServerResponse *response = request->beginResponse("application/octet-stream", (size_t)ESP.getSketchSize() + firmwareTrailerSize, &getFirmwareChunk);
   String filename = String("attachment; filename=\"") + (const char *)&target_name[4] + "_" + VERSION + ".bin\"";
@@ -782,9 +748,6 @@ static bool initialize()
   wifiStarted = false;
   WiFi.disconnect(true);
   WiFi.mode(WIFI_OFF);
-  #if defined(PLATFORM_ESP8266)
-  WiFi.forceSleepBegin();
-  #endif
   registerButtonFunction(ACTION_START_WIFI, [](){
     setWifiUpdateMode();
   });
@@ -847,27 +810,6 @@ static void startMDNS()
 
   String instance = String(wifi_hostname) + "_" + WiFi.macAddress();
   instance.replace(":", "");
-  #if defined(PLATFORM_ESP8266)
-    // We have to do it differently on ESP8266 as setInstanceName has the side-effect of chainging the hostname!
-    MDNS.setInstanceName(wifi_hostname);
-    MDNSResponder::hMDNSService service = MDNS.addService(instance.c_str(), "http", "tcp", 80);
-    MDNS.addServiceTxt(service, "vendor", "elrs");
-    MDNS.addServiceTxt(service, "target", (const char *)&target_name[4]);
-    MDNS.addServiceTxt(service, "device", (const char *)device_name);
-    MDNS.addServiceTxt(service, "product", (const char *)product_name);
-    MDNS.addServiceTxt(service, "version", VERSION);
-    MDNS.addServiceTxt(service, "options", options.c_str());
-    MDNS.addServiceTxt(service, "type", "rx");
-    // If the probe result fails because there is another device on the network with the same name
-    // use our unique instance name as the hostname. A better way to do this would be to use
-    // MDNSResponder::indexDomain and change wifi_hostname as well.
-    MDNS.setHostProbeResultCallback([instance](const char* p_pcDomainName, bool p_bProbeResult) {
-      if (!p_bProbeResult) {
-        WiFi.hostname(instance);
-        MDNS.setInstanceName(instance);
-      }
-    });
-  #else
     MDNS.setInstanceName(instance);
     MDNS.addService("http", "tcp", 80);
     MDNS.addServiceTxt("http", "tcp", "vendor", "elrs");
@@ -877,7 +819,6 @@ static void startMDNS()
     MDNS.addServiceTxt("http", "tcp", "version", VERSION);
     MDNS.addServiceTxt("http", "tcp", "options", options.c_str());
     MDNS.addServiceTxt("http", "tcp", "type", "tx");
-  #endif
 
     MDNS.addService("elrs", "udp", JOYSTICK_PORT);
     MDNS.addServiceTxt("elrs", "udp", "device", (const char *)device_name);
@@ -907,10 +848,8 @@ static void addCaptivePortalHandlers()
 static void startServices()
 {
   if (servicesStarted) {
-    #if defined(PLATFORM_ESP32)
-      MDNS.end();
-      startMDNS();
-    #endif
+    MDNS.end();
+    startMDNS();
     return;
   }
 
@@ -1010,20 +949,10 @@ static void HandleWebUpdate()
         DBGLN("Changing to AP mode");
         WiFi.disconnect();
         wifiMode = WIFI_AP;
-        #if defined(PLATFORM_ESP32)
         WiFi.setHostname(wifi_hostname); // hostname must be set before the mode is set to STA
-        #endif
         WiFi.mode(wifiMode);
-        #if defined(PLATFORM_ESP8266)
-        WiFi.setHostname(wifi_hostname); // hostname must be set before the mode is set to STA
-        #endif
         changeTime = now;
-        #if defined(PLATFORM_ESP8266)
-        WiFi.setOutputPower(13.5);
-        WiFi.setPhyMode(WIFI_PHY_MODE_11N);
-        #elif defined(PLATFORM_ESP32)
         WiFi.setTxPower(WIFI_POWER_19_5dBm);
-        #endif
         WiFi.softAPConfig(ipAddress, ipAddress, netMsk);
         WiFi.softAP(wifi_ap_ssid, wifi_ap_password);
         startServices();
@@ -1031,48 +960,23 @@ static void HandleWebUpdate()
       case WIFI_STA:
         DBGLN("Connecting to network '%s'", station_ssid);
         wifiMode = WIFI_STA;
-        #if defined(PLATFORM_ESP32)
         WiFi.setHostname(wifi_hostname); // hostname must be set before the mode is set to STA
-        #endif
         WiFi.mode(wifiMode);
-        #if defined(PLATFORM_ESP8266)
-        WiFi.setHostname(wifi_hostname); // hostname must be set after the mode is set to STA
-        #endif
         changeTime = now;
-        #if defined(PLATFORM_ESP8266)
-        WiFi.setOutputPower(13.5);
-        WiFi.setPhyMode(WIFI_PHY_MODE_11N);
-        #elif defined(PLATFORM_ESP32)
         WiFi.setTxPower(WIFI_POWER_19_5dBm);
         WiFi.setSortMethod(WIFI_CONNECT_AP_BY_SIGNAL);
         WiFi.setScanMethod(WIFI_ALL_CHANNEL_SCAN);
-        #endif
         WiFi.begin(station_ssid, station_password);
         startServices();
       default:
         break;
     }
-    #if defined(PLATFORM_ESP8266)
-      MDNS.notifyAPChange();
-    #endif
     changeMode = WIFI_OFF;
   }
-
-  #if defined(PLATFORM_ESP8266)
-  if (scanComplete)
-  {
-    WiFi.mode(wifiMode);
-    scanComplete = false;
-  }
-  #endif
 
   if (servicesStarted)
   {
     dnsServer.processNextRequest();
-    #if defined(PLATFORM_ESP8266)
-      MDNS.update();
-    #endif
-
     WifiJoystick::Loop(now);
   }
 }
@@ -1097,9 +1001,6 @@ static int event()
     wifiStarted = false;
     WiFi.disconnect(true);
     WiFi.mode(WIFI_OFF);
-    #if defined(PLATFORM_ESP8266)
-    WiFi.forceSleepBegin();
-    #endif
   }
   return DURATION_IGNORE;
 }
@@ -1109,18 +1010,9 @@ static int timeout()
   if (wifiStarted)
   {
     HandleWebUpdate();
-#if defined(PLATFORM_ESP8266)
-    // When in STA mode, a small delay reduces power use from 90mA to 30mA when idle
-    // In AP mode, it doesn't seem to make a measurable difference, but does not hurt
-    // Only done on 8266 as the ESP32 runs a throttled task
-    if (!Update.isRunning())
-      delay(1);
-    return DURATION_IMMEDIATELY;
-#else
     // All the web traffic is async apart from changing modes and MSP2WIFI
     // No need to run balls-to-the-wall; the wifi runs on this core too (0)
     return 2;
-#endif
   }
 
   // if webupdate was requested before or .wifi_auto_on_interval has elapsed but uart is not detected

@@ -13,37 +13,22 @@ static uint8_t vtxLEDcount;
 static uint8_t *bootLEDs;
 static uint8_t bootLEDcount;
 
-#if defined(PLATFORM_ESP32)
 #include "esp32rgb.h"
 static ESP32S3LedDriverGRB *stripgrb;
 static ESP32S3LedDriverRGB *striprgb;
-#else
-#include <NeoPixelBus.h>
-#define METHOD NeoEsp8266Uart1800KbpsMethod
-static NeoPixelBus<NeoGrbFeature, METHOD> *stripgrb;
-static NeoPixelBus<NeoRgbFeature, METHOD> *striprgb;
-#endif
 
 void WS281Binit()
 {
     if (OPT_WS2812_IS_GRB)
     {
-#if defined(PLATFORM_ESP32)
         stripgrb = new ESP32S3LedDriverGRB(pixelCount, GPIO_PIN_LED_WS2812);
-#else
-        stripgrb = new NeoPixelBus<NeoGrbFeature, METHOD>(pixelCount, GPIO_PIN_LED_WS2812);
-#endif
         stripgrb->Begin();
         stripgrb->ClearTo(RgbColor(0), 0, pixelCount-1);
         stripgrb->Show();
     }
     else
     {
-#if defined(PLATFORM_ESP32)
         striprgb = new ESP32S3LedDriverRGB(pixelCount, GPIO_PIN_LED_WS2812);
-#else
-        striprgb = new NeoPixelBus<NeoRgbFeature, METHOD> (pixelCount, GPIO_PIN_LED_WS2812);
-#endif
         striprgb->Begin();
         striprgb->ClearTo(RgbColor(0), 0, pixelCount-1);
         striprgb->Show();
@@ -231,7 +216,6 @@ uint32_t toRGB(uint8_t c)
 
 void setButtonColors(uint8_t b1, uint8_t b2)
 {
-    #if defined(PLATFORM_ESP32)
     if (USER_BUTTON_LED != -1)
     {
         WS281BsetLED(USER_BUTTON_LED, toRGB(b1));
@@ -240,7 +224,6 @@ void setButtonColors(uint8_t b1, uint8_t b2)
     {
         WS281BsetLED(USER_BUTTON2_LED, toRGB(b2));
     }
-    #endif
 }
 
 static enum {
@@ -380,14 +363,12 @@ static bool initialize()
 static int start()
 {
     blinkyState = STARTUP;
-    #if defined(PLATFORM_ESP32)
     // Only do the blinkies if it was NOT a software reboot
     if (esp_reset_reason() == ESP_RST_SW) {
         blinkyState = NORMAL;
         setButtonColors(config.GetButtonActions(0)->val.color, config.GetButtonActions(1)->val.color);
         return NORMAL_UPDATE_INTERVAL;
     }
-    #endif
     return DURATION_IMMEDIATELY;
 }
 

@@ -1,6 +1,5 @@
 #include "PWM.h"
 
-#if defined(PLATFORM_ESP32)
 #include <driver/ledc.h>
 #include <driver/mcpwm.h>
 
@@ -245,5 +244,3 @@ void PWMController::setMicroseconds(pwm_channel_t channel, uint16_t microseconds
     }
 #endif
 }
-
-#endif

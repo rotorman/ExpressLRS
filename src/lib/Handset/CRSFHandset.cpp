@@ -5,7 +5,6 @@
 #include "helpers.h"
 #include "device.h"
 
-#if defined(PLATFORM_ESP32)
 #include <hal/uart_ll.h>
 #include <soc/soc.h>
 #include <soc/uart_reg.h>
@@ -13,9 +12,6 @@
 // for better performance, and on other targets (mostly using pin 13), it always uses Matrix
 HardwareSerial CRSFHandset::Port(0);
 RTC_DATA_ATTR int rtcModelId = 0;
-#elif defined(PLATFORM_ESP8266)
-HardwareSerial CRSFHandset::Port(0);
-#endif
 
 static constexpr int HANDSET_TELEMETRY_FIFO_SIZE = 128; // this is the smallest telemetry FIFO size in ETX with CRSF defined
 
@@ -54,7 +50,6 @@ void CRSFHandset::Begin()
 
     halfDuplex = (GPIO_PIN_RCSIGNAL_TX == GPIO_PIN_RCSIGNAL_RX);
 
-#if defined(PLATFORM_ESP32)
     portDISABLE_INTERRUPTS();
     UARTinverted = halfDuplex; // on a full UART we will start uninverted checking first
     CRSFHandset::Port.begin(UARTrequestedBaud, SERIAL_8N1,
@@ -73,13 +68,6 @@ void CRSFHandset::Begin()
         modelId = rtcModelId;
         if (RecvModelUpdate) RecvModelUpdate();
     }
-#elif defined(PLATFORM_ESP8266)
-    // Uses default UART pins
-    CRSFHandset::Port.begin(UARTrequestedBaud);
-    // Invert RX/TX (not done, connection is full duplex uninverted)
-    //USC0(UART0) |= BIT(UCRXI) | BIT(UCTXI);
-    // No log message because this is our only UART
-#endif
 }
 
 void CRSFHandset::End()
@@ -273,9 +261,7 @@ void CRSFHandset::RcPacketToChannelsData() // data is packed as 11 bits per chan
 
     // monitoring arming state
     if (lastArmCmd != armCmd) {
-        #if defined(PLATFORM_ESP32)
         devicesTriggerEvent(EVENT_ARM_FLAG_CHANGED);
-        #endif
         lastArmCmd = armCmd;
     }
 }
@@ -307,9 +293,7 @@ bool CRSFHandset::processInternalCrsfPackage(uint8_t *package)
         if (packetType == CRSF_FRAMETYPE_COMMAND && header->payload[0] == CRSF_COMMAND_SUBCMD_RX && header->payload[1] == CRSF_COMMAND_MODEL_SELECT_ID)
         {
             modelId = header->payload[2];
-            #if defined(PLATFORM_ESP32)
             rtcModelId = modelId;
-            #endif
             if (RecvModelUpdate) RecvModelUpdate();
         }
         else
@@ -397,17 +381,10 @@ void CRSFHandset::handleInput()
     {
         // if currently transmitting in half-duplex mode then check if the TX buffers are empty.
         // If there is still data in the transmit buffers then exit, and we'll check next go round.
-#if defined(PLATFORM_ESP32)
         if (!uart_ll_is_tx_idle(UART_LL_GET_HW(0)))
         {
             return;
         }
-#elif defined(PLATFORM_ESP8266)
-        if (((USS(0) >> USTXC) & 0xff) > 0)
-        {
-            return;
-        }
-#endif
         // All done transmitting; go back to receive mode
         transmitting = false;
         duplex_set_RX();
@@ -524,7 +501,6 @@ void CRSFHandset::handleOutput(int receivedBytes)
 
 void CRSFHandset::duplex_set_RX() const
 {
-#if defined(PLATFORM_ESP32)
     ESP_ERROR_CHECK(gpio_set_direction((gpio_num_t)GPIO_PIN_RCSIGNAL_RX, GPIO_MODE_INPUT));
     if (UARTinverted)
     {
@@ -538,15 +514,10 @@ void CRSFHandset::duplex_set_RX() const
         gpio_pullup_en((gpio_num_t)GPIO_PIN_RCSIGNAL_RX);
         gpio_pulldown_dis((gpio_num_t)GPIO_PIN_RCSIGNAL_RX);
     }
-#elif defined(PLATFORM_ESP8266)
-    // Enable loopback on UART0 to connect the RX pin to the TX pin (not done, connection is full duplex uninverted)
-    //USC0(UART0) |= BIT(UCLBE);
-#endif
 }
 
 void CRSFHandset::duplex_set_TX() const
 {
-#if defined(PLATFORM_ESP32)
     ESP_ERROR_CHECK(gpio_set_pull_mode((gpio_num_t)GPIO_PIN_RCSIGNAL_TX, GPIO_FLOATING));
     ESP_ERROR_CHECK(gpio_set_pull_mode((gpio_num_t)GPIO_PIN_RCSIGNAL_RX, GPIO_FLOATING));
     if (UARTinverted)
@@ -565,10 +536,6 @@ void CRSFHandset::duplex_set_TX() const
         gpio_matrix_in(MATRIX_DETACH_IN_HIGH, U0RXD_IN_IDX, false); // Disconnect RX from all pads
         gpio_matrix_out((gpio_num_t)GPIO_PIN_RCSIGNAL_TX, U0TXD_OUT_IDX, false, false);
     }
-#elif defined(PLATFORM_ESP8266)
-    // Disable loopback to disconnect the RX pin from the TX pin (not done, connection is full duplex uninverted)
-    //USC0(UART0) &= ~BIT(UCLBE);
-#endif
 }
 
 int CRSFHandset::getMinPacketInterval() const
@@ -653,7 +620,7 @@ uint32_t CRSFHandset::autobaud()
     }
     return bestBaud;
 }
-#elif defined(PLATFORM_ESP32)
+#else
 uint32_t CRSFHandset::autobaud()
 {
     static enum { INIT, MEASURED, INVERTED } state;
@@ -697,11 +664,6 @@ uint32_t CRSFHandset::autobaud()
         }
     }
     return bestBaud;
-}
-#else
-uint32_t CRSFHandset::autobaud() {
-    UARTcurrentBaudIdx = (UARTcurrentBaudIdx + 1) % ARRAY_SIZE(TxToHandsetBauds);
-    return TxToHandsetBauds[UARTcurrentBaudIdx];
 }
 #endif
 

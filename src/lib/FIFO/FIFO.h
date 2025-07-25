@@ -50,9 +50,7 @@ private:
     uint32_t head = 0;
     uint32_t tail = 0;
     uint32_t numElements = 0;
-#if defined(PLATFORM_ESP32)
     portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
-#endif
 
 public:
     /**
@@ -61,12 +59,7 @@ public:
      */
     ICACHE_RAM_ATTR void inline lock()
     {
-    #if defined(PLATFORM_ESP32)
-        portENTER_CRITICAL(&mux);
-    #elif defined(PLATFORM_ESP8266)
-        noInterrupts();
-    #else
-    #endif
+      portENTER_CRITICAL(&mux);
     }
 
     /**
@@ -74,12 +67,7 @@ public:
      */
     ICACHE_RAM_ATTR void inline unlock()
     {
-    #if defined(PLATFORM_ESP32)
-        portEXIT_CRITICAL(&mux);
-    #elif defined(PLATFORM_ESP8266)
-        interrupts();
-    #else
-    #endif
+      portEXIT_CRITICAL(&mux);
     }
 
     /**

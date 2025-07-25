@@ -16,29 +16,18 @@
 #include "devWIFI.h"
 #include "devButton.h"
 #include "devVTX.h"
-#if defined(PLATFORM_ESP32)
 #include "devScreen.h"
 #include "devBLE.h"
 #include "devGsensor.h"
 #include "devThermal.h"
 #include "devPDET.h"
 #include "devBackpack.h"
-#else
-// Fake functions for 8285
-void checkBackpackUpdate() {}
-void sendCRSFTelemetryToBackpack(uint8_t *) {}
-void sendMAVLinkTelemetryToBackpack(uint8_t *) {}
-#endif
 
 #include "MAVLink.h"
 
 #if defined(PLATFORM_ESP32_S3)
 #include "USB.h"
 #define USBSerial Serial
-#endif
-
-#if defined(PLATFORM_ESP8266)
-#include <user_interface.h>
 #endif
 
 //// CONSTANTS ////
@@ -107,14 +96,12 @@ device_affinity_t ui_devices[] = {
   {&ADC_device, 1},
   {&WIFI_device, 0},
   {&Button_device, 0},
-#if defined(PLATFORM_ESP32)
   {&Backpack_device, 0},
   {&BLE_device, 0},
   {&Screen_device, 0},
   {&Gsensor_device, 0},
   {&Thermal_device, 0},
   {&PDET_device, 0},
-#endif
   {&VTX_device, 0}
 };
 
@@ -1098,7 +1085,6 @@ void EnterBindingModeSafely()
 
 void ProcessMSPPacket(uint32_t now, mspPacket_t *packet)
 {
-#if defined(PLATFORM_ESP32)
   // Inspect packet for ELRS specific opcodes
   if (packet->function == MSP_ELRS_FUNC)
   {
@@ -1140,7 +1126,6 @@ void ProcessMSPPacket(uint32_t now, mspPacket_t *packet)
     memset(backpackVersion, 0, sizeof(backpackVersion));
     memcpy(backpackVersion, packet->payload, min((size_t)packet->payloadSize, sizeof(backpackVersion)-1));
   }
-#endif
 }
 
 void ParseMSPData(uint8_t *buf, uint8_t size)
@@ -1253,7 +1238,6 @@ static void setupSerial()
    */
 
 // Setup TxBackpack
-#if defined(PLATFORM_ESP32)
   Stream *serialPort;
 
   if(firmwareOptions.is_airport)
@@ -1270,18 +1254,6 @@ static void setupSerial()
   {
     serialPort = new NullStream();
   }
-#elif defined(PLATFORM_ESP8266)
-  Stream *serialPort;
-  if (GPIO_PIN_DEBUG_TX != UNDEF_PIN)
-  {
-    serialPort = new HardwareSerial(1);
-    ((HardwareSerial*)serialPort)->begin(BACKPACK_LOGGING_BAUD, SERIAL_8N1, SERIAL_TX_ONLY, GPIO_PIN_DEBUG_TX);
-  }
-  else
-  {
-    serialPort = new NullStream();
-  }
-#endif
   TxBackpack = serialPort;
 
 #if defined(PLATFORM_ESP32_S3)
@@ -1292,7 +1264,7 @@ static void setupSerial()
 #if defined(PLATFORM_ESP32_S3)
   USBSerial.begin(firmwareOptions.uart_baud);
   TxUSB = &USBSerial;
-#elif defined(PLATFORM_ESP32)
+#else
   if (GPIO_PIN_DEBUG_RX == U0RXD_GPIO_NUM && GPIO_PIN_DEBUG_TX == U0TXD_GPIO_NUM)
   {
     // The backpack or Airpoirt is already assigned on UART0 (pins 3, 1)
@@ -1312,8 +1284,6 @@ static void setupSerial()
     TxUSB = new HardwareSerial(1);
     ((HardwareSerial *)TxUSB)->begin(firmwareOptions.uart_baud, SERIAL_8N1, U0RXD_GPIO_NUM, U0TXD_GPIO_NUM);
   }
-#else
-  TxUSB = new NullStream();
 #endif
 }
 
@@ -1363,11 +1333,7 @@ static void setupBindingFromConfig()
   }
   else
   {
-#if defined(PLATFORM_ESP32)
     esp_read_mac(UID, ESP_MAC_WIFI_STA);
-#else
-    wifi_get_macaddr(STATION_IF, UID);
-#endif
   }
 
   DBGLN("UID=(%d, %d, %d, %d, %d, %d)",

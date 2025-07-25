@@ -3,22 +3,17 @@
 #include "CRSFHandset.h"
 #include "POWERMGNT.h"
 #include "devHandset.h"
-
-#if defined(PLATFORM_ESP32)
 #include "AutoDetect.h"
-#endif
 
 Handset *handset;
 
 static bool initialize()
 {
-#if defined(PLATFORM_ESP32)
     if (GPIO_PIN_RCSIGNAL_RX == GPIO_PIN_RCSIGNAL_TX)
     {
         handset = new AutoDetect();
         return true;
     }
-#endif
     handset = new CRSFHandset();
     return true;
 }

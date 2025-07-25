@@ -1,7 +1,4 @@
 #include "targets.h"
-
-#if defined(PLATFORM_ESP32)
-
 #include "PPMHandset.h"
 #include "common.h"
 #include "crsf_protocol.h"
@@ -78,5 +75,3 @@ void PPMHandset::handleInput()
         lastPPM = 0;
     }
 }
-
-#endif

@@ -17,10 +17,8 @@
 #error Invalid radio configuration!
 #endif
 
-#if defined(PLATFORM_ESP32)
 #include <soc/soc_caps.h>
 #define MULTICORE (SOC_CPU_CORES_NUM > 1)
-#endif
 
 ///////////////////////////////////////
 

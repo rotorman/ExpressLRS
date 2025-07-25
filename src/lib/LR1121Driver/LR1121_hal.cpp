@@ -46,7 +46,6 @@ void LR1121Hal::init()
         digitalWrite(GPIO_PIN_NSS_2, HIGH);
     }
 
-#ifdef PLATFORM_ESP32
     SPIEx.begin(GPIO_PIN_SCK, GPIO_PIN_MISO, GPIO_PIN_MOSI, GPIO_PIN_NSS); // sck, miso, mosi, ss (ss can be any GPIO)
     gpio_pullup_en((gpio_num_t)GPIO_PIN_MISO);
     SPIEx.setFrequency(17500000);
@@ -58,14 +57,6 @@ void LR1121Hal::init()
         spiAttachSS(SPIEx.bus(), 1, GPIO_PIN_NSS_2);
     }
     spiEnableSSPins(SPIEx.bus(), SX12XX_Radio_All);
-#elif defined(PLATFORM_ESP8266)
-    DBGLN("PLATFORM_ESP8266");
-    SPIEx.begin();
-    SPIEx.setHwCs(true);
-    SPIEx.setBitOrder(MSBFIRST);
-    SPIEx.setDataMode(SPI_MODE0);
-    SPIEx.setFrequency(17500000);
-#endif
 
     attachInterrupt(digitalPinToInterrupt(GPIO_PIN_DIO1), this->dioISR_1, RISING);
     if (GPIO_PIN_DIO1_2 != UNDEF_PIN)

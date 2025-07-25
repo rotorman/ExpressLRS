@@ -1,5 +1,3 @@
-#if defined(PLATFORM_ESP32)
-
 #include <U8g2lib.h> // Needed for the OLED drivers, this is a arduino package. It is maintained by platformIO
 
 #include "oleddisplay.h"
@@ -527,5 +525,3 @@ static void helperDrawImage(menu_item_t menu)
         }
     }
 }
-
-#endif

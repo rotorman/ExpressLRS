@@ -79,9 +79,7 @@ static const int16_t *powerValuesDual;
 
 static int8_t powerCaliValues[PWR_COUNT] = {0};
 
-#if defined(PLATFORM_ESP32)
 nvs_handle POWERMGNT::handle = 0;
-#endif
 
 PowerLevels_e POWERMGNT::incPower()
 {
@@ -154,15 +152,11 @@ void POWERMGNT::SetPowerCaliValues(int8_t *values, size_t size)
             isUpdate = true;
         }
     }
-#if defined(PLATFORM_ESP32)
     if (isUpdate)
     {
         nvs_set_blob(handle, "powercali", &powerCaliValues, sizeof(powerCaliValues));
     }
     nvs_commit(handle);
-#else
-    UNUSED(isUpdate);
-#endif
 }
 
 void POWERMGNT::GetPowerCaliValues(int8_t *values, size_t size)
@@ -175,7 +169,6 @@ void POWERMGNT::GetPowerCaliValues(int8_t *values, size_t size)
 
 void POWERMGNT::LoadCalibration()
 {
-#if defined(PLATFORM_ESP32)
     // Initialize NVS
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND)
@@ -199,9 +192,6 @@ void POWERMGNT::LoadCalibration()
         nvs_set_u32(handle, "calversion", CALIBRATION_VERSION | CALIBRATION_MAGIC);
         nvs_commit(handle);
     }
-#else
-    memset(powerCaliValues, 0, sizeof(powerCaliValues));
-#endif
 }
 
 
@@ -248,7 +238,7 @@ void POWERMGNT::setPower(PowerLevels_e Power)
         {
             Radio.SetOutputPower(POWER_OUTPUT_VALUES2[Power - MinPower]);
         }
-        #if defined(PLATFORM_ESP32_S3) || defined(PLATFORM_ESP32_C3) || defined(PLATFORM_ESP8266)
+        #if defined(PLATFORM_ESP32_S3) || defined(PLATFORM_ESP32_C3)
         ERRLN("ESP32-S3/C3 and ESP8285 MCUs do not have a DAC");
         #else
         dacWrite(GPIO_PIN_RFamp_APC2, powerValues[Power - MinPower]);

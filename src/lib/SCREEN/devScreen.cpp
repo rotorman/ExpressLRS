@@ -1,7 +1,4 @@
 #include "targets.h"
-
-#if defined(PLATFORM_ESP32)
-
 #include "devScreen.h"
 
 #include "common.h"
@@ -183,4 +180,3 @@ device_t Screen_device = {
     .timeout = timeout,
     .subscribe = EVENT_CONNECTION_CHANGED | EVENT_ARM_FLAG_CHANGED
 };
-#endif

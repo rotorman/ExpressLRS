@@ -4,10 +4,6 @@
 #include "SX127xHal.h"
 #include "SX12xxDriverCommon.h"
 
-#ifdef PLATFORM_ESP8266
-#include <cstdint>
-#endif
-
 #define RADIO_SNR_SCALE 4
 
 class SX127xDriver: public SX12xxDriverCommon

@@ -2,10 +2,8 @@
 
 #include "options.h"
 
-#if defined(PLATFORM_ESP32)
 #include <nvs_flash.h>
 #include <nvs.h>
-#endif
 
 typedef enum
 {
@@ -38,9 +36,7 @@ class POWERMGNT : public PowerLevelContainer
 private:
     static int8_t CurrentSX1280Power;
     static PowerLevels_e FanEnableThreshold;
-#if defined(PLATFORM_ESP32)
     static nvs_handle  handle;
-#endif
     static void LoadCalibration();
 
 public:

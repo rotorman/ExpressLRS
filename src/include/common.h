@@ -213,10 +213,8 @@ enum eServoOutputMode : uint8_t
     somSCL,         // 10: I2C clock signal
     somSDA,         // 11: I2C data line
     somPwm,         // 12: true PWM mode (NOT SUPPORTED)
-#if defined(PLATFORM_ESP32)
     somSerial1RX,   // 13: secondary Serial RX
     somSerial1TX,   // 14: secondary Serial TX
-#endif
 };
 
 enum eServoOutputFailsafeMode : uint8_t
@@ -240,7 +238,6 @@ enum eSerialProtocol : uint8_t
     PROTOCOL_GPS
 };
 
-#if defined(PLATFORM_ESP32)
 enum eSerial1Protocol : uint8_t
 {
     PROTOCOL_SERIAL1_OFF,
@@ -256,7 +253,6 @@ enum eSerial1Protocol : uint8_t
     PROTOCOL_SERIAL1_MSP_DISPLAYPORT,
     PROTOCOL_SERIAL1_GPS
 };
-#endif
 
 enum eFailsafeMode : uint8_t
 {

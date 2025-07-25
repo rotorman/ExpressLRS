@@ -1,6 +1,4 @@
 #include "targets.h"
-
-#if defined(PLATFORM_ESP32)
 #include "common.h"
 #include "devMSPVTX.h"
 #include "devVTXSPI.h"
@@ -409,4 +407,3 @@ device_t MSPVTx_device = {
     .timeout = timeout,
     .subscribe = EVENT_VTX_CHANGE
 };
-#endif

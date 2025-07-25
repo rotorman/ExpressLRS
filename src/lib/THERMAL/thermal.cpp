@@ -1,7 +1,6 @@
 #include "thermal.h"
 #include "logging.h"
 
-#if defined(PLATFORM_ESP32)
 #include "lm75a.h"
 LM75A lm75a;
 #if defined(PLATFORM_ESP32_S3) || defined(PLATFORM_ESP32_C3)
@@ -99,4 +98,3 @@ void Thermal::update_threshold(int index)
         lm75a.update_lm75a_threshold(high, low);
     }
 }
-#endif

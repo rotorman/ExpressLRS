@@ -1,7 +1,4 @@
 #include "targets.h"
-
-#if defined(PLATFORM_ESP32)
-
 #include "logging.h"
 
 #include <math.h>
@@ -120,5 +117,3 @@ void ESP32S3LedDriverRGB::SetPixelColor(uint16_t indexPixel, RgbColor color)
         out_buffer[loc + bitpos + 16] = (color.B & bit) ? 0xFFE0 : 0xF000;
     }
 }
-
-#endif

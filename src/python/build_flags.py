@@ -185,14 +185,7 @@ env['OPTIONS_JSON'] = json_flags
 env['BUILD_FLAGS'] = build_flags
 sys.stdout.write("\nbuild flags: %s\n\n" % build_flags)
 
-if fnmatch.filter(build_flags, '*PLATFORM_ESP32*'):
-    sys.stdout.write("\u001b[32mBuilding for ESP32 Platform\n")
-elif fnmatch.filter(build_flags, '*PLATFORM_ESP8266*'):
-    sys.stdout.write("\u001b[32mBuilding for ESP8266/ESP8285 Platform\n")
-    if fnmatch.filter(build_flags, '-DAUTO_WIFI_ON_INTERVAL*'):
-        sys.stdout.write("\u001b[32mAUTO_WIFI_ON_INTERVAL = ON\n")
-    else:
-        sys.stdout.write("\u001b[32mAUTO_WIFI_ON_INTERVAL = OFF\n")
+sys.stdout.write("\u001b[32mBuilding for ESP32 Platform\n")
 
 sys.stdout.flush()
 time.sleep(.5)

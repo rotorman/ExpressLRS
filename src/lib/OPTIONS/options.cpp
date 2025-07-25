@@ -17,15 +17,9 @@ const char *wifi_ap_address = "10.0.0.1";
 
 #include <ArduinoJson.h>
 #include <StreamString.h>
-#if defined(PLATFORM_ESP8266)
-#include <FS.h>
-#else
 #include <SPIFFS.h>
-#endif
-#if defined(PLATFORM_ESP32)
 #include <esp_partition.h>
 #include "esp_ota_ops.h"
-#endif
 
 char product_name[ELRSOPTS_PRODUCTNAME_SIZE+1];
 char device_name[ELRSOPTS_DEVICENAME_SIZE+1];
@@ -219,17 +213,12 @@ bool options_init()
     debugCreateInitLogger();
 
     uint32_t baseAddr = 0;
-#if defined(PLATFORM_ESP32)
     SPIFFS.begin(true);
     const esp_partition_t *runningPart = esp_ota_get_running_partition();
     if (runningPart)
     {
         baseAddr = runningPart->address;
     }
-#else
-    SPIFFS.begin();
-    // ESP8266 sketch baseAddr is always 0
-#endif
 
     EspFlashStream strmFlash;
     strmFlash.setBaseAddress(baseAddr + ESP.getSketchSize());

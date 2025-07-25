@@ -111,7 +111,6 @@ TxConfig::TxConfig() :
 {
 }
 
-#if defined(PLATFORM_ESP32)
 void TxConfig::Load()
 {
     m_modified = 0;
@@ -229,118 +228,6 @@ void TxConfig::Load()
         Commit();
     }
 }
-#else  // ESP8266
-void TxConfig::Load()
-{
-    m_modified = 0;
-    m_eeprom->Get(0, m_config);
-
-    uint32_t version = 0;
-    if ((m_config.version & CONFIG_MAGIC_MASK) == TX_CONFIG_MAGIC)
-        version = m_config.version & ~CONFIG_MAGIC_MASK;
-    DBGLN("Config version %u", version);
-
-    // If version is current, all done
-    if (version == TX_CONFIG_VERSION)
-        return;
-
-    // Can't upgrade from version <5, or when flashing a previous version, just use defaults.
-    if (version < 5 || version > TX_CONFIG_VERSION)
-    {
-        SetDefaults(true);
-        return;
-    }
-
-    // Upgrade EEPROM, starting with defaults
-    SetDefaults(false);
-
-    if (version == 5)
-    {
-        UpgradeEepromV5ToV6();
-        version = 6;
-    }
-
-    if (version == 6)
-    {
-        UpgradeEepromV6ToV7();
-        version = 7;
-    }
-
-    if (version == 7)
-    {
-        UpgradeEepromV7ToV8();
-    }
-}
-
-void TxConfig::UpgradeEepromV5ToV6()
-{
-    v5_tx_config_t v5Config;
-    v6_tx_config_t v6Config = { 0 }; // default the new fields to 0
-
-    // Populate the prev version struct from eeprom
-    m_eeprom->Get(0, v5Config);
-
-    // Copy prev values to current config struct
-    // This only workse because v5 and v6 are the same up to the new fields
-    // which have already been set to 0
-    memcpy(&v6Config, &v5Config, sizeof(v5Config));
-    v6Config.version = 6U | TX_CONFIG_MAGIC;
-    m_eeprom->Put(0, v6Config);
-    m_eeprom->Commit();
-}
-
-void TxConfig::UpgradeEepromV6ToV7()
-{
-    v6_tx_config_t v6Config;
-
-    // Populate the prev version struct from eeprom
-    m_eeprom->Get(0, v6Config);
-
-    // Manual field copying as some fields have moved
-    #define LAZY(member) m_config.member = v6Config.member
-    LAZY(vtxBand);
-    LAZY(vtxChannel);
-    LAZY(vtxPower);
-    LAZY(vtxPitmode);
-    LAZY(powerFanThreshold);
-    LAZY(fanMode);
-    LAZY(motionMode);
-    LAZY(dvrAux);
-    LAZY(dvrStartDelay);
-    LAZY(dvrStopDelay);
-    #undef LAZY
-
-    for (unsigned i=0; i<CONFIG_TX_MODEL_CNT; i++)
-    {
-        ModelV6toV7(&v6Config.model_config[i], &m_config.model_config[i]);
-    }
-
-    m_modified = ALL_CHANGED;
-
-    // Full Commit now
-    m_config.version = 7U | TX_CONFIG_MAGIC;
-    Commit();
-}
-
-void TxConfig::UpgradeEepromV7ToV8()
-{
-    v7_tx_config_t v7Config;
-
-    // Populate the prev version struct from eeprom
-    m_eeprom->Get(0, v7Config);
-
-    for (unsigned i=0; i<CONFIG_TX_MODEL_CNT; i++)
-    {
-        ModelV7toV8(&v7Config.model_config[i], &m_config.model_config[i]);
-    }
-
-    m_modified = ALL_CHANGED;
-
-    // Full Commit now
-    m_config.version = 8U | TX_CONFIG_MAGIC;
-    Commit();
-}
-#endif
 
 uint32_t
 TxConfig::Commit()
@@ -350,7 +237,6 @@ TxConfig::Commit()
         // No changes
         return 0;
     }
-#if defined(PLATFORM_ESP32)
     // Write parts to NVS
     if (m_modified & EVENT_CONFIG_MODEL_CHANGED)
     {
@@ -394,11 +280,6 @@ TxConfig::Commit()
     }
     nvs_set_u32(handle, "tx_version", m_config.version);
     nvs_commit(handle);
-#else
-    // Write the struct to eeprom
-    m_eeprom->Put(0, m_config);
-    m_eeprom->Commit();
-#endif
     uint32_t changes = m_modified;
     m_modified = 0;
     return changes;
@@ -707,23 +588,13 @@ TxConfig::SetDefaults(bool commit)
             SetRate(enumRatetoIndex(RATE_LORA_2G4_250HZ));
         #endif
         SetPower(POWERMGNT::getDefaultPower());
-#if defined(PLATFORM_ESP32)
         // ESP32 nvs needs to commit every model
         if (commit)
         {
             m_modified |= EVENT_CONFIG_MODEL_CHANGED;
             Commit();
         }
-#endif
     }
-
-#if !defined(PLATFORM_ESP32)
-    // ESP8266 just needs one commit
-    if (commit)
-    {
-        Commit();
-    }
-#endif
 
     SetModelId(0);
     m_modified = 0;

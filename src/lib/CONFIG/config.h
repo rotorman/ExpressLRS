@@ -4,11 +4,8 @@
 #include "elrs_eeprom.h"
 #include "options.h"
 #include "common.h"
-
-#if defined(PLATFORM_ESP32)
 #include <nvs_flash.h>
 #include <nvs.h>
-#endif
 
 // CONFIG_MAGIC is ORed with CONFIG_VERSION in the version field
 #define CONFIG_MAGIC_MASK   (0b11U << 30)
@@ -179,20 +176,12 @@ public:
     bool SetModelId(uint8_t modelId);
 
 private:
-#if !defined(PLATFORM_ESP32)
-    void UpgradeEepromV5ToV6();
-    void UpgradeEepromV6ToV7();
-    void UpgradeEepromV7ToV8();
-#endif
-
     tx_config_t m_config;
     ELRS_EEPROM *m_eeprom;
     uint32_t     m_modified;
     model_config_t *m_model;
     uint8_t     m_modelId;
-#if defined(PLATFORM_ESP32)
     nvs_handle  handle;
-#endif
 };
 
 extern TxConfig config;

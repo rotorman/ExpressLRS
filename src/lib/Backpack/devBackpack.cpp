@@ -23,8 +23,6 @@ static uint16_t ptrChannelData[3] = {CRSF_CHANNEL_VALUE_MID, CRSF_CHANNEL_VALUE_
 static bool headTrackingEnabled = false;
 static uint32_t lastPTRValidTimeMs;
 
-#if defined(PLATFORM_ESP32)
-
 #define GPIO_PIN_BOOT0 0
 
 #include "CRSF.h"
@@ -463,4 +461,3 @@ device_t Backpack_device = {
     .timeout = timeout,
     .subscribe = EVENT_CONNECTION_CHANGED | EVENT_CONFIG_MAIN_CHANGED | EVENT_ENTER_BIND_MODE
 };
-#endif

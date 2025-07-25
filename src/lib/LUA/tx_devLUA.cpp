@@ -197,13 +197,11 @@ static struct luaItem_command luaVRxBackpackUpdate = {
 };
 //---------------------------- WiFi -----------------------------
 
-#if defined(PLATFORM_ESP32)
 static struct luaItem_command luaBLEJoystick = {
     {"BLE Joystick", CRSF_COMMAND},
     lcsIdle, // step
     STR_EMPTYSPACE
 };
-#endif
 
 //----------------------------VTX ADMINISTRATOR------------------
 static struct luaItem_folder luaVtxFolder = {
@@ -890,10 +888,8 @@ static void registerLuaParameters()
     }
   }
 
-  #if defined(PLATFORM_ESP32)
   registerLUAParameter(&luaBLEJoystick, &luahandWifiBle);
-  #endif
-
+  
   if (HAS_RADIO) {
     registerLUAParameter(&luaBind, &luahandSimpleSendCmd);
   }

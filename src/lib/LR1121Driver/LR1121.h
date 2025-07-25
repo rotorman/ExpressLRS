@@ -5,10 +5,6 @@
 #include "LR1121_hal.h"
 #include "SX12xxDriverCommon.h"
 
-#ifdef PLATFORM_ESP8266
-#include <cstdint>
-#endif
-
 #define RADIO_SNR_SCALE 4
 
 class LR1121Driver: public SX12xxDriverCommon

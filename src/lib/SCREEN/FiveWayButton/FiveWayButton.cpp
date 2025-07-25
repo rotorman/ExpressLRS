@@ -1,7 +1,6 @@
 #include "FiveWayButton.h"
 #include "devADC.h"
 
-#if defined(PLATFORM_ESP32)
 uint16_t FiveWayButton::joyAdcValues[] = {0};
 
 /**
@@ -145,4 +144,3 @@ void FiveWayButton::update(int *keyValue, bool *keyLongPressed)
 
     keyInProcess = newKey;
 }
-#endif

@@ -5,10 +5,7 @@
 #include "crsf_protocol.h"
 #include "HardwareSerial.h"
 #include "common.h"
-
-#ifdef PLATFORM_ESP32
 #include "driver/uart.h"
-#endif
 
 class CRSFHandset final : public Handset
 {
@@ -72,10 +69,7 @@ private:
 
     bool armCmd = false;           // Arm command from handset either via ch5 or arm message
     bool lastArmCmd = false;
-
-#if defined(PLATFORM_ESP32)
     bool UARTinverted = false;
-#endif
 
     void sendSyncPacketToTX();
     void adjustMaxPacketSize();

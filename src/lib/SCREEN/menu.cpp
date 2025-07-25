@@ -32,12 +32,10 @@ extern unsigned long rebootTime;
 
 fsm_state_t getInitialState()
 {
-#if defined(PLATFORM_ESP32)
     if(esp_reset_reason() == ESP_RST_SW)
     {
         return STATE_IDLE;
     }
-#endif
     return STATE_SPLASH;
 }
 

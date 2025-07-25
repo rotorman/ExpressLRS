@@ -1,4 +1,3 @@
-#if defined(PLATFORM_ESP32)
 #include "hwTimer.h"
 #include "logging.h"
 
@@ -83,5 +82,3 @@ void ICACHE_RAM_ATTR hwTimer::callback(void)
         portEXIT_CRITICAL_ISR(&isrMutex);
     }
 }
-
-#endif

@@ -18,10 +18,8 @@ typedef uint16_t vbatAnalogStorage_t;
 static MedianAvgFilter<vbatAnalogStorage_t, VBAT_SMOOTH_CNT>vbatSmooth;
 static uint8_t vbatUpdateScale;
 
-#if defined(PLATFORM_ESP32)
 #include "esp_adc_cal.h"
 static esp_adc_cal_characteristics_t *vbatAdcUnitCharacterics;
-#endif
 
 /* Shameful externs */
 extern Telemetry telemetry;
@@ -42,7 +40,6 @@ static bool initialize()
 static int start()
 {
     vbatUpdateScale = 1;
-#if defined(PLATFORM_ESP32)
     analogReadResolution(12);
 
     int atten = hardware_int(HARDWARE_vbat_atten);
@@ -61,15 +58,13 @@ static int start()
         }
         analogSetPinAttenuation(GPIO_ANALOG_VBAT, (adc_attenuation_t)atten);
     }
-#endif
-
     return VBAT_SAMPLE_INTERVAL;
 }
 
 static void reportVbat()
 {
     uint32_t adc = vbatSmooth.calc();
-#if defined(PLATFORM_ESP32) && !defined(DEBUG_VBAT_ADC)
+#if !defined(DEBUG_VBAT_ADC)
     if (vbatAdcUnitCharacterics)
         adc = esp_adc_cal_raw_to_voltage(adc, vbatAdcUnitCharacterics);
 #endif
@@ -98,7 +93,7 @@ static int timeout()
     }
 
     uint32_t adc = analogRead(GPIO_ANALOG_VBAT);
-#if defined(PLATFORM_ESP32) && defined(DEBUG_VBAT_ADC)
+#if defined(DEBUG_VBAT_ADC)
     // When doing DEBUG_VBAT_ADC, every value is adjusted (for logging)
     // in normal mode only the final value is adjusted to save CPU cycles
     if (vbatAdcUnitCharacterics)

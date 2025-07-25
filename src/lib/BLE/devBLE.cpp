@@ -1,7 +1,4 @@
 #include "devBLE.h"
-
-#if defined(PLATFORM_ESP32)
-
 #include "common.h"
 #include "crsf_protocol.h"
 #include "handset.h"
@@ -103,5 +100,3 @@ device_t BLE_device = {
   .timeout = timeout,
   .subscribe = EVENT_CONNECTION_CHANGED
 };
-
-#endif

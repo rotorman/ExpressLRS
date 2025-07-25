@@ -1,7 +1,5 @@
 #pragma once
 
-#if defined(PLATFORM_ESP32)
-
 #include <WiFiUdp.h>
 
 #define JOYSTICK_PORT 11000
@@ -66,5 +64,3 @@ private:
     static bool active;
     static uint8_t failedCount;
 };
-
-#endif

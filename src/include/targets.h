@@ -48,9 +48,7 @@
 #error "Either RADIO_SX127X, RADIO_LR1121 or RADIO_SX128X must be defined!"
 #endif
 
-#if defined(PLATFORM_ESP32)
 #include <soc/uart_pins.h>
-#endif
 #if !defined(U0RXD_GPIO_NUM)
 #define U0RXD_GPIO_NUM (3)
 #endif

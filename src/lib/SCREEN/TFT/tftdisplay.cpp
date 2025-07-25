@@ -1,5 +1,3 @@
-#if defined(PLATFORM_ESP32)
-
 #include <Arduino_GFX_Library.h>
 #include "Pragma_Sans36pt7b.h"
 #include "Pragma_Sans37pt7b.h"
@@ -442,5 +440,3 @@ void TFTDisplay::displayLinkstats()
     gfx->setCursor(LINKSTATS_COL_THIRD, LINKSTATS_ROW_FOURTH);
     gfx->print(CRSF::LinkStatistics.downlink_SNR);
 }
-
-#endif

@@ -1,7 +1,5 @@
 #include "targets.h"
 #include "devThermal.h"
-
-#if defined(PLATFORM_ESP32)
 #include "config.h"
 #include "logging.h"
 
@@ -110,7 +108,6 @@ static void timeoutFan()
     {
         if (fanShouldBeOn)
         {
-#if defined(PLATFORM_ESP32)
             if (GPIO_PIN_FAN_PWM != UNDEF_PIN)
             {
                 static PowerLevels_e lastPower = MinPower;
@@ -126,7 +123,6 @@ static void timeoutFan()
                 }
             }
             else
-#endif
             {
                 fanStateDuration = 0; // reset the timeout
             }
@@ -243,4 +239,3 @@ device_t Thermal_device = {
     .timeout = timeout,
     .subscribe = EVENT_CONFIG_FAN_CHANGED
 };
-#endif

@@ -1,7 +1,4 @@
 #include "targets.h"
-
-#if defined(PLATFORM_ESP32)
-
 #include "AutoDetect.h"
 #include "CRSFHandset.h"
 #include "PPMHandset.h"
@@ -99,5 +96,3 @@ void AutoDetect::handleInput()
         }
     }
 }
-
-#endif

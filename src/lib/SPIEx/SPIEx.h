@@ -13,11 +13,7 @@
 class SPIExClass : public SPIClass
 {
 public:
-#if defined(PLATFORM_ESP32)
     explicit SPIExClass(uint8_t spi_bus=HSPI) : SPIClass(spi_bus) {}
-#else
-    explicit SPIExClass() : SPIClass() {}
-#endif
 
     /**
      * @brief Perform an SPI read operation on the SPI bus.
