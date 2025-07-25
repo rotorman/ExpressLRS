@@ -2,21 +2,12 @@
 #include "common.h"
 #include "CRSF.h"
 #include "logging.h"
-
-#ifdef TARGET_RX
-#include "telemetry.h"
-
-extern Telemetry telemetry;
-#else
 #include "CRSFHandset.h"
-#endif
 
 //LUA VARIABLES//
 
-#ifdef TARGET_TX
 static uint8_t luaWarningFlags = 0b00000000; //8 flag, 1 bit for each flag. set the bit to 1 to show specific warning. 3 MSB is for critical flag
 static void (*devicePingCallback)() = nullptr;
-#endif
 
 #define LUA_MAX_PARAMS 64
 static uint8_t parameterType;
@@ -165,15 +156,11 @@ static uint8_t sendCRSFparam(uint8_t fieldChunk, struct luaPropertiesCommon *lua
   // Start the field payload at 2 to leave room for (FieldID + ChunksRemain)
   chunkBuffer[2] = luaData->parent;
   chunkBuffer[3] = dataType;
-#ifdef TARGET_TX
   // Set the hidden flag
   chunkBuffer[3] |= luaData->type & CRSF_FIELD_HIDDEN ? 0x80 : 0;
   if (CRSFHandset::elrsLUAmode) {
     chunkBuffer[3] |= luaData->type & CRSF_FIELD_ELRS_HIDDEN ? 0x80 : 0;
   }
-#else
-  chunkBuffer[3] |= luaData->type;
-#endif
 
   // Copy the name to the buffer starting at chunkBuffer[4]
   uint8_t *chunkStart = (uint8_t *)stpcpy((char *)&chunkBuffer[4], luaData->name) + 1;
@@ -216,11 +203,7 @@ static uint8_t sendCRSFparam(uint8_t fieldChunk, struct luaPropertiesCommon *lua
   // Maximum number of chunked bytes that can be sent in one response
   // 6 bytes CRSF header/CRC: Dest, Len, Type, ExtSrc, ExtDst, CRC
   // 2 bytes Lua chunk header: FieldId, ChunksRemain
-#ifdef TARGET_TX
   uint8_t chunkMax = handset->GetMaxPacketBytes() - 6 - 2;
-#else
-  uint8_t chunkMax = CRSF_MAX_PACKET_LEN - 6 - 2;
-#endif
   // How many chunks needed to send this field (rounded up)
   uint8_t chunkCnt = (dataSize + chunkMax - 1) / chunkMax;
   // Data left to send is adjustedSize - chunks sent already
@@ -230,19 +213,7 @@ static uint8_t sendCRSFparam(uint8_t fieldChunk, struct luaPropertiesCommon *lua
   chunkStart = &chunkBuffer[fieldChunk * chunkMax];
   chunkStart[0] = luaData->id;                 // FieldId
   chunkStart[1] = chunkCnt - (fieldChunk + 1); // ChunksRemain
-#ifdef TARGET_TX
   CRSFHandset::packetQueueExtended(CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY, chunkStart, chunkSize + 2);
-#else
-  // Buffer for just this chunk with header/extheader/CRC
-  uint8_t packetBuf[CRSF_MAX_PACKET_LEN];
-  memcpy(packetBuf + sizeof(crsf_ext_header_t), chunkStart, chunkSize + 2);
-
-  CRSF::SetExtendedHeaderAndCrc(packetBuf, CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY,
-      chunkSize + CRSF_FRAME_LENGTH_EXT_TYPE_CRC + 2, CRSF_ADDRESS_CRSF_RECEIVER, CRSF_ADDRESS_CRSF_TRANSMITTER);
-
-  telemetry.AppendTelemetryPackage(packetBuf);
-#endif
-
   return chunkCnt - (fieldChunk+1);
 }
 
@@ -262,7 +233,6 @@ void sendLuaCommandResponse(struct luaItem_command *cmd, luaCmdStep_e step, cons
   pushResponseChunk(cmd);
 }
 
-#ifdef TARGET_TX
 static void luaSupressCriticalErrors()
 {
   // clear the critical error bits of the warning flags
@@ -327,8 +297,6 @@ void luaRegisterDevicePingCallback(void (*callback)())
   devicePingCallback = callback;
 }
 
-#endif
-
 void luaParamUpdateReq(uint8_t type, uint8_t index, uint8_t arg)
 {
   parameterType = type;
@@ -360,13 +328,11 @@ bool luaHandleUpdateParameter()
       if (parameterIndex == 0)
       {
         // special case for elrs linkstat request
-#ifdef TARGET_TX
         DBGVLN("ELRS status request");
         updateElrsFlags();
         sendELRSstatus();
       } else if (parameterIndex == 0x2E) {
         luaSupressCriticalErrors();
-#endif
       } else {
         uint8_t id = parameterIndex;
         uint8_t arg = parameterArg;
@@ -386,10 +352,8 @@ bool luaHandleUpdateParameter()
       break;
 
     case CRSF_FRAMETYPE_DEVICE_PING:
-#ifdef TARGET_TX
         devicePingCallback();
         luaSupressCriticalErrors();
-#endif
         sendLuaDevicePacket();
         break;
 
@@ -414,17 +378,6 @@ bool luaHandleUpdateParameter()
       }
       break;
 
-#if defined(TARGET_RX)
-    // This is a bit of a hack, it just so happens that the parameterIndex and parameterArg parameters
-    // are in the same place as the bind command. This should be handled further up the receive chain
-    // but the call in Telemetry.ShouldCallEnterBind() only works if serial data is coming in so the
-    // whole stack needs a bit of a refactor to not have similar code duplicated all over
-    case CRSF_FRAMETYPE_COMMAND:
-      if (parameterIndex == CRSF_COMMAND_SUBCMD_RX && parameterArg == CRSF_COMMAND_SUBCMD_RX_BIND)
-        EnterBindingModeSafely();
-      break;
-#endif
-
     default:
       DBGLN("Unknown LUA %x", parameterType);
   }
@@ -438,10 +391,5 @@ void sendLuaDevicePacket(void)
   uint8_t deviceInformation[DEVICE_INFORMATION_LENGTH];
   CRSF::GetDeviceInformation(deviceInformation, lastLuaField);
   // does append header + crc again so subtract size from length
-#ifdef TARGET_TX
   CRSFHandset::packetQueueExtended(CRSF_FRAMETYPE_DEVICE_INFO, deviceInformation + sizeof(crsf_ext_header_t), DEVICE_INFORMATION_PAYLOAD_LENGTH);
-#else
-  CRSF::SetExtendedHeaderAndCrc(deviceInformation, CRSF_FRAMETYPE_DEVICE_INFO, DEVICE_INFORMATION_FRAME_SIZE, CRSF_ADDRESS_CRSF_RECEIVER, CRSF_ADDRESS_CRSF_TRANSMITTER);
-  telemetry.AppendTelemetryPackage(deviceInformation);
-#endif
 }

@@ -3,11 +3,7 @@
 #include "targets.h"
 #include <stdio.h>
 
-#if defined(TARGET_TX)
 #define TimerIntervalUSDefault 4000
-#else
-#define TimerIntervalUSDefault 20000
-#endif
 
 /**
  * @brief Hardware abstraction for the hardware timer to provide precise timing

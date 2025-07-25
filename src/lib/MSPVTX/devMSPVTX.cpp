@@ -1,6 +1,6 @@
 #include "targets.h"
 
-#if defined(PLATFORM_ESP32) || defined(UNIT_TEST)
+#if defined(PLATFORM_ESP32)
 #include "common.h"
 #include "devMSPVTX.h"
 #include "devVTXSPI.h"

@@ -106,10 +106,6 @@ bool SX1280Driver::Begin(uint32_t minimumFrequency, uint32_t maximumFrequency)
         hal.WriteRegister(0x0891, (hal.ReadRegister(0x0891, SX12XX_Radio_2) | 0xC0), SX12XX_Radio_2);   //default is low power mode, switch to high sensitivity instead
     }
 
-#if defined(TARGET_RX)
-    fallBackMode = SX1280_MODE_FS;
-    hal.WriteCommand(SX1280_RADIO_SET_AUTOFS, 0x01, SX12XX_Radio_All); //Enable auto FS
-#else
 /*
 Do not enable for dual radio TX.
 When SX1280_RADIO_SET_AUTOFS is set and tlm received by only 1 of the 2 radios,  that radio will go into FS mode and the other
@@ -121,7 +117,6 @@ transitioning from FS mode and the other from Standby mode. This causes the tx d
         fallBackMode = SX1280_MODE_FS;
         hal.WriteCommand(SX1280_RADIO_SET_AUTOFS, 0x01, SX12XX_Radio_All); //Enable auto FS
     }
-#endif
 
     // Force the next power update, and the lowest power
     pwrCurrent = PWRPENDING_NONE;
@@ -488,17 +483,6 @@ void ICACHE_RAM_ATTR SX1280Driver::TXnb(uint8_t * data, uint8_t size, bool sendG
         return;
     }
 
-#if defined(DEBUG_RCVR_SIGNAL_STATS)
-    if (radioNumber == SX12XX_Radio_All || radioNumber == SX12XX_Radio_1)
-    {
-        instance->rxSignalStats[0].telem_count++;
-    }
-    if (radioNumber == SX12XX_Radio_All || radioNumber == SX12XX_Radio_2)
-    {
-        instance->rxSignalStats[1].telem_count++;
-    }
-#endif
-
     // Normal diversity mode
     if (GPIO_PIN_NSS_2 != UNDEF_PIN && radioNumber != SX12XX_Radio_All)
     {
@@ -643,12 +627,6 @@ void ICACHE_RAM_ATTR SX1280Driver::GetLastPacketStats()
     int8_t snr[2];
 
     gotRadio[secondRadioIdx] = hasSecondRadioGotData;
-    #if defined(DEBUG_RCVR_SIGNAL_STATS)
-    if(!hasSecondRadioGotData)
-    {
-        instance->rxSignalStats[secondRadioIdx].fail_count++;
-    }
-    #endif
 
     for(uint8_t i=0;i<2;i++)
     {
@@ -691,32 +669,6 @@ void ICACHE_RAM_ATTR SX1280Driver::GetLastPacketStats()
         // Update the last successful packet radio to be the one with better signal strength
         instance->lastSuccessfulPacketRadio = (rssi[0]>rssi[1])? radio[0]: radio[1];
     }
-
-#if defined(DEBUG_RCVR_SIGNAL_STATS)
-    // stat updates
-    for (uint8_t i = 0; i < 2; i++)
-    {
-        if (gotRadio[i])
-        {
-            instance->rxSignalStats[i].irq_count++;
-            instance->rxSignalStats[i].rssi_sum += rssi[i];
-            instance->rxSignalStats[i].snr_sum += snr[i];
-            if (snr[i] > instance->rxSignalStats[i].snr_max)
-            {
-                instance->rxSignalStats[i].snr_max = snr[i];
-            }
-            LastPacketSNRRaw = snr[i];
-        }
-    }
-    if(gotRadio[0] || gotRadio[1])
-    {
-        instance->irq_count_or++;
-    }
-    if(gotRadio[0] && gotRadio[1])
-    {
-        instance->irq_count_both++;
-    }
-#endif
 }
 
 void ICACHE_RAM_ATTR SX1280Driver::IsrCallback_1()
@@ -747,12 +699,6 @@ void ICACHE_RAM_ATTR SX1280Driver::IsrCallback(SX12XX_Radio_Number_t radioNumber
         {
             irqClearRadio = SX12XX_Radio_All; // Packet received so clear all radios and dont spend extra time retrieving data.
         }
-#if defined(DEBUG_RCVR_SIGNAL_STATS)
-        else
-        {
-            instance->rxSignalStats[(radioNumber == SX12XX_Radio_1) ? 0 : 1].fail_count++;
-        }
-#endif
     }
     else if (irqStatus == SX1280_IRQ_RADIO_NONE)
     {

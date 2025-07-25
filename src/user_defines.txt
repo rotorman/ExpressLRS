@@ -67,24 +67,11 @@
 # Use DEBUG_LOG_VERBOSE instead (or both) to see verbose debug logging (spammy stuff)
 #-DDEBUG_LOG_VERBOSE
 
-# Print a letter for each packet received or missed (RX debugging)
-#-DDEBUG_RX_SCOREBOARD
-
 # Don't send RC msgs over UART
 #-DDEBUG_CRSF_NO_OUTPUT
 
 # These debugging options send extra information to BetaFlight in the LinkStatistics packet
 #-DDEBUG_BF_LINK_STATS
-
-# Prints a log line for every channels packet recieved at the RX:
-#    ID,Antenna,RSSI,LQ,SNR,PWR,FHSS,TimingOffset
-# The ID is generated on the TX side and overwrites CH1-CH4 and increments once for every
-# channels packet. Writes directly to Serial, does not require DEBUG_LOG.
-# Flash both TX & RX with this enbled to use it if the ID is required.
-#-DDEBUG_RCVR_LINKSTATS
-
-# This debug option reports dual radio RSSI&SNR, which is useful for validating a TD receiver
-#-DDEBUG_RCVR_SIGNAL_STATS
 
 # Enable reporting of RF FreqCorrection in RX's SNR LinkStatistics, also decreases packet rate
 # on Team2.4 for the additional time needed to include the packet header / enable FreqCorrection

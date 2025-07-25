@@ -8,27 +8,13 @@
 const unsigned char target_name[] = "\xBE\xEF\xCA\xFE" STR(TARGET_NAME);
 const uint8_t target_name_size = sizeof(target_name);
 const char commit[] {LATEST_COMMIT, 0};
-#if defined(UNIT_TEST)
-const char version[] = "1.2.3";
-#else
 const char version[] = {LATEST_VERSION, 0};
-#endif
 
-#if defined(TARGET_TX)
 const char *wifi_hostname = "elrs_tx";
 const char *wifi_ap_ssid = "ExpressLRS TX";
-#else
-const char *wifi_hostname = "elrs_rx";
-const char *wifi_ap_ssid = "ExpressLRS RX";
-#endif
 const char *wifi_ap_password = "expresslrs";
 const char *wifi_ap_address = "10.0.0.1";
 
-#if defined(UNIT_TEST)
-char *device_name = DEVICE_NAME;
-char *product_name = (char *)(target_name+4);
-firmware_options_t firmwareOptions;
-#else
 #include <ArduinoJson.h>
 #include <StreamString.h>
 #if defined(PLATFORM_ESP8266)
@@ -74,16 +60,10 @@ void saveOptions(Stream &stream, bool customised)
         doc["wifi-ssid"] = firmwareOptions.home_wifi_ssid;
         doc["wifi-password"] = firmwareOptions.home_wifi_password;
     }
-    #if defined(TARGET_TX)
     doc["tlm-interval"] = firmwareOptions.tlm_report_interval;
     doc["fan-runtime"] = firmwareOptions.fan_min_runtime;
     doc["unlock-higher-power"] = firmwareOptions.unlock_higher_power;
     doc["airport-uart-baud"] = firmwareOptions.uart_baud;
-    #else
-    doc["rcvr-uart-baud"] = firmwareOptions.uart_baud;
-    doc["lock-on-first-connection"] = firmwareOptions.lock_on_first_connection;
-    doc["dji-permanently-armed"] = firmwareOptions.dji_permanently_armed;
-    #endif
     doc["is-airport"] = firmwareOptions.is_airport;
     doc["domain"] = firmwareOptions.domain;
     doc["customised"] = customised;
@@ -176,7 +156,6 @@ static void options_LoadFromFlashOrFile(EspFlashStream &strmFlash)
     firmwareOptions.wifi_auto_on_interval = wifiInterval == -1 ? -1 : wifiInterval * 1000;
     strlcpy(firmwareOptions.home_wifi_ssid, doc["wifi-ssid"] | "", sizeof(firmwareOptions.home_wifi_ssid));
     strlcpy(firmwareOptions.home_wifi_password, doc["wifi-password"] | "", sizeof(firmwareOptions.home_wifi_password));
-    #if defined(TARGET_TX)
     firmwareOptions.tlm_report_interval = doc["tlm-interval"] | 240U;
     firmwareOptions.fan_min_runtime = doc["fan-runtime"] | 30U;
     firmwareOptions.unlock_higher_power = doc["unlock-higher-power"] | false;
@@ -186,17 +165,6 @@ static void options_LoadFromFlashOrFile(EspFlashStream &strmFlash)
     #else
     firmwareOptions.uart_baud = doc["airport-uart-baud"] | 460800;
     firmwareOptions.is_airport = doc["is-airport"] | false;
-    #endif
-    #else
-    #if defined(USE_AIRPORT_AT_BAUD)
-    firmwareOptions.uart_baud = doc["rcvr-uart-baud"] | USE_AIRPORT_AT_BAUD;
-    firmwareOptions.is_airport = doc["is-airport"] | true;
-    #else
-    firmwareOptions.uart_baud = doc["rcvr-uart-baud"] | 420000;
-    firmwareOptions.is_airport = doc["is-airport"] | false;
-    #endif
-    firmwareOptions.lock_on_first_connection = doc["lock-on-first-connection"] | true;
-    firmwareOptions.dji_permanently_armed = doc["dji-permanently-armed"] | false;
     #endif
     firmwareOptions.domain = doc["domain"] | 0;
     firmwareOptions.flash_discriminator = doc["flash-discriminator"] | 0U;
@@ -240,14 +208,8 @@ static bool options_LoadProductAndDeviceName(EspFlashStream &strmFlash)
     }
     else
     {
-        #if defined(TARGET_RX)
-        strcpy(product_name, "Unified RX");
-        strcpy(device_name, "Unified RX");
-        #else
         strcpy(product_name, "Unified TX");
         strcpy(device_name, "Unified TX");
-        #endif
-
         return false;
     }
 }
@@ -289,4 +251,3 @@ bool options_init()
 
     return hasHardware;
 }
-#endif

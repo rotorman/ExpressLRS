@@ -28,29 +28,6 @@ static void setupWire()
     int gpio_scl = GPIO_PIN_SCL;
     int gpio_sda = GPIO_PIN_SDA;
 
-#if defined(TARGET_RX)
-    for (int ch = 0 ; ch < GPIO_PIN_PWM_OUTPUTS_COUNT ; ++ch)
-    {
-        auto pin = GPIO_PIN_PWM_OUTPUTS[ch];
-        auto pwm = config.GetPwmChannel(ch);
-        // if the PWM pin is nominated as SDA or SCL, and it's not configured for I2C then undef the pins
-        if ((pin == GPIO_PIN_SCL && pwm->val.mode != somSCL) || (pin == GPIO_PIN_SDA && pwm->val.mode != somSDA))
-        {
-            gpio_scl = UNDEF_PIN;
-            gpio_sda = UNDEF_PIN;
-            break;
-        }
-        // If I2C pins are not defined in the hardware, then look for configured I2C
-        if (GPIO_PIN_SCL == UNDEF_PIN && pwm->val.mode == somSCL)
-        {
-            gpio_scl = pin;
-        }
-        if (GPIO_PIN_SCL == UNDEF_PIN && pwm->val.mode == somSDA)
-        {
-            gpio_sda = pin;
-        }
-    }
-#endif
     if(gpio_sda != UNDEF_PIN && gpio_scl != UNDEF_PIN)
     {
         DBGLN("Starting wire on SCL %d, SDA %d", gpio_scl, gpio_sda);

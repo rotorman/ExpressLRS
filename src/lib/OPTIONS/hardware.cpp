@@ -1,4 +1,3 @@
-#if !defined(UNIT_TEST)
 #include "options.h"
 #include "helpers.h"
 #include "logging.h"
@@ -282,4 +281,3 @@ const uint16_t* hardware_u16_array(nameType name)
 {
     return (uint16_t *)hardware[name].array_value;
 }
-#endif

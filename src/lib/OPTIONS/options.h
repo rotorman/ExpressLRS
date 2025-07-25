@@ -30,20 +30,11 @@ typedef struct _options {
     int32_t     wifi_auto_on_interval;
     char        home_wifi_ssid[33];
     char        home_wifi_password[65];
-#if defined(TARGET_RX)
-    uint32_t    uart_baud;
-    bool        _unused1:1; // invert_tx
-    bool        lock_on_first_connection:1;
-    bool        dji_permanently_armed:1;
-    bool        is_airport:1;
-#endif
-#if defined(TARGET_TX) || defined(UNIT_TEST)
     uint32_t    tlm_report_interval;
     bool        _unused1:1;
     bool        unlock_higher_power:1;
     bool        is_airport:1;
     uint32_t    uart_baud;              // only use for airport
-#endif
 } __attribute__((packed)) firmware_options_t;
 
 // Layout is PRODUCTNAME DEVICENAME OPTIONS HARDWARE
@@ -55,10 +46,6 @@ constexpr size_t ELRSOPTS_HARDWARE_SIZE = 2048;
 extern firmware_options_t firmwareOptions;
 extern bool options_init();
 
-#if defined(UNIT_TEST)
-extern char *product_name;
-extern char *device_name;
-#else
 extern char product_name[];
 extern char device_name[];
 extern uint32_t logo_image;
@@ -69,4 +56,3 @@ extern void saveOptions();
 #include "EspFlashStream.h"
 bool options_HasStringInFlash(EspFlashStream &strmFlash);
 void options_SetTrueDefaults();
-#endif

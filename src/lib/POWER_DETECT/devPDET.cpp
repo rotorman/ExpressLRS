@@ -5,7 +5,6 @@
 #include "POWERMGNT.h"
 #include "devADC.h"
 
-#if defined(TARGET_TX) && defined(PLATFORM_ESP32)
 #define SKY85321_MAX_DBM_INPUT 5
 
 typedef uint32_t pdet_storage_t;
@@ -88,4 +87,3 @@ device_t PDET_device = {
     .timeout = timeout,
     .subscribe = EVENT_CONNECTION_CHANGED
 };
-#endif

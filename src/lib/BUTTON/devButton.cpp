@@ -12,19 +12,6 @@ static Button button2;
 // only check every second if the device is in-use, i.e. RX connected, or TX is armed
 static constexpr int MS_IN_USE = 1000;
 
-#if defined(TARGET_RX)
-static constexpr struct {
-    bool pressType;
-    uint8_t count;
-    action_e action;
-} button_actions[] = {
-    // half second durations + 1 (i.e. 2=1.5s)
-    {true, 2, ACTION_BIND},             // 1.5s
-    {true, 9, ACTION_START_WIFI},       // 5.0s
-    {true, 23, ACTION_RESET_REBOOT}     // 12.0s
-};
-#endif
-
 static ButtonAction_fn actions[ACTION_LAST] = { nullptr };
 
 void registerButtonFunction(action_e action, ButtonAction_fn function)
@@ -34,19 +21,13 @@ void registerButtonFunction(action_e action, ButtonAction_fn function)
 
 size_t button_GetActionCnt()
 {
-#if defined(TARGET_RX)
-    return ARRAY_SIZE(button_actions);
-#else
-    return CONFIG_TX_BUTTON_ACTION_CNT;
-#endif
+  return CONFIG_TX_BUTTON_ACTION_CNT;
 }
 
 static void handlePress(uint8_t button, bool longPress, uint8_t count)
 {
     DBGLN("handlePress(%u, %u, %u)", button, (uint8_t)longPress, count);
-#if defined(TARGET_TX)
     const button_action_t *button_actions = config.GetButtonActions(button)->val.actions;
-#endif
     for (unsigned i=0 ; i<button_GetActionCnt() ; i++)
     {
         if (button_actions[i].action != ACTION_NONE && button_actions[i].pressType == longPress && button_actions[i].count == count-1)
@@ -84,17 +65,10 @@ static int start()
 
 static int event()
 {
-#if defined(TARGET_TX)
     if (handset->IsArmed())
     {
         return DURATION_NEVER;
     }
-#else
-    if (connectionState == connected)
-    {
-        return DURATION_NEVER;
-    }
-#endif
     return DURATION_IMMEDIATELY;
 }
 

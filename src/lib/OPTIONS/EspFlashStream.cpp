@@ -1,5 +1,3 @@
-#if !defined(UNIT_TEST)
-
 #include "EspFlashStream.h"
 
 EspFlashStream::EspFlashStream()
@@ -55,5 +53,3 @@ int EspFlashStream::peek()
     }
     return _buffer[_bufferPos];
 }
-
-#endif

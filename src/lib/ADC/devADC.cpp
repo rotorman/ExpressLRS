@@ -1,5 +1,4 @@
 #include "targets.h"
-#if defined(TARGET_TX)
 #include "common.h"
 #include "devADC.h"
 
@@ -62,4 +61,3 @@ device_t ADC_device = {
     .event = nullptr,
     .timeout = timeout,
 };
-#endif

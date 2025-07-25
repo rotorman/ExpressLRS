@@ -186,9 +186,6 @@ void LR1121Driver::Config(uint8_t bw, uint8_t sf, uint8_t cr, uint32_t regfreq,
     ClearIrqStatus(radioNumber);
 
     SetPaConfig(isSubGHz, radioNumber); // Must be called after changing rf modes between subG and 2.4G.  This sets the correct rf amps, and txen pins to be used.
-#if defined(TARGET_RX)
-    pwrForceUpdate = true;  // force an update of the output power because the band may have changed, and we need to configure the power for the band.
-#endif
     CommitOutputPower();
 }
 
@@ -581,17 +578,6 @@ void ICACHE_RAM_ATTR LR1121Driver::TXnb(uint8_t * data, uint8_t size, bool sendG
         return;
     }
 
-#if defined(DEBUG_RCVR_SIGNAL_STATS)
-    if (radioNumber == SX12XX_Radio_All || radioNumber == SX12XX_Radio_1)
-    {
-        instance->rxSignalStats[0].telem_count++;
-    }
-    if (radioNumber == SX12XX_Radio_All || radioNumber == SX12XX_Radio_2)
-    {
-        instance->rxSignalStats[1].telem_count++;
-    }
-#endif
-
     // Normal diversity mode
     if (GPIO_PIN_NSS_2 != UNDEF_PIN && radioNumber != SX12XX_Radio_All)
     {
@@ -757,12 +743,6 @@ void ICACHE_RAM_ATTR LR1121Driver::GetLastPacketStats()
     int8_t snr[2];
 
     gotRadio[secondRadioIdx] = hasSecondRadioGotData;
-    #if defined(DEBUG_RCVR_SIGNAL_STATS)
-    if(!hasSecondRadioGotData)
-    {
-        instance->rxSignalStats[secondRadioIdx].fail_count++;
-    }
-    #endif
 
     // Get both radios ready at the same time to return packet stats
     hal.WriteCommand(LR11XX_RADIO_GET_PKT_STATUS_OC, instance->processingPacketRadio | (gotRadio[secondRadioIdx] ? radio[secondRadioIdx] : 0));
@@ -802,32 +782,6 @@ void ICACHE_RAM_ATTR LR1121Driver::GetLastPacketStats()
         // Update the last successful packet radio to be the one with better signal strength
         instance->lastSuccessfulPacketRadio = (rssi[0]>rssi[1])? radio[0]: radio[1];
     }
-
-#if defined(DEBUG_RCVR_SIGNAL_STATS)
-    // stat updates
-    for (uint8_t i = 0; i < 2; i++)
-    {
-        if (gotRadio[i])
-        {
-            instance->rxSignalStats[i].irq_count++;
-            instance->rxSignalStats[i].rssi_sum += rssi[i];
-            instance->rxSignalStats[i].snr_sum += snr[i];
-            if (snr[i] > instance->rxSignalStats[i].snr_max)
-            {
-                instance->rxSignalStats[i].snr_max = snr[i];
-            }
-            LastPacketSNRRaw = snr[i];
-        }
-    }
-    if(gotRadio[0] || gotRadio[1])
-    {
-        instance->irq_count_or++;
-    }
-    if(gotRadio[0] && gotRadio[1])
-    {
-        instance->irq_count_both++;
-    }
-#endif
 }
 
 void ICACHE_RAM_ATTR LR1121Driver::IsrCallback_1()
@@ -861,11 +815,5 @@ void ICACHE_RAM_ATTR LR1121Driver::IsrCallback(SX12XX_Radio_Number_t radioNumber
         if (instance->RXnbISR(radioNumber))
         {
         }
-#if defined(DEBUG_RCVR_SIGNAL_STATS)
-        else
-        {
-            instance->rxSignalStats[(radioNumber == SX12XX_Radio_1) ? 0 : 1].fail_count++;
-        }
-#endif
     }
 }

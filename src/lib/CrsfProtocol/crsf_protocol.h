@@ -5,15 +5,6 @@
 #include "crc.h"
 #include "options.h"
 
-#if TARGET_TX
-#define CRSF_TX_MODULE 1
-#elif TARGET_RX || defined(UNIT_TEST)
-#define CRSF_RX_MODULE 1
-#else
-#error "Invalid configuration!"
-#endif
-
-
 #define PACKED __attribute__((packed))
 
 #ifndef ICACHE_RAM_ATTR

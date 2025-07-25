@@ -1,6 +1,6 @@
 #include "targets.h"
 
-#if defined(PLATFORM_ESP32) && defined(TARGET_TX)
+#if defined(PLATFORM_ESP32)
 
 #include "PPMHandset.h"
 #include "common.h"

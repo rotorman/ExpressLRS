@@ -1,6 +1,5 @@
 #pragma once
 
-#ifndef UNIT_TEST
 #include "targets.h"
 #include <device.h>
 
@@ -13,8 +12,6 @@
 #else
 #error "Radio configuration is not valid!"
 #endif
-
-#endif // UNIT_TEST
 
 // Used to XOR with OtaCrcInitializer and macSeed to reduce compatibility with previous versions.
 // It should be incremented when the OTA packet structure is modified.
@@ -290,7 +287,6 @@ enum eAuxChannels : uint8_t
 #define ELRS_CRC_POLY 0x07 // 0x83
 #define ELRS_CRC14_POLY 0x2E57 // 0x372B
 
-#ifndef UNIT_TEST
 #if defined(RADIO_SX127X)
 #define RATE_MAX 6
 #define RATE_BINDING RATE_LORA_900_50HZ
@@ -310,7 +306,6 @@ extern LR1121Driver Radio;
 
 extern SX1280Driver Radio;
 #endif
-#endif // UNIT_TEST
 
 expresslrs_mod_settings_s *get_elrs_airRateConfig(uint8_t index);
 expresslrs_rf_pref_params_s *get_elrs_RFperfParams(uint8_t index);
@@ -330,12 +325,10 @@ extern expresslrs_rf_pref_params_s *ExpressLRS_currAirRate_RFperfParams;
 extern uint32_t ChannelData[CRSF_NUM_CHANNELS]; // Current state of channels, CRSF format
 
 extern connectionState_e connectionState;
-#if !defined(UNIT_TEST)
 inline void setConnectionState(connectionState_e newState) {
     connectionState = newState;
     devicesTriggerEvent(EVENT_CONNECTION_CHANGED);
 }
-#endif
 
 uint32_t uidMacSeedGet();
 bool isDualRadio();

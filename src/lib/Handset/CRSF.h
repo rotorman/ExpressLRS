@@ -23,15 +23,6 @@ public:
     static void SetExtendedHeaderAndCrc(uint8_t *frame, crsf_frame_type_e frameType, uint8_t frameSize, crsf_addr_e senderAddr, crsf_addr_e destAddr);
     static uint32_t VersionStrToU32(const char *verStr);
 
-#if defined(CRSF_RX_MODULE)
-public:
-    static void updateUplinkPower(uint8_t uplinkPower);
-    static bool clearUpdatedUplinkPower();
-
-private:
-    static bool HasUpdatedUplinkPower;
-#endif
-
 private:
     static uint8_t MspData[ELRS_MSP_BUFFER];
     static uint8_t MspDataLength;

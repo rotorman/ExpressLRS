@@ -54,7 +54,6 @@ static bool initialize()
 
 static void timeoutThermal()
 {
-#if defined(TARGET_TX)
 #if !defined(PLATFORM_ESP32_S3)
     if(OPT_HAS_THERMAL_LM75A)
 #endif
@@ -73,10 +72,8 @@ static void timeoutThermal()
         }
 #endif
     }
-#endif
 }
 
-#if defined(TARGET_TX) && defined(PLATFORM_ESP32)
 static void setFanSpeed()
 {
     const uint8_t defaultFanSpeeds[] = {
@@ -94,7 +91,6 @@ static void setFanSpeed()
     ledcWrite(fanChannel, speed);
     DBGLN("Fan speed: %d (power) -> %u (pwm)", POWERMGNT::currPower(), speed);
 }
-#endif
 
 /*
  * For enable-only fans:
@@ -109,16 +105,12 @@ static void timeoutFan()
 {
     static uint8_t fanStateDuration;
     static bool fanIsOn;
-#if defined(TARGET_RX)
-    bool fanShouldBeOn = true;
-#else
     bool fanShouldBeOn = POWERMGNT::currPower() >= (PowerLevels_e)config.GetPowerFanThreshold();
-#endif
     if (fanIsOn)
     {
         if (fanShouldBeOn)
         {
-#if defined(TARGET_TX) && defined(PLATFORM_ESP32)
+#if defined(PLATFORM_ESP32)
             if (GPIO_PIN_FAN_PWM != UNDEF_PIN)
             {
                 static PowerLevels_e lastPower = MinPower;
@@ -220,7 +212,6 @@ static int start()
 
 static int event()
 {
-#if defined(TARGET_TX)
     if (OPT_HAS_THERMAL_LM75A && GPIO_PIN_SCL != UNDEF_PIN && GPIO_PIN_SDA != UNDEF_PIN)
     {
 #ifdef HAS_SMART_FAN
@@ -232,7 +223,6 @@ static int event()
         }
 #endif
     }
-#endif
     return DURATION_IGNORE;
 }
 

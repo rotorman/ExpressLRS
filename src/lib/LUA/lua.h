@@ -130,12 +130,10 @@ struct tagLuaElrsParams {
     char msg[1]; // null-terminated string
 } PACKED;
 
-#ifdef TARGET_TX
 void setLuaWarningFlag(lua_Flags flag, bool value);
 uint8_t getLuaWarningFlags(void);
 
 void luaRegisterDevicePingCallback(void (*callback)());
-#endif
 
 #define LUA_FIELD_HIDE(fld) { fld.common.type = (crsf_value_type_e)((uint8_t)fld.common.type | CRSF_FIELD_HIDDEN); }
 #define LUA_FIELD_SHOW(fld) { fld.common.type = (crsf_value_type_e)((uint8_t)fld.common.type & ~CRSF_FIELD_HIDDEN); }

@@ -1,5 +1,3 @@
-#ifndef UNIT_TEST
-
 #include "SX127xHal.h"
 #include "SX127xRegs.h"
 #include "logging.h"
@@ -155,5 +153,3 @@ void ICACHE_RAM_ATTR SX127xHal::dioISR_2()
     if (instance->IsrCallback_2)
         instance->IsrCallback_2();
 }
-
-#endif // UNIT_TEST

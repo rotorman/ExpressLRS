@@ -14,27 +14,22 @@
  * Set LOGGING_UART define to Serial instance to use if not Serial
  **/
 
-// DEBUG_LOG_VERBOSE and DEBUG_RX_SCOREBOARD implies DEBUG_LOG
+// DEBUG_LOG_VERBOSE implies DEBUG_LOG
 #if !defined(DEBUG_LOG)
-  #if defined(DEBUG_LOG_VERBOSE) || (defined(DEBUG_RX_SCOREBOARD) && TARGET_RX) || defined(DEBUG_INIT)
+  #if defined(DEBUG_LOG_VERBOSE) || defined(DEBUG_INIT)
     #define DEBUG_LOG
   #endif
 #endif
 
-#if defined(TARGET_RX) && (defined(DEBUG_RCVR_LINKSTATS) || defined(DEBUG_RX_SCOREBOARD) || defined(DEBUG_RCVR_SIGNAL_STATS)) || defined(DEBUG_LOG)
+#if defined(DEBUG_LOG)
 #define DEBUG_ENABLED
 #endif
 
-#if defined(TARGET_TX)
 extern Stream *TxBackpack;
 #if defined(PLATFORM_ESP32_S3)
 #define LOGGING_UART (Serial)
 #else
 #define LOGGING_UART (*TxBackpack)
-#endif
-#else
-extern Stream *SerialLogger;
-#define LOGGING_UART (*SerialLogger)
 #endif
 
 // #define LOG_USE_PROGMEM
@@ -48,7 +43,7 @@ void debugFreeInitLogger();
 #define debugFreeInitLogger()
 #endif
 
-#if defined(DEBUG_RCVR_LINKSTATS) && !defined(DEBUG_LOG)
+#if !defined(DEBUG_LOG)
   #define ERRLN(msg, ...)
 #else
   #define ERRLN(msg, ...) IFNE(__VA_ARGS__)({ \

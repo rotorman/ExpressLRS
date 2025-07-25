@@ -16,7 +16,6 @@ Maintainer: Miguel Luis, Gregory Cristian and Matthieu Verdy
 Modified and adapted by Alessandro Carcione for ELRS project
 */
 
-#ifndef UNIT_TEST
 #include "SX1280_Regs.h"
 #include "SX1280_hal.h"
 #include <SPIEx.h>
@@ -292,5 +291,3 @@ void ICACHE_RAM_ATTR SX1280Hal::dioISR_2()
     if (instance->IsrCallback_2)
         instance->IsrCallback_2();
 }
-
-#endif // UNIT_TEST

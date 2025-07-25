@@ -1,6 +1,6 @@
 #pragma once
 
-#if defined(TARGET_TX) && defined(PLATFORM_ESP32)
+#if defined(PLATFORM_ESP32)
 
 #include <WiFiUdp.h>
 

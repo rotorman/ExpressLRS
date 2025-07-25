@@ -1,11 +1,7 @@
 #include "targets.h"
 #include "common.h"
 #include "devLED.h"
-
-#if defined(TARGET_TX)
 #include "config.h"
-#endif
-
 #include "crsf_protocol.h"
 #include "POWERMGNT.h"
 
@@ -235,7 +231,7 @@ uint32_t toRGB(uint8_t c)
 
 void setButtonColors(uint8_t b1, uint8_t b2)
 {
-    #if defined(PLATFORM_ESP32) && defined(TARGET_TX)
+    #if defined(PLATFORM_ESP32)
     if (USER_BUTTON_LED != -1)
     {
         WS281BsetLED(USER_BUTTON_LED, toRGB(b1));
@@ -310,9 +306,7 @@ static int blinkyUpdate() {
                     striprgb->ClearTo(RgbColor(0), 0, pixelCount-1);
                 }
             }
-            #if defined(TARGET_TX)
             setButtonColors(config.GetButtonActions(0)->val.color, config.GetButtonActions(1)->val.color);
-            #endif
             if (OPT_WS2812_IS_GRB)
             {
                 stripgrb->Show();
@@ -390,9 +384,7 @@ static int start()
     // Only do the blinkies if it was NOT a software reboot
     if (esp_reset_reason() == ESP_RST_SW) {
         blinkyState = NORMAL;
-        #if defined(TARGET_TX)
         setButtonColors(config.GetButtonActions(0)->val.color, config.GetButtonActions(1)->val.color);
-        #endif
         return NORMAL_UPDATE_INTERVAL;
     }
     #endif
@@ -405,23 +397,9 @@ static int timeout()
     {
         return blinkyUpdate();
     }
-#if defined(TARGET_RX)
-    if (InBindingMode)
-    {
-        blinkyColor.h = 10;
-        return flashLED(blinkyColor, 192, 0, LEDSEQ_BINDING, sizeof(LEDSEQ_BINDING));
-    }
-#endif
     switch (connectionState)
     {
     case connected:
-#if defined(TARGET_RX)
-        if (!connectionHasModelMatch || !teamraceHasModelMatch)
-        {
-            blinkyColor.h = 10;
-            return flashLED(blinkyColor, 192, 0, LEDSEQ_MODEL_MISMATCH, sizeof(LEDSEQ_MODEL_MISMATCH));
-        }
-#endif
         // Set the color and we're done!
         blinkyColor.h = ExpressLRS_currAirRate_Modparams->index * 256 / RATE_MAX;
         blinkyColor.v = fmap(POWERMGNT::currPower(), 0, PWR_COUNT-1, 10, 128);
@@ -434,14 +412,9 @@ static int timeout()
         WS281BsetLED(HsvToRgb(blinkyColor));
         return DURATION_NEVER;
     case disconnected:
-#if defined(TARGET_RX)
-        blinkyColor.h = 10;
-        return flashLED(blinkyColor, 192, 0, LEDSEQ_DISCONNECTED, sizeof(LEDSEQ_DISCONNECTED));
-#else
         blinkyColor.h = ExpressLRS_currAirRate_Modparams->index * 256 / RATE_MAX;
         brightnessFadeLED(blinkyColor, 0, 64);
         return NORMAL_UPDATE_INTERVAL;
-#endif
     case wifiUpdate:
         hueFadeLED(blinkyColor, 85, 85-30, 128, 2);      // Yellow->Green cross-fade
         return 5;

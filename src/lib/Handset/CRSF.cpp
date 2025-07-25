@@ -202,31 +202,3 @@ void ICACHE_RAM_ATTR CRSF::AddMspMessage(const uint8_t length, uint8_t* data)
         MspWriteFIFO.unlock();
     }
 }
-
-#if defined(CRSF_RX_MODULE)
-
-bool CRSF::HasUpdatedUplinkPower = false;
-
-/***
- * @brief: Call this when new uplinkPower from the TX is availble from OTA instead of setting directly
- */
-void CRSF::updateUplinkPower(uint8_t uplinkPower)
-{
-    if (uplinkPower != LinkStatistics.uplink_TX_Power)
-    {
-        LinkStatistics.uplink_TX_Power = uplinkPower;
-        HasUpdatedUplinkPower = true;
-    }
-}
-
-/***
- * @brief: Returns true if HasUpdatedUplinkPower and clears the flag
- */
-bool CRSF::clearUpdatedUplinkPower()
-{
-    bool retVal = HasUpdatedUplinkPower;
-    HasUpdatedUplinkPower = false;
-    return retVal;
-}
-
-#endif // CRSF_RX_MODULE

@@ -39,10 +39,6 @@
 #include "options.h"
 #include "helpers.h"
 #include "devButton.h"
-#if defined(TARGET_RX) && defined(PLATFORM_ESP32)
-#include "devVTXSPI.h"
-#endif
-
 #include "WebContent.h"
 
 #include "config.h"
@@ -51,14 +47,10 @@
 #include "lr1121.h"
 #endif
 
-#if defined(TARGET_TX)
 #include "wifiJoystick.h"
 
 extern TxConfig config;
 extern void setButtonColors(uint8_t b1, uint8_t b2);
-#else
-extern RxConfig config;
-#endif
 
 extern unsigned long rebootTime;
 
@@ -77,11 +69,6 @@ static const byte DNS_PORT = 53;
 static IPAddress netMsk(255, 255, 255, 0);
 static DNSServer dnsServer;
 static IPAddress ipAddress;
-
-#if defined(TARGET_RX)
-#include "tcpsocket.h"
-TCPSOCKET wifi2tcp;
-#endif
 
 #if defined(PLATFORM_ESP8266)
 static bool scanComplete = false;
@@ -268,15 +255,6 @@ static void UpdateSettings(AsyncWebServerRequest *request, JsonVariant &json)
 
 static const char *GetConfigUidType(const JsonObject json)
 {
-#if defined(TARGET_RX)
-  if (config.GetBindStorage() == BINDSTORAGE_VOLATILE)
-    return "Volatile";
-  if (config.GetBindStorage() == BINDSTORAGE_RETURNABLE && config.IsOnLoan())
-    return "Loaned";
-  if (config.GetIsBound())
-    return "Bound";
-  return "Not Bound";
-#else
   if (firmwareOptions.hasUID)
   {
     if (json["options"]["customised"] | false)
@@ -285,7 +263,6 @@ static const char *GetConfigUidType(const JsonObject json)
       return "Flashed";
   }
   return "Not set (using MAC address)";
-#endif
 }
 
 static void GetConfiguration(AsyncWebServerRequest *request)
@@ -304,7 +281,6 @@ static void GetConfiguration(AsyncWebServerRequest *request)
   JsonArray uid = json["config"]["uid"].to<JsonArray>();
   copyArray(UID, UID_LEN, uid);
 
-#if defined(TARGET_TX)
   int button_count = 0;
   if (GPIO_PIN_BUTTON != UNDEF_PIN)
     button_count = 1;
@@ -353,42 +329,11 @@ static void GetConfiguration(AsyncWebServerRequest *request)
       modelJson["tx-antenna"] = modelConfig.txAntenna;
     }
   }
-#endif /* TARGET_TX */
 
   if (!exportMode)
   {
     json["config"]["ssid"] = station_ssid;
     json["config"]["mode"] = wifiMode == WIFI_STA ? "STA" : "AP";
-    #if defined(TARGET_RX)
-    json["config"]["serial-protocol"] = config.GetSerialProtocol();
-#if defined(PLATFORM_ESP32)
-    json["config"]["serial1-protocol"] = config.GetSerial1Protocol();
-#endif
-    json["config"]["sbus-failsafe"] = config.GetFailsafeMode();
-    json["config"]["modelid"] = config.GetModelId();
-    json["config"]["force-tlm"] = config.GetForceTlmOff();
-    json["config"]["vbind"] = config.GetBindStorage();
-    for (int ch=0; ch<GPIO_PIN_PWM_OUTPUTS_COUNT; ++ch)
-    {
-      json["config"]["pwm"][ch]["config"] = config.GetPwmChannel(ch)->raw;
-      json["config"]["pwm"][ch]["pin"] = GPIO_PIN_PWM_OUTPUTS[ch];
-      uint8_t features = 0;
-      auto pin = GPIO_PIN_PWM_OUTPUTS[ch];
-      if (pin == U0TXD_GPIO_NUM) features |= 1;  // SerialTX supported
-      else if (pin == U0RXD_GPIO_NUM) features |= 2;  // SerialRX supported
-      else if (pin == GPIO_PIN_SCL) features |= 4;  // I2C SCL supported (only on this pin)
-      else if (pin == GPIO_PIN_SDA) features |= 8;  // I2C SCL supported (only on this pin)
-      else if (GPIO_PIN_SCL == UNDEF_PIN || GPIO_PIN_SDA == UNDEF_PIN) features |= 12; // Both I2C SCL/SDA supported (on any pin)
-      #if defined(PLATFORM_ESP32)
-      if (pin != 0) features |= 16; // DShot supported on all pins but GPIO0
-      if (pin == GPIO_PIN_SERIAL1_RX) features |= 32;  // SERIAL1 RX supported (only on this pin)
-      else if (pin == GPIO_PIN_SERIAL1_TX) features |= 64;  // SERIAL1 TX supported (only on this pin)
-      else if ((GPIO_PIN_SERIAL1_RX == UNDEF_PIN || GPIO_PIN_SERIAL1_TX == UNDEF_PIN) &&
-               (!(features & 1) && !(features & 2))) features |= 96; // Both Serial1 RX/TX supported (on any pin if not already featured for Serial 1)
-      #endif
-      json["config"]["pwm"][ch]["features"] = features;
-    }
-    #endif
     json["config"]["product_name"] = product_name;
     json["config"]["lua_name"] = device_name;
     json["config"]["reg_domain"] = FHSSgetRegulatoryDomain();
@@ -399,7 +344,6 @@ static void GetConfiguration(AsyncWebServerRequest *request)
   request->send(response);
 }
 
-#if defined(TARGET_TX)
 static void UpdateConfiguration(AsyncWebServerRequest *request, JsonVariant &json)
 {
   if (json.containsKey("button-actions")) {
@@ -482,63 +426,6 @@ static void WebUpdateButtonColors(AsyncWebServerRequest *request, JsonVariant &j
   setButtonColors(button1Color, button2Color);
   request->send(200);
 }
-#else
-/**
- * @brief: Copy uid to config if changed
-*/
-static void JsonUidToConfig(JsonVariant &json)
-{
-  JsonArray juid = json["uid"].as<JsonArray>();
-  size_t juidLen = constrain(juid.size(), 0, UID_LEN);
-  uint8_t newUid[UID_LEN] = { 0 };
-
-  // Copy only as many bytes as were included, right-justified
-  // This supports 6-digit UID as well as 4-digit (OTA bound) UID
-  copyArray(juid, &newUid[UID_LEN-juidLen], juidLen);
-
-  if (memcmp(newUid, config.GetUID(), UID_LEN) != 0)
-  {
-    config.SetUID(newUid);
-    config.Commit();
-    // Also copy it to the global UID in case the page is reloaded
-    memcpy(UID, newUid, UID_LEN);
-  }
-}
-static void UpdateConfiguration(AsyncWebServerRequest *request, JsonVariant &json)
-{
-  uint8_t protocol = json["serial-protocol"] | 0;
-  config.SetSerialProtocol((eSerialProtocol)protocol);
-
-#if defined(PLATFORM_ESP32)
-  uint8_t protocol1 = json["serial1-protocol"] | 0;
-  config.SetSerial1Protocol((eSerial1Protocol)protocol1);
-#endif
-
-  uint8_t failsafe = json["sbus-failsafe"] | 0;
-  config.SetFailsafeMode((eFailsafeMode)failsafe);
-
-  long modelid = json["modelid"] | 255;
-  if (modelid < 0 || modelid > 63) modelid = 255;
-  config.SetModelId((uint8_t)modelid);
-
-  long forceTlm = json["force-tlm"] | 0;
-  config.SetForceTlmOff(forceTlm != 0);
-
-  config.SetBindStorage((rx_config_bindstorage_t)(json["vbind"] | 0));
-  JsonUidToConfig(json);
-
-  JsonArray pwm = json["pwm"].as<JsonArray>();
-  for(uint32_t channel = 0 ; channel < pwm.size() ; channel++)
-  {
-    uint32_t val = pwm[channel];
-    //DBGLN("PWMch(%u)=%u", channel, val);
-    config.SetPwmChannelRaw(channel, val);
-  }
-
-  config.Commit();
-  request->send(200, "text/plain", "Configuration updated");
-}
-#endif
 
 static void WebUpdateGetTarget(AsyncWebServerRequest *request)
 {
@@ -549,12 +436,7 @@ static void WebUpdateGetTarget(AsyncWebServerRequest *request)
   json["lua_name"] = device_name;
   json["reg_domain"] = FHSSgetRegulatoryDomain();
   json["git-commit"] = commit;
-#if defined(TARGET_TX)
   json["module-type"] = "TX";
-#endif
-#if defined(TARGET_RX)
-  json["module-type"] = "RX";
-#endif
 #if defined(RADIO_SX128X)
   json["radio-type"] = "SX128X";
   json["has-sub-ghz"] = false;
@@ -697,11 +579,7 @@ static void WebUploadResponseHandler(AsyncWebServerRequest *request) {
     if (!Update.hasError() && Update.end()) {
       DBGLN("Update complete, rebooting");
       msg = String("{\"status\": \"ok\", \"msg\": \"Update complete. ");
-      #if defined(TARGET_RX)
-        msg += "Please wait for the LED to resume blinking before disconnecting power.\"}";
-      #else
-        msg += "Please wait for a few seconds while the device reboots.\"}";
-      #endif
+      msg += "Please wait for a few seconds while the device reboots.\"}";
       rebootTime = millis() + 200;
     } else {
       StreamString p = StreamString();
@@ -732,7 +610,7 @@ static void WebUploadResponseHandler(AsyncWebServerRequest *request) {
 static void WebUploadDataHandler(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
   force_update = force_update || request->hasArg("force");
   if (index == 0) {
-    #if defined(TARGET_TX) && defined(PLATFORM_ESP32)
+    #if defined(PLATFORM_ESP32)
       WifiJoystick::StopJoystickService();
     #endif
 
@@ -801,7 +679,6 @@ static void WebUploadForceUpdateHandler(AsyncWebServerRequest *request) {
   }
 }
 
-#if defined(TARGET_TX) && defined(PLATFORM_ESP32)
 static void WebUdpControl(AsyncWebServerRequest *request)
 {
   const String &action = request->arg("action");
@@ -817,7 +694,6 @@ static void WebUdpControl(AsyncWebServerRequest *request)
     request->send(200, "text/plain", "ok");
   }
 }
-#endif
 
 static size_t firmwareOffset = 0;
 static size_t getFirmwareChunk(uint8_t *data, size_t len, size_t pos)
@@ -923,9 +799,6 @@ static void startWiFi(unsigned long now)
 
   if (connectionState < FAILURE_STATES) {
     hwTimer::stop();
-#if defined(TARGET_RX) && defined(PLATFORM_ESP32)
-    disableVTxSpi();
-#endif
 
     // Set transmit power to minimum
     POWERMGNT::setPower(MinPower);
@@ -965,22 +838,12 @@ static void startMDNS()
 
   String options = "-DAUTO_WIFI_ON_INTERVAL=" + (firmwareOptions.wifi_auto_on_interval == -1 ? "-1" : String(firmwareOptions.wifi_auto_on_interval / 1000));
 
-  #if defined(TARGET_TX)
   if (firmwareOptions.unlock_higher_power)
   {
     options += " -DUNLOCK_HIGHER_POWER";
   }
   options += " -DTLM_REPORT_INTERVAL_MS=" + String(firmwareOptions.tlm_report_interval);
   options += " -DFAN_MIN_RUNTIME=" + String(firmwareOptions.fan_min_runtime);
-  #endif
-
-  #if defined(TARGET_RX)
-  if (firmwareOptions.lock_on_first_connection)
-  {
-    options += " -DLOCK_ON_FIRST_CONNECTION";
-  }
-  options += " -DRCVR_UART_BAUD=" + String(firmwareOptions.uart_baud);
-  #endif
 
   String instance = String(wifi_hostname) + "_" + WiFi.macAddress();
   instance.replace(":", "");
@@ -1013,18 +876,12 @@ static void startMDNS()
     MDNS.addServiceTxt("http", "tcp", "product", (const char *)product_name);
     MDNS.addServiceTxt("http", "tcp", "version", VERSION);
     MDNS.addServiceTxt("http", "tcp", "options", options.c_str());
-  #if defined(TARGET_TX)
     MDNS.addServiceTxt("http", "tcp", "type", "tx");
-  #else
-    MDNS.addServiceTxt("http", "tcp", "type", "rx");
-  #endif
   #endif
 
-  #if defined(TARGET_TX) && defined(PLATFORM_ESP32)
     MDNS.addService("elrs", "udp", JOYSTICK_PORT);
     MDNS.addServiceTxt("elrs", "udp", "device", (const char *)device_name);
     MDNS.addServiceTxt("elrs", "udp", "version", String(JOYSTICK_VERSION).c_str());
-  #endif
 }
 
 static void addCaptivePortalHandlers()
@@ -1089,16 +946,12 @@ static void startServices()
   server.on("/options.json", HTTP_GET, getFile);
   server.on("/reboot", HandleReboot);
   server.on("/reset", HandleReset);
-  #if defined(TARGET_TX) && defined(PLATFORM_ESP32)
-    server.on("/udpcontrol", HTTP_POST, WebUdpControl);
-  #endif
+  server.on("/udpcontrol", HTTP_POST, WebUdpControl);
 
   server.addHandler(new AsyncCallbackJsonWebHandler("/config", UpdateConfiguration));
   server.addHandler(new AsyncCallbackJsonWebHandler("/options.json", UpdateSettings));
-  #if defined(TARGET_TX)
-    server.addHandler(new AsyncCallbackJsonWebHandler("/buttons", WebUpdateButtonColors));
-    server.addHandler(new AsyncCallbackJsonWebHandler("/import", ImportConfiguration, 32768U));
-  #endif
+  server.addHandler(new AsyncCallbackJsonWebHandler("/buttons", WebUpdateButtonColors));
+  server.addHandler(new AsyncCallbackJsonWebHandler("/import", ImportConfiguration, 32768U));
 
   #if defined(RADIO_LR1121)
     server.on("/lr1121.html", WebUpdateSendContent);
@@ -1118,15 +971,10 @@ static void startServices()
 
   startMDNS();
 
-  #if defined(TARGET_TX) && defined(PLATFORM_ESP32)
-    WifiJoystick::StartJoystickService();
-  #endif
+  WifiJoystick::StartJoystickService();
 
   servicesStarted = true;
   DBGLN("HTTPUpdateServer ready! Open http://%s.local in your browser", wifi_hostname);
-  #if defined(TARGET_RX)
-  wifi2tcp.begin();
-  #endif
 }
 
 static void HandleWebUpdate()
@@ -1225,17 +1073,8 @@ static void HandleWebUpdate()
       MDNS.update();
     #endif
 
-    #if defined(TARGET_TX) && defined(PLATFORM_ESP32)
-      WifiJoystick::Loop(now);
-    #endif
+    WifiJoystick::Loop(now);
   }
-}
-
-void HandleMSP2WIFI()
-{
-  #if defined(TARGET_RX)
-  wifi2tcp.handle();
-  #endif
 }
 
 static int start()
@@ -1270,7 +1109,6 @@ static int timeout()
   if (wifiStarted)
   {
     HandleWebUpdate();
-    HandleMSP2WIFI();
 #if defined(PLATFORM_ESP8266)
     // When in STA mode, a small delay reduces power use from 90mA to 30mA when idle
     // In AP mode, it doesn't seem to make a measurable difference, but does not hurt
@@ -1285,7 +1123,6 @@ static int timeout()
 #endif
   }
 
-  #if defined(TARGET_TX)
   // if webupdate was requested before or .wifi_auto_on_interval has elapsed but uart is not detected
   // start webupdate, there might be wrong configuration flashed.
   if(firmwareOptions.wifi_auto_on_interval != -1 && webserverPreventAutoStart == false && connectionState < wifiUpdate && !wifiStarted){
@@ -1293,21 +1130,6 @@ static int timeout()
     setWifiUpdateMode();
     return DURATION_IMMEDIATELY;
   }
-  #elif defined(TARGET_RX)
-  if (firmwareOptions.wifi_auto_on_interval != -1 && !webserverPreventAutoStart && (connectionState == disconnected))
-  {
-    static bool pastAutoInterval = false;
-    // If InBindingMode then wait at least 60 seconds before going into wifi,
-    // regardless of if .wifi_auto_on_interval is set to less
-    if (!InBindingMode || firmwareOptions.wifi_auto_on_interval >= 60000 || pastAutoInterval)
-    {
-      setWifiUpdateMode();
-      return DURATION_IMMEDIATELY;
-    }
-    pastAutoInterval = true;
-    return (60000 - firmwareOptions.wifi_auto_on_interval);
-  }
-  #endif
   return DURATION_NEVER;
 }
 

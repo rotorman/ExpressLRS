@@ -38,8 +38,6 @@ PowerLevels_e crsfPowerToPower(uint8_t crsfpower)
     }
 }
 
-#ifndef UNIT_TEST
-
 #include "common.h"
 #include "device.h"
 #include "helpers.h"
@@ -272,5 +270,3 @@ void POWERMGNT::setPower(PowerLevels_e Power)
     CurrentPower = Power;
     devicesTriggerEvent(EVENT_POWER_CHANGED);
 }
-
-#endif /* !UNIT_TEST */

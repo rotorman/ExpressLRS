@@ -446,17 +446,6 @@ void ICACHE_RAM_ATTR SX127xDriver::TXnb(uint8_t * data, uint8_t size, bool sendG
       return;
   }
 
-#if defined(DEBUG_RCVR_SIGNAL_STATS)
-    if (radioNumber == SX12XX_Radio_All || radioNumber == SX12XX_Radio_1)
-    {
-        instance->rxSignalStats[0].telem_count++;
-    }
-    if (radioNumber == SX12XX_Radio_All || radioNumber == SX12XX_Radio_2)
-    {
-        instance->rxSignalStats[1].telem_count++;
-    }
-#endif
-
   RFAMP.TXenable(radioNumber);
   hal.writeRegister(SX127X_REG_FIFO_ADDR_PTR, SX127X_FIFO_TX_BASE_ADDR_MAX, radioNumber);
   if (sendGeminiBuffer)
@@ -540,12 +529,6 @@ void ICACHE_RAM_ATTR SX127xDriver::GetLastPacketStats()
   int8_t snr[2];
 
   gotRadio[secondRadioIdx] = hasSecondRadioGotData;
-  #if defined(DEBUG_RCVR_SIGNAL_STATS)
-  if(!hasSecondRadioGotData)
-  {
-    instance->rxSignalStats[secondRadioIdx].fail_count++;
-  }
-  #endif
 
   for (uint8_t i = 0; i < 2; i++)
   {
@@ -575,32 +558,6 @@ void ICACHE_RAM_ATTR SX127xDriver::GetLastPacketStats()
     // Update the last successful packet radio to be the one with better signal strength
     instance->lastSuccessfulPacketRadio = (rssi[0] > rssi[1]) ? radio[0] : radio[1];
   }
-
-#if defined(DEBUG_RCVR_SIGNAL_STATS)
-  // stat updates
-  for (uint8_t i = 0; i < 2; i++)
-  {
-    if (gotRadio[i])
-    {
-      instance->rxSignalStats[i].irq_count++;
-      instance->rxSignalStats[i].rssi_sum += rssi[i];
-      instance->rxSignalStats[i].snr_sum += snr[i];
-      if (snr[i] > instance->rxSignalStats[i].snr_max)
-      {
-        instance->rxSignalStats[i].snr_max = snr[i];
-      }
-      LastPacketSNRRaw = snr[i];
-    }
-  }
-  if (gotRadio[0] || gotRadio[1])
-  {
-    instance->irq_count_or++;
-  }
-  if (gotRadio[0] && gotRadio[1])
-  {
-    instance->irq_count_both++;
-  }
-#endif
 }
 
 void ICACHE_RAM_ATTR SX127xDriver::SetMode(SX127x_RadioOPmodes mode, SX12XX_Radio_Number_t radioNumber)
@@ -758,12 +715,6 @@ void ICACHE_RAM_ATTR SX127xDriver::IsrCallback(SX12XX_Radio_Number_t radioNumber
         {
             irqClearRadio = SX12XX_Radio_All;
         }
-#if defined(DEBUG_RCVR_SIGNAL_STATS)
-        else
-        {
-            instance->rxSignalStats[(radioNumber == SX12XX_Radio_1) ? 0 : 1].fail_count++;
-        }
-#endif
     }
     else if (irqStatus == SX127X_CLEAR_IRQ_FLAG_NONE)
     {

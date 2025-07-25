@@ -42,15 +42,10 @@ static inline uint8_t ICACHE_RAM_ATTR HybridWideNonceToSwitchIndex(uint8_t const
     return ((nonce & 0b111) + ((nonce >> 3) & 0b1)) % 8;
 }
 
-#if defined(TARGET_TX) || defined(UNIT_TEST)
-
 #include "handset.h"            // need access to handset data for arming
 
 // Current ChannelData generator function being used by TX
 PackChannelData_t OtaPackChannelData;
-#if defined(DEBUG_RCVR_LINKSTATS)
-static uint32_t packetCnt;
-#endif
 
 /******** Decimate 11bit to 10bit functions ********/
 typedef uint32_t (*Decimate11to10_fn)(uint32_t ch11bit);
@@ -101,21 +96,12 @@ static void ICACHE_RAM_ATTR PackUInt11ToChannels4x10(uint32_t const * const src,
 static void ICACHE_RAM_ATTR PackChannelDataHybridCommon(OTA_Packet4_s * const ota4, const uint32_t *channelData)
 {
     ota4->type = PACKET_TYPE_RCDATA;
-#if defined(DEBUG_RCVR_LINKSTATS)
-    // Incremental packet counter for verification on the RX side, 32 bits shoved into CH1-CH4
-    ota4->dbg_linkstats.packetNum = packetCnt++;
-#else
     // CRSF input is 11bit and OTA will carry only 10bit. Discard the Extended Limits (E.Limits)
     // range and use the full 10bits to carry only 998us - 2012us
     PackUInt11ToChannels4x10(&channelData[0], &ota4->rc.ch, &Decimate11to10_Limit);
 
     // send armed status to receiver
-    #if defined(UNIT_TEST)
-    ota4->rc.isArmed = CRSF_to_BIT(channelData[4]);
-    #else
     ota4->rc.isArmed = handset->IsArmed();
-    #endif
-#endif /* !DEBUG_RCVR_LINKSTATS */
 }
 
 /**
@@ -131,9 +117,6 @@ static void ICACHE_RAM_ATTR PackChannelDataHybridCommon(OTA_Packet4_s * const ot
  */
 // The next switch index to send, where 0=AUX2 and 6=AUX8
 static uint8_t Hybrid8NextSwitchIndex;
-#if defined(UNIT_TEST)
-void OtaSetHybrid8NextSwitchIndex(uint8_t idx) { Hybrid8NextSwitchIndex = idx; }
-#endif
 void ICACHE_RAM_ATTR GenerateChannelDataHybrid8(OTA_Packet_s * const otaPktPtr, const uint32_t *channelData,
                                                 bool const TelemetryStatus, uint8_t const tlmDenom)
 {
@@ -228,15 +211,7 @@ static void ICACHE_RAM_ATTR GenerateChannelData8ch12ch(OTA_Packet8_s * const ota
     ota8->rc.uplinkPower = constrain(CRSF::LinkStatistics.uplink_TX_Power, 1, 8) - 1;
     ota8->rc.isHighAux = isHighAux;
     // send armed status to receiver
-    #if defined(UNIT_TEST)
-    ota8->rc.isArmed = CRSF_to_BIT(channelData[4]);
-    #else
     ota8->rc.isArmed = handset->IsArmed();
-    #endif
-#if defined(DEBUG_RCVR_LINKSTATS)
-    // Incremental packet counter for verification on the RX side, 32 bits shoved into CH1-CH4
-    ota8->dbg_linkstats.packetNum = packetCnt++;
-#else
     // Sources:
     // 8ch always: low=0 high=5
     // 12ch isHighAux=false: low=0 high=5
@@ -266,7 +241,6 @@ static void ICACHE_RAM_ATTR GenerateChannelData8ch12ch(OTA_Packet8_s * const ota
     }
     PackUInt11ToChannels4x10(&channelData[chSrcLow], &ota8->rc.chLow, &Decimate11to10_Div2);
     PackUInt11ToChannels4x10(&channelData[chSrcHigh], &ota8->rc.chHigh, &Decimate11to10_Div2);
-#endif
 }
 
 static void ICACHE_RAM_ATTR GenerateChannelData8ch(OTA_Packet_s * const otaPktPtr, const uint32_t *channelData, bool const TelemetryStatus, uint8_t const tlmDenom)
@@ -277,9 +251,6 @@ static void ICACHE_RAM_ATTR GenerateChannelData8ch(OTA_Packet_s * const otaPktPt
 }
 
 static bool FullResIsHighAux;
-#if defined(UNIT_TEST)
-void OtaSetFullResNextChannelSet(bool next) { FullResIsHighAux = next; }
-#endif
 static void ICACHE_RAM_ATTR GenerateChannelData12ch(OTA_Packet_s * const otaPktPtr, const uint32_t *channelData, bool const TelemetryStatus, uint8_t const tlmDenom)
 {
     (void)tlmDenom;
@@ -290,205 +261,6 @@ static void ICACHE_RAM_ATTR GenerateChannelData12ch(OTA_Packet_s * const otaPktP
     GenerateChannelData8ch12ch((OTA_Packet8_s * const)otaPktPtr, channelData, TelemetryStatus, FullResIsHighAux);
     FullResIsHighAux = !FullResIsHighAux;
 }
-#endif
-
-
-#if TARGET_RX || defined(UNIT_TEST)
-
-bool isArmed;       // global arming status for other functions
-
-// Current ChannelData unpacker function being used by RX
-UnpackChannelData_t OtaUnpackChannelData;
-
-#if defined(DEBUG_RCVR_LINKSTATS)
-// Sequential PacketID from the TX
-uint32_t debugRcvrLinkstatsPacketId;
-#else
-
-static void UnpackChannels4x10ToUInt11(OTA_Channels_4x10 const * const srcChannels4x10, uint32_t * const dest)
-{
-    uint8_t const * const payload = (uint8_t const * const)srcChannels4x10;
-    constexpr unsigned numOfChannels = 4;
-    constexpr unsigned srcBits = 10;
-    constexpr unsigned dstBits = 11;
-    constexpr unsigned inputChannelMask = (1 << srcBits) - 1;
-    constexpr unsigned precisionShift = dstBits - srcBits;
-
-    // code from BetaFlight rx/crsf.cpp / bitpacker_unpack
-    uint8_t bitsMerged = 0;
-    uint32_t readValue = 0;
-    unsigned readByteIndex = 0;
-    for (uint8_t n = 0; n < numOfChannels; n++)
-    {
-        while (bitsMerged < srcBits)
-        {
-            uint8_t readByte = payload[readByteIndex++];
-            readValue |= ((uint32_t) readByte) << bitsMerged;
-            bitsMerged += 8;
-        }
-        //printf("rv=%x(%x) bm=%u\n", readValue, (readValue & channelMask), bitsMerged);
-        dest[n] = (readValue & inputChannelMask) << precisionShift;
-        readValue >>= srcBits;
-        bitsMerged -= srcBits;
-    }
-}
-#endif /* !DEBUG_RCVR_LINKSTATS */
-
-static void ICACHE_RAM_ATTR UnpackChannelDataHybridCommon(OTA_Packet4_s const * const ota4, uint32_t *channelData)
-{
-    isArmed = ota4->rc.isArmed;
-
-#if defined(DEBUG_RCVR_LINKSTATS)
-    debugRcvrLinkstatsPacketId = ota4->dbg_linkstats.packetNum;
-#else
-    // The analog channels, encoded as 10bit where 0 = 998us and 1023 = 2012us
-    UnpackChannels4x10ToUInt11(&ota4->rc.ch, &channelData[0]);
-    // The unpacker simply does a << 1 to convert 10 to 11bit, but Hybrid/Wide modes
-    // only pack a subset of the full range CRSF data, so properly expand it
-    // This is ~80 bytes less code than passing an 10-to-11 expander fn to the unpacker
-    for (unsigned ch=0; ch<4; ++ch)
-    {
-        channelData[ch] = UINT10_to_CRSF(channelData[ch] >> 1);
-    }
-    channelData[4] = BIT_to_CRSF(isArmed);
-#endif
-}
-
-/**
- * Hybrid switches decoding of over the air data
- *
- * Hybrid switches uses 10 bits for each analog channel,
- * 2 bits for the low latency switch[0]
- * 3 bits for the round-robin switch index and 2 bits for the value
- *
- * Input: Buffer
- * Output: channelData
- * Returns: TelemetryStatus bit
- */
-bool ICACHE_RAM_ATTR UnpackChannelDataHybridSwitch8(OTA_Packet_s const * const otaPktPtr, uint32_t *channelData,
-                                                    uint8_t const tlmDenom)
-{
-    (void)tlmDenom;
-
-    OTA_Packet4_s const * const ota4 = (OTA_Packet4_s const * const)otaPktPtr;
-    UnpackChannelDataHybridCommon(ota4, channelData);
-
-    // The round-robin switch, switchIndex is actually index-1
-    // to leave the low bit open for switch 7 (sent as 0b11x)
-    // where x is the high bit of switch 7
-    const uint8_t switchByte = ota4->rc.switches;
-    uint8_t switchIndex = (switchByte & 0b111000) >> 3;
-    if (switchIndex >= 6)
-    {
-        // Because AUX1 (index 0) is the low latency switch, the low bit
-        // of the switchIndex can be used as data, and arrives as index "6"
-        channelData[11] = N_to_CRSF(switchByte & 0b1111, 15);
-    }
-    else
-    {
-        channelData[5+switchIndex] = SWITCH3b_to_CRSF(switchByte & 0b111);
-    }
-
-    // TelemetryStatus bit
-    return switchByte & (1 << 6);
-}
-
-/**
- * HybridWide switches decoding of over the air data
- *
- * Hybrid switches uses 10 bits for each analog channel,
- * 1 bits for the low latency switch[0]
- * 6 or 7 bits for the round-robin switch
- * 1 bit for the TelemetryStatus, which may be in every packet or just idx 7
- * depending on TelemetryRatio
- *
- * Output: channelData
- * Returns: TelemetryStatus bit
- */
-bool ICACHE_RAM_ATTR UnpackChannelDataHybridWide(OTA_Packet_s const * const otaPktPtr, uint32_t *channelData,
-                                                 uint8_t const tlmDenom)
-{
-    static bool TelemetryStatus = false;
-
-    OTA_Packet4_s const * const ota4 = (OTA_Packet4_s const * const)otaPktPtr;
-    UnpackChannelDataHybridCommon(ota4, channelData);
-
-    // The round-robin switch, 6-7 bits with the switch index implied by the nonce
-    const uint8_t switchByte = ota4->rc.switches;
-    bool telemInEveryPacket = (tlmDenom > 1) && (tlmDenom < 8);
-    uint8_t switchIndex = HybridWideNonceToSwitchIndex(OtaNonce);
-    if (telemInEveryPacket || switchIndex == 7)
-          TelemetryStatus = (switchByte & 0b01000000) >> 6;
-    if (switchIndex == 7)
-    {
-        CRSF::updateUplinkPower(switchByte & 0b111111);
-    }
-    else
-    {
-        uint8_t bins;
-        uint16_t switchValue;
-        if (telemInEveryPacket)
-        {
-            bins = 63;
-            switchValue = switchByte & 0b111111; // 6-bit
-        }
-        else
-        {
-            bins = 127;
-            switchValue = switchByte & 0b1111111; // 7-bit
-        }
-
-        channelData[5 + switchIndex] = N_to_CRSF(switchValue, bins);
-    }
-
-    return TelemetryStatus;
-}
-
-bool ICACHE_RAM_ATTR UnpackChannelData8ch(OTA_Packet_s const * const otaPktPtr, uint32_t *channelData, uint8_t const tlmDenom)
-{
-    (void)tlmDenom;
-
-    OTA_Packet8_s const * const ota8 = (OTA_Packet8_s const * const)otaPktPtr;
-
-    isArmed = ota8->rc.isArmed;
-
-#if defined(DEBUG_RCVR_LINKSTATS)
-    debugRcvrLinkstatsPacketId = ota8->dbg_linkstats.packetNum;
-#else
-    uint8_t chDstLow;
-    uint8_t chDstHigh;
-    if (OtaSwitchModeCurrent == smHybridOr16ch)
-    {
-        if (ota8->rc.isHighAux)
-        {
-            chDstLow = 8;
-            chDstHigh = 12;
-        }
-        else
-        {
-            chDstLow = 0;
-            chDstHigh = 4;
-        }
-    }
-    else
-    {
-        chDstLow = 0;
-        chDstHigh = (ota8->rc.isHighAux) ? 8 : 4;
-    }
-
-    // Analog channels packed 10bit covering the entire CRSF extended range (i.e. not just 988-2012)
-    // ** Different than the 10bit encoding in Hybrid/Wide mode **
-    UnpackChannels4x10ToUInt11(&ota8->rc.chLow, &channelData[chDstLow]);
-    UnpackChannels4x10ToUInt11(&ota8->rc.chHigh, &channelData[chDstHigh]);
-
-    // enable this for legacy behavior (digital ch5) for 8ch and 12ch mode
-    //channelData[4] = BIT_to_CRSF(isArmed); 
-#endif
-    // Restore the uplink_TX_Power range 0-7 -> 1-8
-    CRSF::updateUplinkPower(ota8->rc.uplinkPower + 1);
-    return ota8->rc.telemetryStatus;
-}
-#endif
 
 bool ICACHE_RAM_ATTR ValidatePacketCrcFull(OTA_Packet_s * const otaPktPtr)
 {
@@ -504,13 +276,6 @@ bool ICACHE_RAM_ATTR ValidatePacketCrcStd(OTA_Packet_s * const otaPktPtr)
     uint16_t const inCRC = ((uint16_t)otaPktPtr->std.crcHigh << 8) + otaPktPtr->std.crcLow;
     // For smHybrid the CRC only has the packet type in byte 0
     // For smWide the FHSS slot is added to the CRC in byte 0 on PACKET_TYPE_RCDATAs
-#if defined(TARGET_RX)
-    if (otaPktPtr->std.type == PACKET_TYPE_RCDATA && OtaSwitchModeCurrent == smWideOr8ch)
-    {
-        otaPktPtr->std.crcHigh = (OtaNonce % ExpressLRS_currAirRate_Modparams->FHSShopInterval) + 1;
-    }
-    else
-#endif
     {
         otaPktPtr->std.crcHigh = 0;
     }
@@ -529,13 +294,11 @@ void ICACHE_RAM_ATTR GeneratePacketCrcFull(OTA_Packet_s * const otaPktPtr)
 
 void ICACHE_RAM_ATTR GeneratePacketCrcStd(OTA_Packet_s * const otaPktPtr)
 {
-#if defined(TARGET_TX)
     // artificially inject the low bits of the nonce on data packets, this will be overwritten with the CRC after it's calculated
     if (otaPktPtr->std.type == PACKET_TYPE_RCDATA && OtaSwitchModeCurrent == smWideOr8ch)
     {
         otaPktPtr->std.crcHigh = (OtaNonce % ExpressLRS_currAirRate_Modparams->FHSShopInterval) + 1;
     }
-#endif
     uint16_t crc = ota_crc.calc((uint8_t*)otaPktPtr, OTA4_CRC_CALC_LEN, OtaCrcInitializer);
     otaPktPtr->std.crcHigh = (crc >> 8);
     otaPktPtr->std.crcLow  = crc;
@@ -551,15 +314,10 @@ void OtaUpdateSerializers(OtaSwitchMode_e const switchMode, uint8_t packetSize)
         OtaGeneratePacketCrc = &GeneratePacketCrcFull;
         ota_crc.init(16, ELRS_CRC16_POLY);
 
-        #if defined(TARGET_TX) || defined(UNIT_TEST)
         if (switchMode == smWideOr8ch)
             OtaPackChannelData = &GenerateChannelData8ch;
         else
             OtaPackChannelData = &GenerateChannelData12ch;
-        #endif
-        #if defined(TARGET_RX) || defined(UNIT_TEST)
-        OtaUnpackChannelData = &UnpackChannelData8ch;
-        #endif
     } // is8ch
 
     else
@@ -570,22 +328,12 @@ void OtaUpdateSerializers(OtaSwitchMode_e const switchMode, uint8_t packetSize)
 
         if (switchMode == smWideOr8ch)
         {
-            #if defined(TARGET_TX) || defined(UNIT_TEST)
             OtaPackChannelData = &GenerateChannelDataHybridWide;
-            #endif
-            #if defined(TARGET_RX) || defined(UNIT_TEST)
-            OtaUnpackChannelData = &UnpackChannelDataHybridWide;
-            #endif
         } // !is8ch and smWideOr8ch
 
         else
         {
-            #if defined(TARGET_TX) || defined(UNIT_TEST)
             OtaPackChannelData = &GenerateChannelDataHybrid8;
-            #endif
-            #if defined(TARGET_RX) || defined(UNIT_TEST)
-            OtaUnpackChannelData = &UnpackChannelDataHybridSwitch8;
-            #endif
         } // !is8ch and smHybridOr16ch
     }
 

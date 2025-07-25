@@ -1,5 +1,3 @@
-#ifndef UNIT_TEST
-
 #include "LR1121_hal.h"
 #include "LR1121_Regs.h"
 #include "logging.h"
@@ -200,5 +198,3 @@ void ICACHE_RAM_ATTR LR1121Hal::dioISR_2()
     if (instance->IsrCallback_2)
         instance->IsrCallback_2();
 }
-
-#endif // UNIT_TEST

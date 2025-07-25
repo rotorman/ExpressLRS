@@ -1,10 +1,7 @@
 #include "targets.h"
 #include "common.h"
 #include "devLED.h"
-
-#if defined(TARGET_TX)
 #include "POWERMGNT.h"
-#endif
 
 constexpr uint8_t LEDSEQ_RADIO_FAILED[] = { 20, 100 }; // 200ms on, 1000ms off
 constexpr uint8_t LEDSEQ_DISCONNECTED[] = { 50, 50 };  // 500ms on, 500ms off
@@ -88,7 +85,6 @@ static int timeout()
     return updateLED();
 }
 
-#if defined(TARGET_TX)
 static void setPowerLEDs()
 {
     if (hasGBLeds)
@@ -114,18 +110,10 @@ static void setPowerLEDs()
         }
     }
 }
-#endif
 
 static int event()
 {
-    #if defined(TARGET_TX)
-        setPowerLEDs();
-    #else
-        if (InBindingMode && GPIO_PIN_LED_RED != UNDEF_PIN)
-        {
-            return flashLED(GPIO_PIN_LED_RED, GPIO_LED_RED_INVERTED, LEDSEQ_BINDING, sizeof(LEDSEQ_BINDING));
-        }
-    #endif
+    setPowerLEDs();
     switch (connectionState)
     {
     case connected:

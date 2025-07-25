@@ -1,7 +1,4 @@
 #include "targets.h"
-
-#ifdef TARGET_TX
-
 #include "CRSF.h"
 #include "CRSFHandset.h"
 #include "POWERMGNT.h"
@@ -55,4 +52,3 @@ device_t Handset_device = {
     .timeout = timeout,
     .subscribe = EVENT_POWER_CHANGED
 };
-#endif

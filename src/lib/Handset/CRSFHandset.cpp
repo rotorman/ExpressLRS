@@ -3,8 +3,6 @@
 #include "FIFO.h"
 #include "logging.h"
 #include "helpers.h"
-
-#if defined(CRSF_TX_MODULE) && !defined(UNIT_TEST)
 #include "device.h"
 
 #if defined(PLATFORM_ESP32)
@@ -17,8 +15,6 @@ HardwareSerial CRSFHandset::Port(0);
 RTC_DATA_ATTR int rtcModelId = 0;
 #elif defined(PLATFORM_ESP8266)
 HardwareSerial CRSFHandset::Port(0);
-#elif defined(TARGET_NATIVE)
-HardwareSerial CRSFHandset::Port = Serial;
 #endif
 
 static constexpr int HANDSET_TELEMETRY_FIFO_SIZE = 128; // this is the smallest telemetry FIFO size in ETX with CRSF defined
@@ -769,5 +765,3 @@ bool CRSFHandset::UARTwdt()
 #endif
     return retval;
 }
-
-#endif // CRSF_TX_MODULE

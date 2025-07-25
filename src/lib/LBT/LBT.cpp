@@ -100,10 +100,7 @@ void ICACHE_RAM_ATTR SetClearChannelAssessmentTime(void)
 
   rxStartTime = micros();
   validRSSIdelayUs = SpreadingFactorToRSSIvalidDelayUs((SX1280_RadioLoRaSpreadingFactors_t)ExpressLRS_currAirRate_Modparams->sf, ExpressLRS_currAirRate_Modparams->radio_type);
-
-#if defined(TARGET_TX)
   Radio.RXnb(SX1280_MODE_RX, validRSSIdelayUs);
-#endif
 }
 
 SX12XX_Radio_Number_t ICACHE_RAM_ATTR ChannelIsClear(SX12XX_Radio_Number_t radioNumber)

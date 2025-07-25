@@ -1,8 +1,6 @@
 #include "elrs_eeprom.h"
 #include "targets.h"
 #include "logging.h"
-
-#if !defined(TARGET_NATIVE)
 #include <EEPROM.h>
 
 void
@@ -43,5 +41,3 @@ ELRS_EEPROM::Commit()
       ERRLN("EEPROM commit failed");
     }
 }
-
-#endif /* !TARGET_NATIVE */

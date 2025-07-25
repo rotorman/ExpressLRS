@@ -43,14 +43,7 @@ void ICACHE_RAM_ATTR hwTimer::resume()
         // We want the timer to fire tock() ASAP after enabling
         // tock() should always be the first event to maintain consistency
         isTick = false;
-#if defined(TARGET_TX)
         NextTimeout = ESP.getCycleCount() + HWtimerInterval;
-#else
-        // Fire the timer in 20us to get it started close to the correct starting time and phase.
-        // The 20us delay is requied to allow the transceiver IRQ enough time to return and finish IsrCallback().
-        // If it does not there is a chance that the IRQ will not be cleared and the radio will hang. 
-        NextTimeout = ESP.getCycleCount() + (20 * HWTIMER_TICKS_PER_US * HWTIMER_PRESCALER);
-#endif
         timer0_write(NextTimeout);
         interrupts();
 
@@ -77,26 +70,9 @@ void ICACHE_RAM_ATTR hwTimer::callback()
 {
     if (running)
     {
-#if defined(TARGET_TX)
         NextTimeout += HWtimerInterval;
         timer0_write(NextTimeout);
         callbackTock();
-#else
-        NextTimeout += (HWtimerInterval >> 1) + (FreqOffset * HWTIMER_PRESCALER);
-        if (hwTimer::isTick)
-        {
-            timer0_write(NextTimeout);
-            callbackTick();
-        }
-        else
-        {
-            NextTimeout += PhaseShift;
-            timer0_write(NextTimeout);
-            PhaseShift = 0;
-            callbackTock();
-        }
-        hwTimer::isTick = !hwTimer::isTick;
-#endif
     }
 }
 

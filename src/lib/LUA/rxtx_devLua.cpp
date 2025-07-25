@@ -32,12 +32,4 @@ void luadevGeneratePowerOpts(luaItem_selection *luaPower)
     pwr = (PowerLevels_e)((unsigned int)pwr + 1);
   }
   *out = '\0';
-
-#if defined(TARGET_RX)
-  // The RX has the dynamic option added on to the end
-  // the space on the end is to make it display "MatchTX mW"
-  // but only if it has more than one power level
-  if (POWERMGNT::getMinPower() != POWERMGNT::getMaxPower())
-    strcat(strPowerLevels, ";MatchTX ");
-#endif
 }

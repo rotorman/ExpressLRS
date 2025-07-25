@@ -32,8 +32,6 @@ public:
     static PowerLevels_e currPower() { return CurrentPower; }
 };
 
-#ifndef UNIT_TEST
-
 class POWERMGNT : public PowerLevelContainer
 {
 
@@ -151,5 +149,3 @@ public:
 
 #define CALIBRATION_MAGIC    0x43414C << 8   //['C', 'A', 'L']
 #define CALIBRATION_VERSION   1
-
-#endif /* !UNIT_TEST */

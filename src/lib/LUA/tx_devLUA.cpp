@@ -1,5 +1,3 @@
-#ifdef TARGET_TX
-
 #include "rxtx_devLua.h"
 #include "CRSF.h"
 #include "CRSFHandset.h"
@@ -1025,5 +1023,3 @@ device_t LUA_device = {
   .timeout = timeout,
   .subscribe = EVENT_ALL
 };
-
-#endif

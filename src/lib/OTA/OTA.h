@@ -9,10 +9,6 @@
 #include "telemetry_protocol.h"
 #include "FIFO.h"
 
-#if TARGET_RX 
-extern bool isArmed;
-#endif
-
 #define OTA4_PACKET_SIZE     8U
 #define OTA4_CRC_CALC_LEN    offsetof(OTA_Packet4_s, crcLow)
 #define OTA8_PACKET_SIZE     13U
@@ -189,25 +185,10 @@ extern GeneratePacketCrc_t OtaGeneratePacketCrc;
 #define ELRS_CRC14_POLY 0x2E57 // 0x372b
 #define ELRS_CRC16_POLY 0x3D65 // 0x9eb2
 
-#if defined(TARGET_TX) || defined(UNIT_TEST)
 typedef void (*PackChannelData_t)(OTA_Packet_s * const otaPktPtr, const uint32_t *channelData, bool TelemetryStatus, uint8_t tlmDenom);
 extern PackChannelData_t OtaPackChannelData;
-#if defined(UNIT_TEST)
-void OtaSetHybrid8NextSwitchIndex(uint8_t idx);
-void OtaSetFullResNextChannelSet(bool next);
-#endif
-#endif
-
-#if defined(TARGET_RX) || defined(UNIT_TEST)
-typedef bool (*UnpackChannelData_t)(OTA_Packet_s const * const otaPktPtr, uint32_t *channelData, uint8_t tlmDenom);
-extern UnpackChannelData_t OtaUnpackChannelData;
-#endif
 
 void OtaPackAirportData(OTA_Packet_s * const otaPktPtr, FIFO<AP_MAX_BUF_LEN> *inputBuffer);
 void OtaUnpackAirportData(OTA_Packet_s const * const otaPktPtr, FIFO<AP_MAX_BUF_LEN> *outputBuffer);
-
-#if defined(DEBUG_RCVR_LINKSTATS)
-extern uint32_t debugRcvrLinkstatsPacketId;
-#endif
 
 #endif // H_OTA

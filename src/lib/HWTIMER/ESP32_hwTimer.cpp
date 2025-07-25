@@ -16,11 +16,7 @@ volatile int32_t hwTimer::FreqOffset = 0;
 static hw_timer_t *timer = NULL;
 static portMUX_TYPE isrMutex = portMUX_INITIALIZER_UNLOCKED;
 
-#if defined(TARGET_RX)
-#define HWTIMER_TICKS_PER_US 5
-#else
 #define HWTIMER_TICKS_PER_US 1
-#endif
 
 void ICACHE_RAM_ATTR hwTimer::init(void (*callbackTick)(), void (*callbackTock)())
 {
@@ -51,18 +47,7 @@ void ICACHE_RAM_ATTR hwTimer::resume()
     {
         // The timer must be restarted so that the new timerAlarmWrite() period is set.
         timerRestart(timer);
-#if defined(TARGET_TX)
         timerAlarmWrite(timer, HWtimerInterval, true);
-#else
-        // We want the timer to fire tock() ASAP after enabling
-        // tock() should always be the first event to maintain consistency
-        isTick = false;
-        // When using EDGE triggered timer, enabling the timer causes an edge so the interrupt
-        // is fired immediately
-        // Unlike the 8266 timer, the ESP32 timer can be started without delay.
-        // It does not interrupt the currently running IsrCallback(), but triggers immediately once it has completed.
-        timerAlarmWrite(timer, 0 * HWTIMER_TICKS_PER_US, true);
-#endif
         running = true;
         timerAlarmEnable(timer);
         DBGLN("hwTimer resume");
@@ -94,24 +79,7 @@ void ICACHE_RAM_ATTR hwTimer::callback(void)
     if (running)
     {
         portENTER_CRITICAL_ISR(&isrMutex);
-#if defined(TARGET_TX)
         callbackTock();
-#else
-        uint32_t NextInterval = (HWtimerInterval >> 1) + FreqOffset;
-        if (hwTimer::isTick)
-        {
-            timerAlarmWrite(timer, NextInterval, true);
-            hwTimer::callbackTick();
-        }
-        else
-        {
-            NextInterval += PhaseShift;
-            timerAlarmWrite(timer, NextInterval, true);
-            PhaseShift = 0;
-            hwTimer::callbackTock();
-        }
-        hwTimer::isTick = !hwTimer::isTick;
-#endif
         portEXIT_CRITICAL_ISR(&isrMutex);
     }
 }

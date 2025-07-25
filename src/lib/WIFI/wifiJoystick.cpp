@@ -1,9 +1,5 @@
 #include "device.h"
-
 #include "wifiJoystick.h"
-
-#if defined(TARGET_TX) && defined(PLATFORM_ESP32)
-
 #include <WiFi.h>
 #include <WiFiUdp.h>
 #include "common.h"
@@ -154,5 +150,3 @@ void WifiJoystick::UpdateValues()
         failedCount = 0;
     }
 }
-
-#endif
