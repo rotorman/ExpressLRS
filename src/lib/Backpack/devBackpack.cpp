@@ -426,7 +426,7 @@ static int timeout()
 
 static int event()
 {
-    const bool disabled = config.GetBackpackDisable() || connectionState == bleJoystick || connectionState == wifiUpdate;
+    const bool disabled = config.GetBackpackDisable() || connectionState == wifiUpdate;
     if (GPIO_PIN_BACKPACK_EN != UNDEF_PIN)
     {
         // EN should be HIGH to be active

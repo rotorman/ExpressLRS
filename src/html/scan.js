@@ -710,12 +710,8 @@ function appendRow(b,p,v) {
     <select onchange="changeAction(${b}, ${p}, parseInt(this.value));">
       <option value='0' ${v['action']===0 ? 'selected' : ''}>Unused</option>
       <option value='1' ${v['action']===1 ? 'selected' : ''}>Increase Power</option>
-      <option value='2' ${v['action']===2 ? 'selected' : ''}>Go to VTX Band Menu</option>
-      <option value='3' ${v['action']===3 ? 'selected' : ''}>Go to VTX Channel Menu</option>
-      <option value='4' ${v['action']===4 ? 'selected' : ''}>Send VTX Settings</option>
       <option value='5' ${v['action']===5 ? 'selected' : ''}>Start WiFi</option>
       <option value='6' ${v['action']===6 ? 'selected' : ''}>Enter Binding Mode</option>
-      <option value='7' ${v['action']===7 ? 'selected' : ''}>Start BLE Joystick</option>
     </select>
     <label>Action</label>
   </div>

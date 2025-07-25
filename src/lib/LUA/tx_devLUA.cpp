@@ -37,7 +37,6 @@ extern char backpackVersion[];
 
 static char version_domain[20+1+6+1];
 char pwrFolderDynamicName[] = "TX Power (1000 Dynamic)";
-char vtxFolderDynamicName[] = "VTX Admin (OFF:C:1 Aux11 )";
 static char modelMatchUnit[] = " (ID: 00)";
 static char tlmBandwidth[] = " (xxxxxbps)";
 static const char folderNameSeparator[2] = {' ',':'};
@@ -188,53 +187,6 @@ static struct luaItem_command luaVRxBackpackUpdate = {
 };
 //---------------------------- WiFi -----------------------------
 
-static struct luaItem_command luaBLEJoystick = {
-    {"BLE Joystick", CRSF_COMMAND},
-    lcsIdle, // step
-    STR_EMPTYSPACE
-};
-
-//----------------------------VTX ADMINISTRATOR------------------
-static struct luaItem_folder luaVtxFolder = {
-    {"VTX Administrator", CRSF_FOLDER},vtxFolderDynamicName
-};
-
-static struct luaItem_selection luaVtxBand = {
-    {"Band", CRSF_TEXT_SELECTION},
-    0, // value
-    "Off;A;B;E;F;R;L",
-    STR_EMPTYSPACE
-};
-
-static struct luaItem_int8 luaVtxChannel = {
-    {"Channel", CRSF_UINT8},
-    0, // value
-    1, // min
-    8, // max
-    STR_EMPTYSPACE
-};
-
-static struct luaItem_selection luaVtxPwr = {
-    {"Pwr Lvl", CRSF_TEXT_SELECTION},
-    0, // value
-    "-;1;2;3;4;5;6;7;8",
-    STR_EMPTYSPACE
-};
-
-static struct luaItem_selection luaVtxPit = {
-    {"Pitmode", CRSF_TEXT_SELECTION},
-    0, // value
-    "Off;On;" STR_LUA_ALLAUX_UPDOWN,
-    STR_EMPTYSPACE
-};
-
-static struct luaItem_command luaVtxSend = {
-    {"Send VTx", CRSF_COMMAND},
-    lcsIdle, // step
-    STR_EMPTYSPACE
-};
-//----------------------------VTX ADMINISTRATOR------------------
-
 //---------------------------- BACKPACK ------------------
 static struct luaItem_folder luaBackpackFolder = {
     {"Backpack", CRSF_FOLDER},
@@ -291,7 +243,6 @@ static struct luaItem_string luaBackpackVersion = {
 static char luaBadGoodString[10];
 
 extern TxConfig config;
-extern void VtxTriggerSend();
 extern void ResetPower();
 extern uint8_t adjustPacketRateForBaud(uint8_t rate);
 extern void SetSyncSpam();
@@ -375,11 +326,6 @@ static void luadevUpdateBackpackOpts()
   }
 }
 
-static void setBleJoystickMode()
-{
-  setConnectionState(bleJoystick);
-}
-
 static void luahandWifiBle(struct luaPropertiesCommon *item, uint8_t arg)
 {
   struct luaItem_command *cmd = (struct luaItem_command *)item;
@@ -393,13 +339,6 @@ static void luahandWifiBle(struct luaPropertiesCommon *item, uint8_t arg)
     textConfirm = "Enter WiFi Update?";
     textRunning = "WiFi Running...";
     targetState = wifiUpdate;
-  }
-  else
-  {
-    setTargetState = &setBleJoystickMode;
-    textConfirm = "Start BLE Joystick?";
-    textRunning = "Joystick Running...";
-    targetState = bleJoystick;
   }
 
   switch ((luaCmdStep_e)arg)
@@ -443,10 +382,6 @@ static void luahandSimpleSendCmd(struct luaPropertiesCommon *item, uint8_t arg)
       msg = "Binding...";
       EnterBindingModeSafely();
     }
-    else if ((void *)item == (void *)&luaVtxSend)
-    {
-      VtxTriggerSend();
-    }
     else if ((void *)item == (void *)&luaRxWebUpdate)
     {
       RxWiFiReadyToSend = true;
@@ -486,57 +421,6 @@ static void updateFolderName_TxPower()
   pwrFolderDynamicName[pwrFolderLabelOffset] = '\0';
 }
 
-static void updateFolderName_VtxAdmin()
-{
-  uint8_t vtxBand = config.GetVtxBand();
-  if (vtxBand)
-  {
-    luaVtxFolder.dyn_name = vtxFolderDynamicName;
-    uint8_t vtxFolderLabelOffset = 11; // start writing after "VTX Admin ("
-
-    // Band
-    vtxFolderLabelOffset += findLuaSelectionLabel(&luaVtxBand, &vtxFolderDynamicName[vtxFolderLabelOffset], vtxBand);
-    vtxFolderDynamicName[vtxFolderLabelOffset++] = folderNameSeparator[1];
-
-    // Channel
-    vtxFolderDynamicName[vtxFolderLabelOffset++] = '1' + config.GetVtxChannel();
-
-    // VTX Power
-    uint8_t vtxPwr = config.GetVtxPower();
-    //if power is no-change (-), don't show, also hide pitmode
-    if (vtxPwr)
-    {
-      vtxFolderDynamicName[vtxFolderLabelOffset++] = folderNameSeparator[1];
-      vtxFolderLabelOffset += findLuaSelectionLabel(&luaVtxPwr, &vtxFolderDynamicName[vtxFolderLabelOffset], vtxPwr);
-
-      // Pit Mode
-      uint8_t vtxPit = config.GetVtxPitmode();
-      //if pitmode is off, don't show
-      //show pitmode AuxSwitch or show P if not OFF
-      if (vtxPit != 0)
-      {
-        if (vtxPit != 1)
-        {
-          vtxFolderDynamicName[vtxFolderLabelOffset++] = folderNameSeparator[1];
-          vtxFolderLabelOffset += findLuaSelectionLabel(&luaVtxPit, &vtxFolderDynamicName[vtxFolderLabelOffset], vtxPit);
-        }
-        else
-        {
-          vtxFolderDynamicName[vtxFolderLabelOffset++] = folderNameSeparator[1];
-          vtxFolderDynamicName[vtxFolderLabelOffset++] = 'P';
-        }
-      }
-    }
-    vtxFolderDynamicName[vtxFolderLabelOffset++] = ')';
-    vtxFolderDynamicName[vtxFolderLabelOffset] = '\0';
-  }
-  else
-  {
-    //don't show vtx settings if band is OFF
-    luaVtxFolder.dyn_name = NULL;
-  }
-}
-
 /***
  * @brief: Update the luaBadGoodString with the current bad/good count
  * This item is hidden on our Lua and only displayed in other systems that don't poll our status
@@ -555,7 +439,6 @@ static void luadevUpdateBadGood()
 void luadevUpdateFolderNames()
 {
   updateFolderName_TxPower();
-  updateFolderName_VtxAdmin();
 
   // These aren't folder names, just string labels slapped in the units field generally
   luadevUpdateTlmBandwidth();
@@ -772,23 +655,6 @@ static void registerLuaParameters()
     registerLUAParameter(&luaCELimit, NULL, luaPowerFolder.common.id);
   }
 #endif
-  if (HAS_RADIO || OPT_USE_TX_BACKPACK) {
-    // VTX folder
-    registerLUAParameter(&luaVtxFolder);
-    registerLUAParameter(&luaVtxBand, [](struct luaPropertiesCommon *item, uint8_t arg) {
-      config.SetVtxBand(arg);
-    }, luaVtxFolder.common.id);
-    registerLUAParameter(&luaVtxChannel, [](struct luaPropertiesCommon *item, uint8_t arg) {
-      config.SetVtxChannel(arg - 1);
-    }, luaVtxFolder.common.id);
-    registerLUAParameter(&luaVtxPwr, [](struct luaPropertiesCommon *item, uint8_t arg) {
-      config.SetVtxPower(arg);
-    }, luaVtxFolder.common.id);
-    registerLUAParameter(&luaVtxPit, [](struct luaPropertiesCommon *item, uint8_t arg) {
-      config.SetVtxPitmode(arg);
-    }, luaVtxFolder.common.id);
-    registerLUAParameter(&luaVtxSend, &luahandSimpleSendCmd, luaVtxFolder.common.id);
-  }
 
   // WIFI folder
   registerLUAParameter(&luaWiFiFolder);
@@ -847,8 +713,6 @@ static void registerLuaParameters()
     }
   }
 
-  registerLUAParameter(&luaBLEJoystick, &luahandWifiBle);
-  
   if (HAS_RADIO) {
     registerLUAParameter(&luaBind, &luahandSimpleSendCmd);
   }
@@ -916,12 +780,6 @@ static int event()
   uint8_t dynamic = config.GetDynamicPower() ? config.GetBoostChannel() + 1 : 0;
   setLuaTextSelectionValue(&luaDynamicPower, dynamic);
 
-  setLuaTextSelectionValue(&luaVtxBand, config.GetVtxBand());
-  setLuaUint8Value(&luaVtxChannel, config.GetVtxChannel() + 1);
-  setLuaTextSelectionValue(&luaVtxPwr, config.GetVtxPower());
-  // Pit mode can only be sent as part of the power byte
-  LUA_FIELD_VISIBLE(luaVtxPit, config.GetVtxPower() != 0);
-  setLuaTextSelectionValue(&luaVtxPit, config.GetVtxPitmode());
   if (OPT_USE_TX_BACKPACK)
   {
     setLuaTextSelectionValue(&luaBackpackEnable, config.GetBackpackDisable() ? 0 : 1);

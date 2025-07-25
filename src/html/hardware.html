@@ -182,7 +182,6 @@ td img.icon-pwm {
 					<tr><td></td><td>PDET pin<img class="icon-analog"/></td><td><input size='3' id='power_pdet' name='power_pdet' type='text'/></td><td>Analog input (up to 1.1V) connected to 'power detect' pin on PA for adjustment of the power output</td></tr>
 					<tr><td></td><td>Intercept</td><td><input size='20' id='power_pdet_intercept' name='power_pdet_intercept' type='text'/></td><td>Intercept and Slope are used together to calculate the dBm from the measured mV on the PDET pin</td></tr>
 					<tr><td></td><td>Slope</td><td><input size='20' id='power_pdet_slope' name='power_pdet_slope' type='text'/></td><td>dBm = mV * slope + intercept, this is then used to adjust the actual output power accordingly</td></tr>
-@@if isTX:
 					<tr><td colspan='2'><b>Analog Joystick</td></tr>
 					<tr><td></td><td>ADC pin<img class="icon-analog"/></td><td><input size='3' id='joystick' name='joystick' type='text'/></td><td>Analog Input (3.3V max) use to read joystick direction using a resistor network</td></tr>
 					<tr><td></td><td>Values</td><td><input size='40' id='joystick_values' name='joystick_values' type='text' class='array'/></td><td>Comma-separated list of ADC values (12-bit) for UP, DOWN, LEFT, RIGHT, ENTER, IDLE</td></tr>
@@ -191,14 +190,10 @@ td img.icon-pwm {
 					<tr><td></td><td>Pin 1<img class="icon-input"/></td><td><input size='3' id='five_way1' name='five_way1' type='text'/></td><td>These 3 pins create a binary value for the joystick direction</td></tr>
 					<tr><td></td><td>Pin 2<img class="icon-input"/></td><td><input size='3' id='five_way2' name='five_way2' type='text'/></td><td>7 = IDLE, 6 = OK, 5 = DOWN</td></tr>
 					<tr><td></td><td>Pin 3<img class="icon-input"/></td><td><input size='3' id='five_way3' name='five_way3' type='text'/></td><td>4 = RIGHT, 3 = UP, 2 = LEFT</td></tr>
-@@end
 					<tr><td colspan='2'><b>Mood Lighting</td></tr>
 					<tr><td></td><td>RGB LED pin<img class="icon-output"/></td><td><input size='3' id='led_rgb' name='led_rgb' type='text'/></td><td>Signal pin for WS2812 RGB LED or LED strip</td></tr>
 					<tr><td></td><td>RGB LED is GRB</td><td><input size='3' id='led_rgb_isgrb' name='led_rgb_isgrb' type='checkbox'/></td><td>Most WS2812 RGB LEDs are actually GRB</td></tr>
 					<tr><td></td><td>RGB indexes for Status</td><td><input size='40' id='ledidx_rgb_status' name='ledidx_rgb_status' type='text' class='array'/></td><td>Indexes into the "string" of RGB LEDs (if empty then only LED at 0 is used)</td></tr>
-@@if not isTX:
-					<tr><td></td><td>RGB indexes for VTX Status</td><td><input size='40' id='ledidx_rgb_vtx' name='ledidx_rgb_vtx' type='text' class='array'/></td><td>Indexes into the "string" of RGB LEDs (if empty then no VTX status)</td></tr>
-@@end
 					<tr><td></td><td>RGB indexes for Boot animation</td><td><input size='40' id='ledidx_rgb_boot' name='ledidx_rgb_boot' type='text' class='array'/></td><td>Indexes into the "string" of RGB LEDs (if empty status indexes are used)</td></tr>
 					<tr><td></td><td>LED pin<img class="icon-output"/></td><td><input size='3' id='led' name='led' type='text'/></td><td>Only use when only a single LED is used</td></tr>
 					<tr><td></td><td>Red LED pin<img class="icon-output"/></td><td><input size='3' id='led_red' name='led_red' type='text'/></td><td>If there are multiple LEDs, then this is the pin for the RED LED</td></tr>
@@ -212,7 +207,6 @@ td img.icon-pwm {
 					<tr><td></td><td>Button 1 RGB Index</td><td><input size='3' id='button_led_index' name='button_led_index' type='text'/></td><td>Index of button LED in RGB string, leave empty for no RGB LED</td></tr>
 					<tr><td></td><td>Button 2 pin<img class="icon-output"/></td><td><input size='3' id='button2' name='button2' type='text'/></td><td>Second (active low) button</td></tr>
 					<tr><td></td><td>Button 2 RGB Index</td><td><input size='3' id='button2_led_index' name='button2_led_index' type='text'/></td><td>Index of button LED in RGB string, leave empty for no RGB LED</td></tr>
-@@if isTX:
 					<tr><td colspan='2'><b>OLED/TFT (Crotch TV)</td></tr>
 					<tr><td></td><td>Screen type</td><td>
 						<select id='screen_type' name='screen_type'>
@@ -251,46 +245,6 @@ td img.icon-pwm {
 					<tr><td></td><td>Has STK8xxx G-sensor</td><td><input size='3' id='gsensor_stk8xxx' name='gsensor_stk8xxx' type='checkbox'/></td><td>Checked if there is a STK8xxx g-sensor on the I2C bus</td></tr>
 					<tr><td></td><td>G-sensor interrupt pin<img class="icon-input"/></td><td><input size='3' id='misc_gsensor_int' name='misc_gsensor_int' type='text'/></td><td>Pin connected the STK8xxx g-sensor for interrupts</td></tr>
 					<tr><td></td><td>Has LM75A Thermal sensor</td><td><input size='3' id='thermal_lm75a' name='thermal_lm75a' type='checkbox'/></td><td>Checked if there is a LM75A thermal sensor on the I2C bus</td></tr>
-@@end
-@@if not isTX:
-					<tr><td colspan='2'><b>PWM</td></tr>
-					<tr><td></td><td>PWM output pins<img class="icon-pwm"/></td><td><input size='40' id='pwm_outputs' name='pwm_outputs' type='text' class='array'/></td><td>Comma-separated list of pins used for PWM output</td></tr>
-
-					<tr><td colspan='2'><b>VBat</td></tr>
-					<tr><td></td><td>VBat pin<img class="icon-analog"/></td><td><input size='3' id='vbat' name='vbat' type='text'/></td><td>Analog input pin for reading VBAT voltage (1V max on 8285, 3.3V max on ESP32)</td></tr>
-					<tr><td></td><td>VBat offset</td><td><input size='7' id='vbat_offset' name='vbat_offset' type='text'/></td><td>Offset and scale are used together with the analog pin to calculate the voltage</td></tr>
-					<tr><td></td><td>VBat scale</td><td><input size='7' id='vbat_scale' name='vbat_scale' type='text'/></td><td>voltage = (analog - offset) / scale</td></tr>
-					<tr><td></td><td>VBat attenuation</td><td>
-						<select id='vbat_atten' name='vbat_atten'>
-							<option value='-1'>Default</option>
-							<option value='0'>0 dB</option>
-							<option value='1'>2.5 dB</option>
-							<option value='2'>6 dB</option>
-							<option value='3'>11 dB</option>
-							<option value='4'>0 dB + calibration</option>
-							<option value='5'>2.5 dB + calibration</option>
-							<option value='6'>6 dB + calibration</option>
-							<option value='7'>11 dB + calibration</option>
-						</select>
-					</td><td>ADC pin attenuation (ESP32) and optional efuse-based calibration adjustment</td></tr>
-
-					<tr><td colspan='2'><b>SPI VTX</td></tr>
-					<tr><td></td><td>RF amp PWM pin<img class="icon-pwm"/></td><td><input size='3' id='vtx_amp_pwm' name='vtx_amp_pwm' type='text'/></td><td>Set the power output level of the VTX PA (value is calculated based on power and frequency using VPD interpolation values)</td></tr>
-					<tr><td></td><td>RF amp VPD pin<img class="icon-analog"/></td><td><input size='3' id='vtx_amp_vpd' name='vtx_amp_vpd' type='text'/></td><td>Analog input for VPD (power detect) from VTX PA</td></tr>
-					<tr><td></td><td>RF amp VREF pin<img class="icon-output"/></td><td><input size='3' id='vtx_amp_vref' name='vtx_amp_vref' type='text'/></td><td>Active high enable pin the the VTX PA VREF (voltage reference)</td></tr>
-					<tr><td></td><td>SPI NSS pin<img class="icon-output"/></td><td><input size='3' id='vtx_nss' name='vtx_nss' type='text'/></td><td>Chip select for RTC6705 VTx (leave undefined if sharing Radio SPI bus)</td></tr>
-					<tr><td></td><td>SPI SCK pin<img class="icon-output"/></td><td><input size='3' id='vtx_sck' name='vtx_sck' type='text'/></td><td>Clock pin on RTC6705 VTx (leave undefined if sharing Radio SPI bus)</td></tr>
-					<tr><td></td><td>SPI MISO pin<img class="icon-input"/></td><td><input size='3' id='vtx_miso' name='vtx_miso' type='text'/></td><td>MISO pin on RTC6705 VTx (leave undefined if sharing Radio SPI bus)</td></tr>
-					<tr><td></td><td>SPI MOSI pin<img class="icon-output"/></td><td><input size='3' id='vtx_mosi' name='vtx_mosi' type='text'/></td><td>MOSI pin on RTC6705 VTx (leave undefined if sharing Radio SPI bus)</td></tr>
-					<tr><td></td><td>25mW VPD interpolation values</td><td><input size='40' id='vtx_amp_vpd_25mW' name='vtx_amp_vpd_25mW' type='text' class='array'/></td><td>4 values for 5650, 5750, 5850, 5950 frequencies at 25mW</td></tr>
-					<tr><td></td><td>100mW VPD interpolation values</td><td><input size='40' id='vtx_amp_vpd_100mW' name='vtx_amp_vpd_100mW' type='text' class='array'/></td><td>4 values for 5650, 5750, 5850, 5950 frequencies at 100mW</td></tr>
-					<tr><td></td><td>25mW PWM interpolation values</td><td><input size='40' id='vtx_amp_pwm_25mW' name='vtx_amp_pwm_25mW' type='text' class='array'/></td><td>4 values for 5650, 5750, 5850, 5950 frequencies at 25mW</td></tr>
-					<tr><td></td><td>100mW PWM interpolation values</td><td><input size='40' id='vtx_amp_pwm_100mW' name='vtx_amp_pwm_100mW' type='text' class='array'/></td><td>4 values for 5650, 5750, 5850, 5950 frequencies at 100mW</td></tr>
-
-					<tr><td colspan='2'><b>I2C</td></tr>
-					<tr><td></td><td>SCL pin<img class="icon-output"/></td><td><input size='3' id='i2c_scl' name='i2c_scl' type='text'/></td><td>I2C clock pin used to communicate with I2C devices</td></tr>
-					<tr><td></td><td>SDA pin<img class="icon-input"/><img class="icon-output"/></td><td><input size='3' id='i2c_sda' name='i2c_sda' type='text'/></td><td>I2C data pin used to communicate with I2C devices</td></tr>
-@@end
 				</table>
 				<br>
 				<input type='button' value='Save Target Configuration' class='mui-btn mui-btn--primary' onclick="submitHardwareSettings()"/>

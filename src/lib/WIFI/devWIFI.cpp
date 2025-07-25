@@ -37,8 +37,6 @@
 #include "lr1121.h"
 #endif
 
-#include "wifiJoystick.h"
-
 extern TxConfig config;
 extern void setButtonColors(uint8_t b1, uint8_t b2);
 
@@ -291,10 +289,6 @@ static void GetConfiguration(AsyncWebServerRequest *request)
 
     json["config"]["motion-mode"] = config.GetMotionMode();
 
-    json["config"]["vtx-admin"]["band"] = config.GetVtxBand();
-    json["config"]["vtx-admin"]["channel"] = config.GetVtxChannel();
-    json["config"]["vtx-admin"]["pitmode"] = config.GetVtxPitmode();
-    json["config"]["vtx-admin"]["power"] = config.GetVtxPower();
     json["config"]["backpack"]["dvr-start-delay"] = config.GetDvrStartDelay();
     json["config"]["backpack"]["dvr-stop-delay"] = config.GetDvrStopDelay();
     json["config"]["backpack"]["dvr-aux-channel"] = config.GetDvrAux();
@@ -360,14 +354,6 @@ static void ImportConfiguration(AsyncWebServerRequest *request, JsonVariant &jso
   if (json.containsKey("fan-mode")) config.SetFanMode(json["fan-mode"]);
   if (json.containsKey("power-fan-threshold")) config.SetPowerFanThreshold(json["power-fan-threshold"]);
   if (json.containsKey("motion-mode")) config.SetMotionMode(json["motion-mode"]);
-
-  if (json.containsKey("vtx-admin"))
-  {
-    if (json["vtx-admin"].containsKey("band")) config.SetVtxBand(json["vtx-admin"]["band"]);
-    if (json["vtx-admin"].containsKey("channel")) config.SetVtxChannel(json["vtx-admin"]["channel"]);
-    if (json["vtx-admin"].containsKey("pitmode")) config.SetVtxPitmode(json["vtx-admin"]["pitmode"]);
-    if (json["vtx-admin"].containsKey("power")) config.SetVtxPower(json["vtx-admin"]["power"]);
-  }
 
   if (json.containsKey("backpack"))
   {
@@ -588,8 +574,7 @@ static void WebUploadResponseHandler(AsyncWebServerRequest *request) {
 static void WebUploadDataHandler(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
   force_update = force_update || request->hasArg("force");
   if (index == 0) {
-    WifiJoystick::StopJoystickService();
-
+    
     size_t filesize = request->header("X-FileSize").toInt();
     DBGLN("Update: '%s' size %u", filename.c_str(), filesize);
     if (!Update.begin(filesize, U_FLASH)) { // pass the size provided
@@ -644,22 +629,6 @@ static void WebUploadForceUpdateHandler(AsyncWebServerRequest *request) {
   } else {
     Update.abort();
     request->send(200, "application/json", "{\"status\": \"ok\", \"msg\": \"Update cancelled\"}");
-  }
-}
-
-static void WebUdpControl(AsyncWebServerRequest *request)
-{
-  const String &action = request->arg("action");
-  if (action.equals("joystick_begin"))
-  {
-    WifiJoystick::StartSending(request->client()->remoteIP(),
-      request->arg("interval").toInt(), request->arg("channels").toInt());
-    request->send(200, "text/plain", "ok");
-  }
-  else if (action.equals("joystick_end"))
-  {
-    WifiJoystick::StopSending();
-    request->send(200, "text/plain", "ok");
   }
 }
 
@@ -819,10 +788,6 @@ static void startMDNS()
     MDNS.addServiceTxt("http", "tcp", "version", VERSION);
     MDNS.addServiceTxt("http", "tcp", "options", options.c_str());
     MDNS.addServiceTxt("http", "tcp", "type", "tx");
-
-    MDNS.addService("elrs", "udp", JOYSTICK_PORT);
-    MDNS.addServiceTxt("elrs", "udp", "device", (const char *)device_name);
-    MDNS.addServiceTxt("elrs", "udp", "version", String(JOYSTICK_VERSION).c_str());
 }
 
 static void addCaptivePortalHandlers()
@@ -885,7 +850,6 @@ static void startServices()
   server.on("/options.json", HTTP_GET, getFile);
   server.on("/reboot", HandleReboot);
   server.on("/reset", HandleReset);
-  server.on("/udpcontrol", HTTP_POST, WebUdpControl);
 
   server.addHandler(new AsyncCallbackJsonWebHandler("/config", UpdateConfiguration));
   server.addHandler(new AsyncCallbackJsonWebHandler("/options.json", UpdateSettings));
@@ -909,8 +873,6 @@ static void startServices()
   dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
 
   startMDNS();
-
-  WifiJoystick::StartJoystickService();
 
   servicesStarted = true;
   DBGLN("HTTPUpdateServer ready! Open http://%s.local in your browser", wifi_hostname);
@@ -977,7 +939,6 @@ static void HandleWebUpdate()
   if (servicesStarted)
   {
     dnsServer.processNextRequest();
-    WifiJoystick::Loop(now);
   }
 }
 

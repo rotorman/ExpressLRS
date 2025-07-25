@@ -15,7 +15,6 @@
 #include "devLUA.h"
 #include "devWIFI.h"
 #include "devButton.h"
-#include "devVTX.h"
 #include "devScreen.h"
 #include "devGsensor.h"
 #include "devThermal.h"
@@ -92,7 +91,6 @@ device_affinity_t ui_devices[] = {
   {&Gsensor_device, 0},
   {&Thermal_device, 0},
   {&PDET_device, 0},
-  {&VTX_device, 0}
 };
 
 static bool diversityAntennaState = LOW;
@@ -1061,19 +1059,6 @@ void ProcessMSPPacket(uint32_t now, mspPacket_t *packet)
       break;
     }
   }
-  else if (packet->function == MSP_SET_VTX_CONFIG)
-  {
-    if (packet->payload[0] < 48) // Standard 48 channel VTx table size e.g. A, B, E, F, R, L
-    {
-      config.SetVtxBand(packet->payload[0] / 8 + 1);
-      config.SetVtxChannel(packet->payload[0] % 8);
-    } else
-    {
-      return; // Packets containing frequency in MHz are not yet supported.
-    }
-
-    VtxTriggerSend();
-  }
   else if (packet->function == MSP_ELRS_BACKPACK_SET_PTR && packet->payloadSize == 6)
   {
     processPanTiltRollPacket(now, packet);
@@ -1358,7 +1343,6 @@ void loop()
   CheckReadyToSend();
   CheckConfigChangePending();
   DynamicPower_Update(now);
-  VtxPitmodeSwitchUpdate();
 
   /* Send TLM updates to handset if connected + reporting period
    * is elapsed. This keeps handset happy dispite of the telemetry ratio */

@@ -41,7 +41,6 @@ typedef enum
     MODE_STATES,
     // States below here are special mode states
     noCrossfire,
-    bleJoystick,
     NO_CONFIG_SAVE_STATES,
     wifiUpdate,
     serialUpdate,
@@ -181,12 +180,8 @@ typedef struct expresslrs_mod_settings_s
 typedef enum : uint8_t {
     ACTION_NONE,
     ACTION_INCREASE_POWER,
-    ACTION_GOTO_VTX_BAND,
-    ACTION_GOTO_VTX_CHANNEL,
-    ACTION_SEND_VTX,
     ACTION_START_WIFI,
     ACTION_BIND,
-    ACTION_BLE_JOYSTICK,
     ACTION_RESET_REBOOT,
 
     ACTION_LAST

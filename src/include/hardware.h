@@ -82,8 +82,6 @@ typedef enum {
     HARDWARE_led_rgb_isgrb,
     HARDWARE_ledidx_rgb_status,
     HARDWARE_ledidx_rgb_status_count,
-    HARDWARE_ledidx_rgb_vtx,
-    HARDWARE_ledidx_rgb_vtx_count,
     HARDWARE_ledidx_rgb_boot,
     HARDWARE_ledidx_rgb_boot_count,
 
@@ -131,19 +129,6 @@ typedef enum {
     HARDWARE_vbat_offset,
     HARDWARE_vbat_scale,
     HARDWARE_vbat_atten,
-
-    // VTX
-    HARDWARE_vtx_amp_pwm,
-    HARDWARE_vtx_amp_vpd,
-    HARDWARE_vtx_amp_vref,
-    HARDWARE_vtx_nss,
-    HARDWARE_vtx_miso,
-    HARDWARE_vtx_mosi,
-    HARDWARE_vtx_sck,
-    HARDWARE_vtx_amp_vpd_25mW,
-    HARDWARE_vtx_amp_vpd_100mW,
-    HARDWARE_vtx_amp_pwm_25mW,
-    HARDWARE_vtx_amp_pwm_100mW,
 
     HARDWARE_LAST
 } nameType;

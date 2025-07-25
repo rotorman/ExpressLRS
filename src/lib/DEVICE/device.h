@@ -12,14 +12,12 @@ enum deviceEvent_t {
 
     EVENT_ARM_FLAG_CHANGED = 1 << 0,
     EVENT_POWER_CHANGED = 1 << 1,
-    EVENT_VTX_CHANGE = 1 << 2, // Triggers change on RX SPI VTX, or VTX send on TX
     EVENT_ENTER_BIND_MODE = 1 << 3,
     EVENT_EXIT_BIND_MODE = 1 << 4,
     EVENT_MODEL_SELECTED = 1 << 5,
     EVENT_CONNECTION_CHANGED = 1 << 6,
 
     EVENT_CONFIG_MODEL_CHANGED = 1 << 8,
-    EVENT_CONFIG_VTX_CHANGED = 1 << 9,
     EVENT_CONFIG_MAIN_CHANGED = 1 << 10, // catch-all for global config item
     EVENT_CONFIG_FAN_CHANGED = 1 << 11,
     EVENT_CONFIG_MOTION_CHANGED = 1 << 12,

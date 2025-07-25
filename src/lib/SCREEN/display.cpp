@@ -21,16 +21,9 @@ const char *Display::main_menu_strings[][2] = {
     {"BLE", "GAMEPAD"},
     {"BIND", "MODE"},
     {"WIFI", "ADMIN"},
-    {"VTX", "ADMIN"},
 
     {"MAX", "POWER"},
     {"DYNAMIC", "POWER"},
-
-    {"VTX", "BAND"},
-    {"VTX", "CHANNEL"},
-    {"VTX", "POWER"},
-    {"VTX", "PITMODE"},
-    {"VTX", "SEND"},
 
     {"TX", "WIFI"},
     {"RX", "WIFI"},
@@ -159,53 +152,6 @@ static const char *smartfan_string[] = {
     "OFF"
 };
 
-static const char *band_string[] = {
-    "OFF",
-    "A",
-    "B",
-    "E",
-    "F",
-    "R",
-    "L"
-};
-
-static const char *channel_string[] = {
-    "1",
-    "2",
-    "3",
-    "4",
-    "5",
-    "6",
-    "7",
-    "8"
-};
-
-static const char *vtx_power_string[] = {
-    "-",
-    "1",
-    "2",
-    "3",
-    "4",
-    "5",
-    "6",
-    "7",
-    "8"
-};
-
-static const char *pitmode_string[] = {
-    "OFF", "ON",
-    "AUX1 !+", "AUX1 !-",
-    "AUX2 !+", "AUX2 !-",
-    "AUX3 !+", "AUX3 !-",
-    "AUX4 !+", "AUX4 !-",
-    "AUX5 !+", "AUX5 !-",
-    "AUX6 !+", "AUX6 !-",
-    "AUX7 !+", "AUX7 !-",
-    "AUX8 !+", "AUX8 !-",
-    "AUX9 !+", "AUX9 !-",
-    "AUX10 !+", "AUX10 !-"
-};
-
 int Display::getValueCount(menu_item_t menu)
 {
     switch (menu)
@@ -232,15 +178,6 @@ int Display::getValueCount(menu_item_t menu)
         return ARRAY_SIZE(power_string);
     case STATE_POWER_DYNAMIC:
         return ARRAY_SIZE(dynamic_string);
-
-    case STATE_VTX_BAND:
-        return ARRAY_SIZE(band_string);
-    case STATE_VTX_CHANNEL:
-        return ARRAY_SIZE(channel_string);
-    case STATE_VTX_POWER:
-        return ARRAY_SIZE(vtx_power_string);
-    case STATE_VTX_PITMODE:
-        return ARRAY_SIZE(pitmode_string);
     default:
         return 0;
     }
@@ -274,15 +211,6 @@ const char *Display::getValue(menu_item_t menu, uint8_t value_index)
         return power_string[value_index];
     case STATE_POWER_DYNAMIC:
         return dynamic_string[value_index];
-
-    case STATE_VTX_BAND:
-        return band_string[value_index];
-    case STATE_VTX_CHANNEL:
-        return channel_string[value_index];
-    case STATE_VTX_POWER:
-        return vtx_power_string[value_index];
-    case STATE_VTX_PITMODE:
-        return pitmode_string[value_index];
     default:
         return nullptr;
     }

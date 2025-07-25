@@ -19,7 +19,6 @@ extern FiniteStateMachine state_machine;
 extern bool RxWiFiReadyToSend;
 extern bool TxBackpackWiFiReadyToSend;
 extern bool VRxBackpackWiFiReadyToSend;
-extern void VtxTriggerSend();
 extern void ResetPower();
 extern void setWifiUpdateMode();
 extern void SetSyncSpam();
@@ -167,27 +166,6 @@ static void setupValueIndex(bool init)
         values_max = display->getValueCount((menu_item_t)state_machine.getParentState())-1;
         values_index = config.GetDynamicPower() ? config.GetBoostChannel() + 1 : 0;
         break;
-
-    case STATE_VTX_BAND:
-        values_min = 0;
-        values_max = display->getValueCount((menu_item_t)state_machine.getParentState())-1;
-        values_index = config.GetVtxBand();
-        break;
-    case STATE_VTX_CHANNEL:
-        values_min = 0;
-        values_max = display->getValueCount((menu_item_t)state_machine.getParentState())-1;
-        values_index = config.GetVtxChannel();
-        break;
-    case STATE_VTX_POWER:
-        values_min = 0;
-        values_max = display->getValueCount((menu_item_t)state_machine.getParentState())-1;
-        values_index = config.GetVtxPower();
-        break;
-    case STATE_VTX_PITMODE:
-        values_min = 0;
-        values_max = display->getValueCount((menu_item_t)state_machine.getParentState())-1;
-        values_index = config.GetVtxPitmode();
-        break;
     }
 }
 
@@ -289,73 +267,8 @@ static void saveValueIndex(bool init)
             config.SetDynamicPower(values_index > 0);
             config.SetBoostChannel((values_index - 1) > 0 ? values_index - 1 : 0);
             break;
-
-        case STATE_VTX_BAND:
-            config.SetVtxBand(values_index);
-            break;
-        case STATE_VTX_CHANNEL:
-            config.SetVtxChannel(values_index);
-            break;
-        case STATE_VTX_POWER:
-            config.SetVtxPower(values_index);
-            break;
-        case STATE_VTX_PITMODE:
-            config.SetVtxPitmode(values_index);
-            break;
         default:
             break;
-    }
-}
-
-// VTX Admin
-static void executeSendVTX(bool init)
-{
-    if (init)
-    {
-        VtxTriggerSend();
-        display->displaySending();
-    }
-    else
-    {
-        state_machine.popState();
-    }
-}
-
-static void executeSaveAndSendVTX(bool init)
-{
-    if (init)
-    {
-        saveValueIndex(true);
-    }
-    executeSendVTX(init);
-}
-
-// Bluetooth Joystck
-static void displayBLEConfirm(bool init)
-{
-    display->displayBLEConfirm();
-}
-
-static void executeBLE(bool init)
-{
-    if (init)
-    {
-        setConnectionState(bleJoystick);
-        display->displayBLEStatus();
-    }
-    else
-    {
-        if (connectionState != bleJoystick)
-        {
-            state_machine.popState();
-        }
-    }
-}
-
-static void exitBLE(bool init)
-{
-    if (connectionState == bleJoystick) {
-        rebootTime = millis() + 200;
     }
 }
 
@@ -497,62 +410,6 @@ fsm_state_entry_t const power_menu_fsm[] = {
     {STATE_LAST}
 };
 
-// VTX Admin FSM
-fsm_state_event_t const vtx_execute_events[] = {{EVENT_TIMEOUT, GOTO(STATE_VTX_SEND)}, {EVENT_LEFT, ACTION_POP}};
-fsm_state_entry_t const vtx_execute_fsm[] = {
-    {STATE_VTX_SEND, nullptr, executeSendVTX, 1000, vtx_execute_events, ARRAY_SIZE(vtx_execute_events)},
-};
-
-// Changing Channel, Band, Power, Pitmode in the VTX Admin menu operate like the value_select_fsm, except
-// on a LONG press saving they jump to STATE_VTX_SAVESEND, an immediate send instead of doing a POP
-// back to the item and requiring a LEFT then PREV/NEXT to get to it
-fsm_state_event_t const vtxvalue_select_events[] = {
-    {EVENT_TIMEOUT, ACTION_POPALL},
-    {EVENT_LEFT, ACTION_POP},
-    {EVENT_ENTER, GOTO(STATE_VTX_SEND)}, // short press gets save then pop
-    {EVENT_LONG_ENTER, GOTO(STATE_VTX_SAVESEND)}, // long press gets save, then immediately sends automatically
-    {EVENT_UP, GOTO(STATE_VALUE_DEC)},
-    {EVENT_DOWN, GOTO(STATE_VALUE_INC)}
-};
-fsm_state_entry_t const vtx_select_fsm[] = {
-    {STATE_VALUE_INIT, nullptr, setupValueIndex, 0, value_init_events, ARRAY_SIZE(value_init_events)},
-    {STATE_VALUE_SELECT, nullptr, displayValueIndex, 20000, vtxvalue_select_events, ARRAY_SIZE(vtxvalue_select_events)},
-    {STATE_VALUE_INC, nullptr, incrementValueIndex, 0, value_increment_events, ARRAY_SIZE(value_increment_events)},
-    {STATE_VALUE_DEC, nullptr, decrementValueIndex, 0, value_decrement_events, ARRAY_SIZE(value_decrement_events)},
-    {STATE_VTX_SAVESEND, nullptr, executeSaveAndSendVTX, 1000, vtx_execute_events, ARRAY_SIZE(vtx_execute_events)},
-    // vv This is actually STATE_VALUE_SAVE with a different state ID, since vtx_execute_events wants
-    // a STATE_VTX_SEND as its target, so it "saves" the value twice. Once before SEND and once after
-    {STATE_VTX_SEND, nullptr, saveValueIndex, 0, value_save_events, ARRAY_SIZE(value_save_events)},
-    {STATE_LAST}
-};
-fsm_state_event_t const vtx_item_events[] = {MENU_EVENTS(vtx_select_fsm)};
-fsm_state_event_t const vtx_send_events[] = {MENU_EVENTS(vtx_execute_fsm)};
-fsm_state_entry_t const vtx_menu_fsm[] = {
-    // Channel first, the most frequently changed
-    {STATE_VTX_CHANNEL, nullptr, displayMenuScreen, 20000, vtx_item_events, ARRAY_SIZE(vtx_item_events)},
-    {STATE_VTX_BAND, nullptr, displayMenuScreen, 20000, vtx_item_events, ARRAY_SIZE(vtx_item_events)},
-    {STATE_VTX_POWER, nullptr, displayMenuScreen, 20000, vtx_item_events, ARRAY_SIZE(vtx_item_events)},
-    {STATE_VTX_PITMODE, nullptr, displayMenuScreen, 20000, vtx_item_events, ARRAY_SIZE(vtx_item_events)},
-    {STATE_VTX_SEND, nullptr, displayMenuScreen, 20000, vtx_send_events, ARRAY_SIZE(vtx_send_events)},
-    {STATE_LAST}
-};
-
-// BLE Joystick FSM
-fsm_state_event_t const ble_confirm_events[] = {
-    {EVENT_TIMEOUT, ACTION_POPALL},
-    {EVENT_LEFT, ACTION_POP},
-    {EVENT_ENTER, GOTO(STATE_BLE_EXECUTE)}
-};
-fsm_state_event_t const ble_execute_events[] = {{EVENT_TIMEOUT, GOTO(STATE_BLE_EXECUTE)}, {EVENT_LEFT, GOTO(STATE_BLE_EXIT)}};
-fsm_state_event_t const ble_exit_events[] = {{EVENT_IMMEDIATE, ACTION_POP}};
-
-fsm_state_entry_t const ble_menu_fsm[] = {
-    {STATE_BLE_CONFIRM, nullptr, displayBLEConfirm, 20000, ble_confirm_events, ARRAY_SIZE(ble_confirm_events)},
-    {STATE_BLE_EXECUTE, nullptr, executeBLE, 1000, ble_execute_events, ARRAY_SIZE(ble_execute_events)},
-    {STATE_BLE_EXIT, nullptr, exitBLE, 0, ble_exit_events, ARRAY_SIZE(ble_exit_events)},
-    {STATE_LAST}
-};
-
 // WiFi Update FSM
 fsm_state_event_t const wifi_confirm_events[] = {
     {EVENT_TIMEOUT, ACTION_POPALL},
@@ -599,8 +456,6 @@ fsm_state_entry_t const bind_menu_fsm[] = {
 
 // Main menu FSM
 fsm_state_event_t const power_menu_events[] = {MENU_EVENTS(power_menu_fsm)};
-fsm_state_event_t const vtx_menu_events[] = {MENU_EVENTS(vtx_menu_fsm)};
-fsm_state_event_t const ble_menu_events[] = {MENU_EVENTS(ble_menu_fsm)};
 fsm_state_event_t const bind_menu_events[] = {MENU_EVENTS(bind_menu_fsm)};
 fsm_state_event_t const wifi_menu_events[] = {MENU_EVENTS(wifi_menu_fsm)};
 
@@ -612,10 +467,8 @@ fsm_state_entry_t const main_menu_fsm[] = {
     {STATE_TELEMETRY, nullptr, displayMenuScreen, 20000, value_menu_events, ARRAY_SIZE(value_menu_events)},
     {STATE_POWERSAVE, [](){return OPT_HAS_GSENSOR;}, displayMenuScreen, 20000, value_menu_events, ARRAY_SIZE(value_menu_events)},
     {STATE_SMARTFAN, [](){return OPT_HAS_THERMAL;}, displayMenuScreen, 20000, value_menu_events, ARRAY_SIZE(value_menu_events)},
-    {STATE_JOYSTICK, nullptr, displayMenuScreen, 20000, ble_menu_events, ARRAY_SIZE(ble_menu_events)},
     {STATE_BIND, nullptr, displayMenuScreen, 20000, bind_menu_events, ARRAY_SIZE(bind_menu_events)},
     {STATE_WIFI, nullptr, displayMenuScreen, 20000, wifi_menu_events, ARRAY_SIZE(wifi_menu_events)},
-    {STATE_VTX, nullptr, displayMenuScreen, 20000, vtx_menu_events, ARRAY_SIZE(vtx_menu_events)},
     {STATE_LAST}
 };
 
@@ -653,10 +506,4 @@ void jumpToWifiRunning()
 {
     state_machine.jumpTo(wifi_menu_fsm, STATE_WIFI_TX);
     state_machine.jumpTo(wifi_update_menu_fsm, STATE_WIFI_EXECUTE);
-}
-
-void jumpToBleRunning()
-{
-    state_machine.jumpTo(main_menu_fsm, STATE_JOYSTICK);
-    state_machine.jumpTo(ble_menu_fsm, STATE_BLE_EXECUTE);
 }

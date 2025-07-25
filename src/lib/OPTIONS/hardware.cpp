@@ -82,8 +82,6 @@ static const struct {
     {HARDWARE_led_rgb_isgrb, "led_rgb_isgrb", BOOL},
     {HARDWARE_ledidx_rgb_status, "ledidx_rgb_status", ARRAY},
     {HARDWARE_ledidx_rgb_status_count, "ledidx_rgb_status", COUNT},
-    {HARDWARE_ledidx_rgb_vtx, "ledidx_rgb_vtx", ARRAY},
-    {HARDWARE_ledidx_rgb_vtx_count, "ledidx_rgb_vtx", COUNT},
     {HARDWARE_ledidx_rgb_boot, "ledidx_rgb_boot", ARRAY},
     {HARDWARE_ledidx_rgb_boot_count, "ledidx_rgb_boot", COUNT},
     {HARDWARE_screen_cs, "screen_cs", INT},
@@ -119,17 +117,6 @@ static const struct {
     {HARDWARE_vbat_offset, "vbat_offset", INT},
     {HARDWARE_vbat_scale, "vbat_scale", INT},
     {HARDWARE_vbat_atten, "vbat_atten", INT},
-    {HARDWARE_vtx_amp_pwm, "vtx_amp_pwm", INT},
-    {HARDWARE_vtx_amp_vpd, "vtx_amp_vpd", INT},
-    {HARDWARE_vtx_amp_vref, "vtx_amp_vref", INT},
-    {HARDWARE_vtx_nss, "vtx_nss", INT},
-    {HARDWARE_vtx_miso, "vtx_miso", INT},
-    {HARDWARE_vtx_mosi, "vtx_mosi", INT},
-    {HARDWARE_vtx_sck, "vtx_sck", INT},
-    {HARDWARE_vtx_amp_vpd_25mW, "vtx_amp_vpd_25mW", ARRAY},
-    {HARDWARE_vtx_amp_vpd_100mW, "vtx_amp_vpd_100mW", ARRAY},
-    {HARDWARE_vtx_amp_pwm_25mW, "vtx_amp_pwm_25mW", ARRAY},
-    {HARDWARE_vtx_amp_pwm_100mW, "vtx_amp_pwm_100mW", ARRAY},
 };
 
 typedef union {

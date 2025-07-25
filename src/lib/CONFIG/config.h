@@ -91,10 +91,6 @@ typedef enum {
 
 typedef struct {
     uint32_t        version;
-    uint8_t         vtxBand;    // 0=Off, else band number
-    uint8_t         vtxChannel; // 0=Ch1 -> 7=Ch8
-    uint8_t         vtxPower;   // 0=Do not set, else power number
-    uint8_t         vtxPitmode; // Off/On/AUX1^/AUX1v/etc
     uint8_t         powerFanThreshold:4; // Power level to enable fan if present
     model_config_t  model_config[CONFIG_TX_MODEL_CNT];
     uint8_t         fanMode;            // some value used by thermal?
@@ -126,10 +122,6 @@ public:
     uint8_t GetAntennaMode() const { return m_model->txAntenna; }
     bool GetModelMatch() const { return m_model->modelMatch; }
     bool     IsModified() const { return m_modified != 0; }
-    uint8_t  GetVtxBand() const { return m_config.vtxBand; }
-    uint8_t  GetVtxChannel() const { return m_config.vtxChannel; }
-    uint8_t  GetVtxPower() const { return m_config.vtxPower; }
-    uint8_t  GetVtxPitmode() const { return m_config.vtxPitmode; }
     uint8_t GetPowerFanThreshold() const { return m_config.powerFanThreshold; }
     uint8_t  GetFanMode() const { return m_config.fanMode; }
     uint8_t  GetMotionMode() const { return m_config.motionMode; }
@@ -154,10 +146,6 @@ public:
     void SetModelMatch(bool modelMatch);
     void SetDefaults(bool commit);
     void SetStorageProvider(ELRS_EEPROM *eeprom);
-    void SetVtxBand(uint8_t vtxBand);
-    void SetVtxChannel(uint8_t vtxChannel);
-    void SetVtxPower(uint8_t vtxPower);
-    void SetVtxPitmode(uint8_t vtxPitmode);
     void SetPowerFanThreshold(uint8_t powerFanThreshold);
     void SetFanMode(uint8_t fanMode);
     void SetMotionMode(uint8_t motionMode);

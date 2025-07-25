@@ -25,10 +25,6 @@ static bool is_pre_screen_flipped = false;
 #define SCREEN_DURATION 20
 
 extern void jumpToWifiRunning();
-extern void jumpToBleRunning();
-
-static bool jumpToBandSelect = false;
-static bool jumpToChannelSelect = false;
 
 static int handle(void)
 {
@@ -55,11 +51,6 @@ static int handle(void)
         jumpToWifiRunning();
     }
     
-    if (state_machine.getParentState() != STATE_JOYSTICK && connectionState == bleJoystick)
-    {
-        jumpToBleRunning();
-    }
-
     if (!handset->IsArmed())
     {
         int key;
@@ -105,22 +96,7 @@ static int handle(void)
             Display::printScreenshot();
         }
 #endif
-        if (jumpToBandSelect)
-        {
-            state_machine.jumpTo(vtx_menu_fsm, STATE_VTX_BAND);
-            state_machine.jumpTo(value_select_fsm, STATE_VALUE_INIT);
-            jumpToBandSelect = false;
-        }
-        else if (jumpToChannelSelect)
-        {
-            state_machine.jumpTo(vtx_menu_fsm, STATE_VTX_CHANNEL);
-            state_machine.jumpTo(value_select_fsm, STATE_VALUE_INIT);
-            jumpToChannelSelect = false;
-        }
-        else
-        {
-            state_machine.handleEvent(now, fsm_event);
-        }
+        state_machine.handleEvent(now, fsm_event);
     }
     else
     {
@@ -145,15 +121,6 @@ static bool initialize()
         }
         display->init();
         state_machine.start(millis(), getInitialState());
-
-        registerButtonFunction(ACTION_GOTO_VTX_BAND, [](){
-            jumpToBandSelect = true;
-            handle();
-        });
-        registerButtonFunction(ACTION_GOTO_VTX_CHANNEL, [](){
-            jumpToChannelSelect = true;
-            handle();
-        });
     }
     return OPT_HAS_SCREEN;
 }

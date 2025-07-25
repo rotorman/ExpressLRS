@@ -7,7 +7,7 @@
 #include "helpers.h"
 #include "logging.h"
 
-#define ALL_CHANGED         (EVENT_CONFIG_MODEL_CHANGED | EVENT_CONFIG_VTX_CHANGED | EVENT_CONFIG_MAIN_CHANGED | EVENT_CONFIG_FAN_CHANGED | EVENT_CONFIG_MOTION_CHANGED | EVENT_CONFIG_BUTTON_CHANGED)
+#define ALL_CHANGED         (EVENT_CONFIG_MODEL_CHANGED | EVENT_CONFIG_MAIN_CHANGED | EVENT_CONFIG_FAN_CHANGED | EVENT_CONFIG_MOTION_CHANGED | EVENT_CONFIG_BUTTON_CHANGED)
 
 // Really awful but safe(?) type punning of model_config_t/v6_model_config_t to and from uint32_t
 template<class T> static const void U32_to_Model(uint32_t const u32, T * const model)
@@ -141,14 +141,6 @@ void TxConfig::Load()
 
     uint32_t value;
     uint8_t value8;
-    // vtx (v5)
-    if (nvs_get_u32(handle, "vtx", &value) == ESP_OK)
-    {
-        m_config.vtxBand = value >> 24;
-        m_config.vtxChannel = value >> 16;
-        m_config.vtxPower = value >> 8;
-        m_config.vtxPitmode = value;
-    }
 
     // fanthresh (v5)
     if (nvs_get_u8(handle, "fanthresh", &value8) == ESP_OK)
@@ -243,15 +235,6 @@ TxConfig::Commit()
         char model[10] = "model";
         itoa(m_modelId, model+5, 10);
         nvs_set_u32(handle, model, value);
-    }
-    if (m_modified & EVENT_CONFIG_VTX_CHANGED)
-    {
-        uint32_t value =
-            m_config.vtxBand << 24 |
-            m_config.vtxChannel << 16 |
-            m_config.vtxPower << 8 |
-            m_config.vtxPitmode;
-        nvs_set_u32(handle, "vtx", value);
     }
     if (m_modified & EVENT_CONFIG_FAN_CHANGED)
     {
@@ -362,46 +345,6 @@ TxConfig::SetModelMatch(bool modelMatch)
     {
         m_model->modelMatch = modelMatch;
         m_modified |= EVENT_CONFIG_MODEL_CHANGED;
-    }
-}
-
-void
-TxConfig::SetVtxBand(uint8_t vtxBand)
-{
-    if (m_config.vtxBand != vtxBand)
-    {
-        m_config.vtxBand = vtxBand;
-        m_modified |= EVENT_CONFIG_VTX_CHANGED;
-    }
-}
-
-void
-TxConfig::SetVtxChannel(uint8_t vtxChannel)
-{
-    if (m_config.vtxChannel != vtxChannel)
-    {
-        m_config.vtxChannel = vtxChannel;
-        m_modified |= EVENT_CONFIG_VTX_CHANGED;
-    }
-}
-
-void
-TxConfig::SetVtxPower(uint8_t vtxPower)
-{
-    if (m_config.vtxPower != vtxPower)
-    {
-        m_config.vtxPower = vtxPower;
-        m_modified |= EVENT_CONFIG_VTX_CHANGED;
-    }
-}
-
-void
-TxConfig::SetVtxPitmode(uint8_t vtxPitmode)
-{
-    if (m_config.vtxPitmode != vtxPitmode)
-    {
-        m_config.vtxPitmode = vtxPitmode;
-        m_modified |= EVENT_CONFIG_VTX_CHANGED;
     }
 }
 
@@ -553,8 +496,8 @@ TxConfig::SetDefaults(bool commit)
         .val = {
             .color = 3,     // R:0 G:0 B:255
             .actions = {
-                {false, 1, ACTION_GOTO_VTX_CHANNEL},
-                {true, 0, ACTION_SEND_VTX}
+                {false, 1, ACTION_NONE},
+                {true, 0, ACTION_NONE}
             }
         }
     };

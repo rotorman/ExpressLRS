@@ -12,19 +12,11 @@ enum fsm_state_s {
     STATE_TELEMETRY,
     STATE_POWERSAVE,
     STATE_SMARTFAN,
-    STATE_JOYSTICK,
     STATE_BIND,
     STATE_WIFI,
-    STATE_VTX,
 
     STATE_POWER_MAX,
     STATE_POWER_DYNAMIC,
-
-    STATE_VTX_BAND,
-    STATE_VTX_CHANNEL,
-    STATE_VTX_POWER,
-    STATE_VTX_PITMODE,
-    STATE_VTX_SEND,
 
     STATE_WIFI_TX,
     STATE_WIFI_RX,
@@ -37,19 +29,12 @@ enum fsm_state_s {
     STATE_IDLE,
     STATE_TELEMETRY_CURR,
 
-    STATE_BLE_CONFIRM,
-    STATE_BLE_EXECUTE,
-    STATE_BLE_EXIT,
-
     STATE_WIFI_CONFIRM,
     STATE_WIFI_EXECUTE,
     STATE_WIFI_EXIT,
 
     STATE_BIND_CONFIRM,
     STATE_BIND_EXECUTE,
-
-    STATE_VTX_SAVE,
-    STATE_VTX_SAVESEND,
 
     STATE_VALUE_INIT,
     STATE_VALUE_SELECT,
@@ -76,7 +61,6 @@ enum fsm_state_s {
 #define EVENT_LONG_RIGHT (EVENT_RIGHT | LONG_PRESSED)
 
 extern fsm_state_entry_t const entry_fsm[];
-extern fsm_state_entry_t const vtx_menu_fsm[];
 extern fsm_state_entry_t const value_select_fsm[];
 
 fsm_state_t getInitialState();

@@ -22,19 +22,11 @@ const uint16_t *main_menu_icons[] = {
     elrs_ratio,
     elrs_motion,
     elrs_fan,
-    elrs_joystick,
     elrs_bind,
     elrs_wifimode,
-    elrs_vtx,
 
     elrs_power,
     elrs_power,
-
-    elrs_vtx,
-    elrs_vtx,
-    elrs_vtx,
-    elrs_vtx,
-    elrs_vtx,
 
     elrs_updatefw,
     elrs_rxwifi,
@@ -278,32 +270,6 @@ void TFTDisplay::displayValue(menu_item_t menu, uint8_t value_index)
                         val.c_str(), BLACK, WHITE);
     displayFontCenter(SUB_PAGE_TIPS_START_X, SCREEN_X, SUB_PAGE_TIPS_START_Y,  SCREEN_NORMAL_FONT_SIZE, SCREEN_NORMAL_FONT,
                         "PRESS TO CONFIRM", BLACK, WHITE);
-}
-
-void TFTDisplay::displayBLEConfirm()
-{
-    gfx->fillScreen(WHITE);
-
-    gfx->draw16bitRGBBitmap(SUB_PAGE_ICON_START_X, SUB_PAGE_ICON_START_Y, elrs_joystick, SCREEN_LARGE_ICON_SIZE, SCREEN_LARGE_ICON_SIZE);
-    displayFontCenter(SUB_PAGE_WORD_START_X, SCREEN_X, SUB_PAGE_WORD_START_Y1,  SCREEN_NORMAL_FONT_SIZE, SCREEN_NORMAL_FONT,
-                        "PRESS TO", BLACK, WHITE);
-    displayFontCenter(SUB_PAGE_WORD_START_X, SCREEN_X, SUB_PAGE_WORD_START_Y2,  SCREEN_NORMAL_FONT_SIZE, SCREEN_NORMAL_FONT,
-                        "START BLE", BLACK, WHITE);
-    displayFontCenter(SUB_PAGE_WORD_START_X, SCREEN_X, SUB_PAGE_WORD_START_Y3,  SCREEN_NORMAL_FONT_SIZE, SCREEN_NORMAL_FONT,
-                        "GAMEPAD", BLACK, WHITE);
-}
-
-void TFTDisplay::displayBLEStatus()
-{
-    gfx->fillScreen(WHITE);
-
-    gfx->draw16bitRGBBitmap(SUB_PAGE_ICON_START_X, SUB_PAGE_ICON_START_Y, elrs_joystick, SCREEN_LARGE_ICON_SIZE, SCREEN_LARGE_ICON_SIZE);
-    displayFontCenter(SUB_PAGE_WORD_START_X, SCREEN_X, SUB_PAGE_WORD_START_Y1,  SCREEN_NORMAL_FONT_SIZE, SCREEN_NORMAL_FONT,
-                        "BLE", BLACK, WHITE);
-    displayFontCenter(SUB_PAGE_WORD_START_X, SCREEN_X, SUB_PAGE_WORD_START_Y2,  SCREEN_NORMAL_FONT_SIZE, SCREEN_NORMAL_FONT,
-                        "GAMEPAD", BLACK, WHITE);
-    displayFontCenter(SUB_PAGE_WORD_START_X, SCREEN_X, SUB_PAGE_WORD_START_Y3,  SCREEN_NORMAL_FONT_SIZE, SCREEN_NORMAL_FONT,
-                        "RUNNING", BLACK, WHITE);
 }
 
 void TFTDisplay::displayWiFiConfirm()

@@ -8,8 +8,6 @@
 static uint8_t pixelCount;
 static uint8_t *statusLEDs;
 static uint8_t statusLEDcount;
-static uint8_t *vtxStatusLEDs;
-static uint8_t vtxLEDcount;
 static uint8_t *bootLEDs;
 static uint8_t bootLEDcount;
 
@@ -329,14 +327,6 @@ static bool initialize()
             }
         }
 
-        vtxLEDcount = WS2812_VTX_STATUS_LEDS_COUNT;
-        vtxStatusLEDs = new uint8_t[vtxLEDcount];
-        for (int i=0 ; i<vtxLEDcount ; i++)
-        {
-            vtxStatusLEDs[i] = WS2812_VTX_STATUS_LEDS[i];
-            pixelCount = max((int)pixelCount, vtxStatusLEDs[i]+1);
-        }
-
         bootLEDcount = WS2812_BOOT_LEDS_COUNT;
         if (bootLEDcount == 0)
         {
@@ -402,9 +392,6 @@ static int timeout()
     case serialUpdate:
         blinkyColor.h = 172;
         return flashLED(blinkyColor, 192, 0, LEDSEQ_UPDATE, sizeof(LEDSEQ_UPDATE));
-    case bleJoystick:
-        hueFadeLED(blinkyColor, 170, 170+30, 128, 2);    // Blue cross-fade
-        return 5;
     case radioFailed:
         blinkyColor.h = 0;
         return flashLED(blinkyColor, 192, 0, LEDSEQ_RADIO_FAILED, sizeof(LEDSEQ_RADIO_FAILED));
