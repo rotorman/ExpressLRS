@@ -65,7 +65,7 @@ typedef struct {
                 txAntenna:2,
                 ptrStartChannel:4,
                 ptrEnableChannel:5,
-                linkMode:3;
+                free:3;
 } v7_model_config_t;
 
 typedef struct {

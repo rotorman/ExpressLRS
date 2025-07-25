@@ -1,7 +1,6 @@
 #include "targets.h"
 
 #include "CRSFHandset.h"
-#include "MAVLink.h"
 #include "common.h"
 #include "config.h"
 #include "device.h"
@@ -320,7 +319,7 @@ static void AuxStateToMSPOut()
 
 void sendCRSFTelemetryToBackpack(const uint8_t *data)
 {
-    if (config.GetBackpackDisable() || config.GetBackpackTlmMode() == BACKPACK_TELEM_MODE_OFF || config.GetLinkMode() == TX_MAVLINK_MODE)
+    if (config.GetBackpackDisable() || config.GetBackpackTlmMode() == BACKPACK_TELEM_MODE_OFF)
     {
         return;
     }
@@ -343,18 +342,6 @@ void sendCRSFTelemetryToBackpack(const uint8_t *data)
     }
 
     MSP::sendPacket(&packet, TxBackpack); // send to tx-backpack as MSP
-}
-
-void sendMAVLinkTelemetryToBackpack(const uint8_t *data)
-{
-    if (config.GetBackpackDisable() || config.GetBackpackTlmMode() == BACKPACK_TELEM_MODE_OFF)
-    {
-        // Backpack telemetry is off
-        return;
-    }
-
-    const uint8_t count = data[1];
-    TxBackpack->write(data + CRSF_FRAME_NOT_COUNTED_BYTES, count);
 }
 
 static void sendConfigToBackpack()

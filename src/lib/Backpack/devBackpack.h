@@ -28,11 +28,4 @@ void checkBackpackUpdate();
  */
 void sendCRSFTelemetryToBackpack(const uint8_t *data);
 
-/**
- * @brief send MAVLink telemetry packet (inside a CRSF packet) to the backpack.
- *
- * @param data the MAVLink telemetry packet to send.
- */
-void sendMAVLinkTelemetryToBackpack(const uint8_t *data);
-
 extern device_t Backpack_device;

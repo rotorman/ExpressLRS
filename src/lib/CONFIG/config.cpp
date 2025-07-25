@@ -103,7 +103,6 @@ static void ModelV7toV8(v7_model_config_t const * const v7, model_config_t * con
     v8->txAntenna = v7->txAntenna;
     v8->ptrStartChannel = v7->ptrStartChannel;
     v8->ptrEnableChannel = v7->ptrEnableChannel;
-    v8->linkMode = v7->linkMode;
 }
 
 TxConfig::TxConfig() :
@@ -353,22 +352,6 @@ TxConfig::SetAntennaMode(uint8_t txAntenna)
     {
         m_model->txAntenna = txAntenna;
         m_modified |= EVENT_CONFIG_MODEL_CHANGED;
-    }
-}
-
-void
-TxConfig::SetLinkMode(uint8_t linkMode)
-{
-    if (GetLinkMode() != linkMode)
-    {
-        m_model->linkMode = linkMode;
-
-        if (linkMode == TX_MAVLINK_MODE)
-        {
-            m_model->tlm = TLM_RATIO_1_2;
-            m_model->switchMode = smHybridOr16ch; // Force Hybrid / 16ch/2 switch modes for mavlink
-        }
-        m_modified |= EVENT_CONFIG_MODEL_CHANGED | EVENT_CONFIG_MAIN_CHANGED;
     }
 }
 

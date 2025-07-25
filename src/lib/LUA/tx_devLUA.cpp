@@ -42,14 +42,12 @@ static char modelMatchUnit[] = " (ID: 00)";
 static char tlmBandwidth[] = " (xxxxxbps)";
 static const char folderNameSeparator[2] = {' ',':'};
 static const char tlmRatios[] = "Std;Off;1:128;1:64;1:32;1:16;1:8;1:4;1:2;Race";
-static const char tlmRatiosMav[] = ";;;;;;;;1:2;";
 static const char switchmodeOpts4ch[] = "Wide;Hybrid";
 static const char switchmodeOpts4chMav[] = ";Hybrid";
 static const char switchmodeOpts8ch[] = "8ch;16ch Rate/2;12ch Mixed";
 static const char switchmodeOpts8chMav[] = ";16ch Rate/2;";
 static const char antennamodeOpts[] = "Gemini;Ant 1;Ant 2;Switch";
 static const char antennamodeOptsDualBand[] = "Gemini;;;";
-static const char linkModeOpts[] = "Normal;MAVLink";
 static const char luastrDvrAux[] = "Off;" STR_LUA_ALLAUX_UPDOWN;
 static const char luastrDvrDelay[] = "0s;5s;15s;30s;45s;1min;2min";
 static const char luastrHeadTrackingEnable[] = "Off;On;" STR_LUA_ALLAUX_UPDOWN;
@@ -134,13 +132,6 @@ static struct luaItem_selection luaAntenna = {
     {"Antenna Mode", CRSF_TEXT_SELECTION},
     0, // value
     antennamodeOpts,
-    STR_EMPTYSPACE
-};
-
-static struct luaItem_selection luaLinkMode = {
-    {"Link Mode", CRSF_TEXT_SELECTION},
-    0, // value
-    linkModeOpts,
     STR_EMPTYSPACE
 };
 
@@ -696,11 +687,7 @@ static void registerLuaParameters()
           (OtaSwitchMode_e)config.GetSwitchMode(), get_elrs_airRateConfig(actualRate)->PayloadLength);
         // If the switch mode is going to change, block the change while connected
         bool isDisconnected = connectionState == disconnected;
-        // Don't allow the switch mode to change if the TX is in mavlink mode
-        // Wide switch mode is not compatible with mavlink, and the switch mode is
-        // autoconfigured when entering mavlink mode
-        bool isMavlinkMode = config.GetLinkMode() == TX_MAVLINK_MODE;
-        if (newSwitchMode == OtaSwitchModeCurrent || (isDisconnected && !isMavlinkMode))
+        if (newSwitchMode == OtaSwitchModeCurrent || isDisconnected)
         {
           config.SetRate(actualRate);
           config.SetSwitchMode(newSwitchMode);
@@ -719,9 +706,7 @@ static void registerLuaParameters()
       expresslrs_tlm_ratio_e eRatio = (expresslrs_tlm_ratio_e)arg;
       if (eRatio <= TLM_RATIO_DISARMED)
       {
-        bool isMavlinkMode = config.GetLinkMode() == TX_MAVLINK_MODE;
-        // Don't allow TLM ratio changes if using AIRPORT or Mavlink
-        if (!firmwareOptions.is_airport && !isMavlinkMode)
+        if (!firmwareOptions.is_airport)
         {
           config.SetTlm(eRatio);
         }
@@ -733,16 +718,12 @@ static void registerLuaParameters()
         // Only allow changing switch mode when disconnected since we need to guarantee
         // the pack and unpack functions are matched
         bool isDisconnected = connectionState == disconnected;
-        // Don't allow the switch mode to change if the TX is in mavlink mode
-        // Wide switchmode is not compatible with mavlink, and the switchmode is
-        // auto configuredwhen entering mavlink mode
-        bool isMavlinkMode = config.GetLinkMode() == TX_MAVLINK_MODE;
-        if (isDisconnected && !isMavlinkMode)
+        if (isDisconnected)
         {
           config.SetSwitchMode(arg);
           OtaUpdateSerializers((OtaSwitchMode_e)arg, ExpressLRS_currAirRate_Modparams->PayloadLength);
         }
-        else if (!isMavlinkMode) // No need to display warning as no switch change can be made while in Mavlink mode.
+        else
         {
           setLuaWarningFlag(LUA_FLAG_ERROR_CONNECTED, true);
         }
@@ -756,19 +737,6 @@ static void registerLuaParameters()
         config.SetAntennaMode(newAntennaMode);
       });
     }
-    registerLUAParameter(&luaLinkMode, [](struct luaPropertiesCommon *item, uint8_t arg) {
-      // Only allow changing when disconnected since we need to guarantee
-      // the switch pack and unpack functions are matched on the tx and rx.
-      bool isDisconnected = connectionState == disconnected;
-      if (isDisconnected)
-      {
-        config.SetLinkMode(arg);
-      }
-      else
-      {
-        setLuaWarningFlag(LUA_FLAG_ERROR_CONNECTED, true);
-      }
-    });
     if (!firmwareOptions.is_airport)
     {
       registerLUAParameter(&luaModelMatch, [](struct luaPropertiesCommon *item, uint8_t arg) {
@@ -913,7 +881,6 @@ static int event()
     return DURATION_NEVER;
   }
 
-  bool isMavlinkMode = config.GetLinkMode() == TX_MAVLINK_MODE;
   uint8_t currentRate = adjustPacketRateForBaud(config.GetRate());
 #if defined(RADIO_LR1121)
   // calculate RFMode from current packet-rate
@@ -936,25 +903,17 @@ static int event()
   setLuaTextSelectionValue(&luaAirRate, RATE_MAX - 1 - currentRate);
 
   setLuaTextSelectionValue(&luaTlmRate, config.GetTlm());
-  luaTlmRate.options = isMavlinkMode ? tlmRatiosMav : tlmRatios;
+  luaTlmRate.options = tlmRatios;
 
   luaAntenna.options = get_elrs_airRateConfig(config.GetRate())->radio_type == RADIO_TYPE_LR1121_LORA_DUAL ? antennamodeOptsDualBand : antennamodeOpts;
 
   setLuaTextSelectionValue(&luaSwitch, config.GetSwitchMode());
-  if (isMavlinkMode)
-  {
-    luaSwitch.options = OtaIsFullRes ? switchmodeOpts8chMav : switchmodeOpts4chMav;
-  }
-  else
-  {
-    luaSwitch.options = OtaIsFullRes ? switchmodeOpts8ch : switchmodeOpts4ch;
-  }
+  luaSwitch.options = OtaIsFullRes ? switchmodeOpts8ch : switchmodeOpts4ch;
 
   if (isDualRadio())
   {
     setLuaTextSelectionValue(&luaAntenna, config.GetAntennaMode());
   }
-  setLuaTextSelectionValue(&luaLinkMode, config.GetLinkMode());
   luadevUpdateModelID();
   setLuaTextSelectionValue(&luaModelMatch, (uint8_t)config.GetModelMatch());
   setLuaTextSelectionValue(&luaPower, config.GetPower() - MinPower);

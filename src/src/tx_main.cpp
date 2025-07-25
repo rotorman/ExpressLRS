@@ -23,8 +23,6 @@
 #include "devPDET.h"
 #include "devBackpack.h"
 
-#include "MAVLink.h"
-
 #if defined(PLATFORM_ESP32_S3)
 #include "USB.h"
 #define USBSerial Serial
@@ -46,8 +44,6 @@ FIFO<AP_MAX_BUF_LEN> apOutputBuffer;
 
 #define UART_INPUT_BUF_LEN 1024
 FIFO<UART_INPUT_BUF_LEN> uartInputBuffer;
-
-uint8_t mavlinkSSBuffer[CRSF_MAX_PACKET_LEN]; // Buffer for current stubbon sender packet (mavlink only)
 
 unsigned long rebootTime = 0;
 extern bool webserverPreventAutoStart;
@@ -438,7 +434,6 @@ void ICACHE_RAM_ATTR GenerateSyncPacketData(OTA_Sync_s * const syncPtr)
   syncPtr->switchEncMode = SwitchEncMode;
   syncPtr->newTlmRatio = newTlmRatio - TLM_RATIO_NO_TLM;
   syncPtr->geminiMode = isDualRadio() && config.GetAntennaMode() == TX_RADIO_MODE_GEMINI;
-  syncPtr->otaProtocol = config.GetLinkMode();
   syncPtr->UID4 = UID[4];
   syncPtr->UID5 = UID[5];
 
@@ -570,16 +565,8 @@ void ICACHE_RAM_ATTR SendRCdataToRF()
   uint32_t lastRcData = handset->GetRCdataLastRecv();
   if (lastRcData && (micros() - lastRcData > 1000000))
   {
-    // The tx is in Mavlink mode and without a valid crsf or RC input.  Do not send stale or fake zero packet RC!
-    // Only send sync and MSP packets.
-    if (config.GetLinkMode() == TX_MAVLINK_MODE)
-    {
-      dontSendChannelData = true;
-    }
-    else
-    {
-      return;
-    }
+    // Do not send stale or fake zero packet RC!
+    return;
   }
 
   busyTransmitting = true;
@@ -626,16 +613,12 @@ void ICACHE_RAM_ATTR SendRCdataToRF()
         otaPkt.full.msp_ul.packageIndex = MspSender.GetCurrentPayload(
           otaPkt.full.msp_ul.payload,
           sizeof(otaPkt.full.msp_ul.payload));
-        if (config.GetLinkMode() == TX_MAVLINK_MODE)
-          otaPkt.full.msp_ul.tlmConfirm = TelemetryReceiver.GetCurrentConfirm();
       }
       else
       {
         otaPkt.std.msp_ul.packageIndex = MspSender.GetCurrentPayload(
           otaPkt.std.msp_ul.payload,
           sizeof(otaPkt.std.msp_ul.payload));
-        if (config.GetLinkMode() == TX_MAVLINK_MODE)
-          otaPkt.std.msp_ul.tlmConfirm = TelemetryReceiver.GetCurrentConfirm();
       }
 
       // send channel data next so the channel messages also get sent during msp transmissions
@@ -1183,17 +1166,6 @@ static void HandleUARTin()
         uartInputBuffer.lock();
         uartInputBuffer.pushBytes(buf, size);
         uartInputBuffer.unlock();
-
-        // Lets check if the data is Mav and auto change LinkMode
-        // Start the hwTimer since the user might be operating the module as a standalone unit without a handset.
-        if (connectionState == noCrossfire)
-        {
-          if (isThisAMavPacket(buf, size))
-          {
-            config.SetLinkMode(TX_MAVLINK_MODE);
-            UARTconnected();
-          }
-        }
       }
     }
   }
@@ -1206,24 +1178,6 @@ static void HandleUARTin()
     {
       uint8_t buf[size];
       TxBackpack->readBytes(buf, size);
-
-      // If the TX is in Mavlink mode, push the bytes into the fifo buffer
-      if (config.GetLinkMode() == TX_MAVLINK_MODE)
-      {
-        uartInputBuffer.lock();
-        uartInputBuffer.pushBytes(buf, size);
-        uartInputBuffer.unlock();
-
-        // The tx is in Mavlink mode and receiving data from the Backpack.
-        // Start the hwTimer since the user might be operating the module as a standalone unit without a handset.
-        if (connectionState == noCrossfire)
-        {
-          if (isThisAMavPacket(buf, size))
-          {
-            UARTconnected();
-          }
-        }
-      }
 
       // Try to parse any MSP packets from the Backpack
       ParseMSPData(buf, size);
@@ -1503,23 +1457,7 @@ void loop()
 
   if (TelemetryReceiver.HasFinishedData())
   {
-      if (CRSFinBuffer[0] == CRSF_ADDRESS_USB)
-      {
-        if (config.GetLinkMode() == TX_MAVLINK_MODE)
-        {
-          // raw mavlink data - forward to USB rather than handset
-          uint8_t count = CRSFinBuffer[1];
-          // Convert to CRSF telemetry where we can
-          convert_mavlink_to_crsf_telem(CRSFinBuffer, count, handset);
-          TxUSB->write(CRSFinBuffer + CRSF_FRAME_NOT_COUNTED_BYTES, count);
-          // If we have a backpack
-          if (TxUSB != TxBackpack)
-          {
-            sendMAVLinkTelemetryToBackpack(CRSFinBuffer);
-          }
-        }
-      }
-      else
+      if (CRSFinBuffer[0] != CRSF_ADDRESS_USB)
       {
         // Send all other tlm to handset
         handset->sendTelemetryToTX(CRSFinBuffer);
@@ -1568,25 +1506,5 @@ void loop()
       }
     }
   }
-
-  if (config.GetLinkMode() == TX_MAVLINK_MODE)
-  {
-    // Use MspSender for MAVLINK uplink data
-    uint8_t *nextPayload = 0;
-    uint8_t nextPlayloadSize = 0;
-    uint16_t count = uartInputBuffer.size();
-    if (count > 0 && !MspSender.IsActive())
-    {
-        count = std::min(count, (uint16_t)CRSF_PAYLOAD_SIZE_MAX);
-        mavlinkSSBuffer[0] = MSP_ELRS_MAVLINK_TLM; // Used on RX to differentiate between std msp opcodes and mavlink
-        mavlinkSSBuffer[1] = count;
-        // Following n bytes are just raw mavlink
-        uartInputBuffer.lock();
-        uartInputBuffer.popBytes(mavlinkSSBuffer + CRSF_FRAME_NOT_COUNTED_BYTES, count);
-        uartInputBuffer.unlock();
-        nextPayload = mavlinkSSBuffer;
-        nextPlayloadSize = count + CRSF_FRAME_NOT_COUNTED_BYTES;
-        MspSender.SetDataToTransmit(nextPayload, nextPlayloadSize);
-    }
-  }
+  
 }
