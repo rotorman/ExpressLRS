@@ -17,7 +17,6 @@
 #include "devButton.h"
 #include "devVTX.h"
 #include "devScreen.h"
-#include "devBLE.h"
 #include "devGsensor.h"
 #include "devThermal.h"
 #include "devPDET.h"
@@ -89,7 +88,6 @@ device_affinity_t ui_devices[] = {
   {&WIFI_device, 0},
   {&Button_device, 0},
   {&Backpack_device, 0},
-  {&BLE_device, 0},
   {&Screen_device, 0},
   {&Gsensor_device, 0},
   {&Thermal_device, 0},
@@ -1284,9 +1282,6 @@ void setup()
     //Radio.currSyncWord = UID[3];
     #endif
     bool init_success;
-    #if defined(USE_BLE_JOYSTICK)
-    init_success = true; // No radio is attached with a joystick only module.  So we are going to fake success so that crsf, hwTimer etc are initiated below.
-    #else
     if (GPIO_PIN_SCK != UNDEF_PIN)
     {
       init_success = Radio.Begin(FHSSgetMinimumFreq(), FHSSgetMaximumFreq());
@@ -1296,7 +1291,6 @@ void setup()
       // Assume BLE Joystick mode if no radio SCK pin
       init_success = true;
     }
-    #endif
 
     if (!init_success)
     {
@@ -1335,13 +1329,6 @@ void setup()
 void loop()
 {
   uint32_t now = millis();
-
-  #if defined(USE_BLE_JOYSTICK)
-  if (connectionState != bleJoystick && connectionState != noCrossfire) // Wait until the correct crsf baud has been found
-  {
-      connectionState = bleJoystick;
-  }
-  #endif
 
   if (connectionState < MODE_STATES)
   {
