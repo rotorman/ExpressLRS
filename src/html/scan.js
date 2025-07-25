@@ -1,4 +1,4 @@
-@@require(PLATFORM, isTX, is8285)
+@@require(PLATFORM)
 
 /* eslint-disable comma-dangle */
 /* eslint-disable max-len */
@@ -68,217 +68,14 @@ function generateFeatureBadges(features) {
   return str;
 }
 
-@@if not isTX:
-function updatePwmSettings(arPwm) {
-  if (arPwm === undefined) {
-    if (_('model_tab')) _('model_tab').style.display = 'none';
-    return;
-  }
-  var pinRxIndex = undefined;
-  var pinTxIndex = undefined;
-  var pinModes = []
-  // arPwm is an array of raw integers [49664,50688,51200]. 10 bits of failsafe position, 4 bits of input channel, 1 bit invert, 4 bits mode, 1 bit for narrow/750us
-  const htmlFields = ['<div class="mui-panel pwmpnl"><table class="pwmtbl mui-table"><tr><th class="fixed-column">Output</th><th class="mui--text-center fixed-column">Features</th><th>Mode</th><th>Input</th><th class="mui--text-center fixed-column">Invert?</th><th class="mui--text-center fixed-column">750us?</th><th class="mui--text-center fixed-column pwmitm">Failsafe Mode</th><th class="mui--text-center fixed-column pwmitm">Failsafe Pos</th></tr>'];
-  arPwm.forEach((item, index) => {
-    const failsafe = (item.config & 1023) + 988; // 10 bits
-    const failsafeMode = (item.config >> 20) & 3; // 2 bits
-    const ch = (item.config >> 10) & 15; // 4 bits
-    const inv = (item.config >> 14) & 1;
-    const mode = (item.config >> 15) & 15; // 4 bits
-    const narrow = (item.config >> 19) & 1;
-    const features = item.features;
-    const modes = ['50Hz', '60Hz', '100Hz', '160Hz', '333Hz', '400Hz', '10KHzDuty', 'On/Off'];
-    if (features & 16) {
-      modes.push('DShot');
-    } else {
-      modes.push(undefined);
-    }
-    if (features & 1) {
-      modes.push('Serial TX');
-      modes.push(undefined);  // SCL
-      modes.push(undefined);  // SDA
-      modes.push(undefined);  // true PWM
-      pinRxIndex = index;
-    } else if (features & 2) {
-      modes.push('Serial RX');
-      modes.push(undefined);  // SCL
-      modes.push(undefined);  // SDA
-      modes.push(undefined);  // true PWM
-      pinTxIndex = index;
-    } else {
-      modes.push(undefined);  // Serial
-      if (features & 4) {
-        modes.push('I2C SCL');
-      } else {
-        modes.push(undefined);
-      }
-      if (features & 8) {
-        modes.push('I2C SDA');
-      } else {
-        modes.push(undefined);
-      }
-      modes.push(undefined);  // true PWM
-    }
-
-    if (features & 32) {
-      modes.push('Serial2 RX');
-    } else {
-      modes.push(undefined);
-    }
-    if (features & 64) {
-      modes.push('Serial2 TX');
-    } else {
-      modes.push(undefined);
-    }
-
-    const modeSelect = enumSelectGenerate(`pwm_${index}_mode`, mode, modes);
-    const inputSelect = enumSelectGenerate(`pwm_${index}_ch`, ch,
-        ['ch1', 'ch2', 'ch3', 'ch4',
-          'ch5 (AUX1)', 'ch6 (AUX2)', 'ch7 (AUX3)', 'ch8 (AUX4)',
-          'ch9 (AUX5)', 'ch10 (AUX6)', 'ch11 (AUX7)', 'ch12 (AUX8)',
-          'ch13 (AUX9)', 'ch14 (AUX10)', 'ch15 (AUX11)', 'ch16 (AUX12)']);
-    const failsafeModeSelect = enumSelectGenerate(`pwm_${index}_fsmode`, failsafeMode,
-        ['Set Position', 'No Pulses', 'Last Position']); // match eServoOutputFailsafeMode
-    htmlFields.push(`<tr><td class="mui--text-center mui--text-title">${index + 1}</td>
-            <td>${generateFeatureBadges(features)}</td>
-            <td>${modeSelect}</td>
-            <td>${inputSelect}</td>
-            <td><div class="mui-checkbox mui--text-center"><input type="checkbox" id="pwm_${index}_inv"${(inv) ? ' checked' : ''}></div></td>
-            <td><div class="mui-checkbox mui--text-center"><input type="checkbox" id="pwm_${index}_nar"${(narrow) ? ' checked' : ''}></div></td>
-            <td>${failsafeModeSelect}</td>
-            <td><div class="mui-textfield compact"><input id="pwm_${index}_fs" value="${failsafe}" size="6" class="pwmitm" /></div></td></tr>`);
-    pinModes[index] = mode;
-  });
-  htmlFields.push('</table></div>');
-
-  const grp = document.createElement('DIV');
-  grp.setAttribute('class', 'group');
-  grp.innerHTML = htmlFields.join('');
-
-  _('pwm').appendChild(grp);
-
-  const setDisabled = (index, onoff) => {
-    _(`pwm_${index}_ch`).disabled = onoff;
-    _(`pwm_${index}_inv`).disabled = onoff;
-    _(`pwm_${index}_nar`).disabled = onoff;
-    _(`pwm_${index}_fs`).disabled = onoff;
-    _(`pwm_${index}_fsmode`).disabled = onoff;
-  }
-  arPwm.forEach((item,index)=>{
-    const pinMode = _(`pwm_${index}_mode`)
-    pinMode.onchange = () => {
-      setDisabled(index, pinMode.value > 9);
-      const updateOthers = (value, enable) => {
-        if (value > 9) { // disable others
-          arPwm.forEach((item, other) => {
-            if (other != index) {
-              document.querySelectorAll(`#pwm_${other}_mode option`).forEach(opt => {
-                if (opt.value == value) {
-                  if (modeSelectionInit)
-                    opt.disabled = true;
-                  else
-                    opt.disabled = enable;
-                }
-              });
-            }
-          })
-        }
-      }
-      updateOthers(pinMode.value, true); // disable others
-      updateOthers(pinModes[index], false); // enable others
-      pinModes[index] = pinMode.value;
-
-      // show Serial2 protocol selection only if Serial2 TX is assigned
-      _('serial1-config').style.display = 'none';
-      if (pinMode.value == 14) // Serial2 TX
-        _('serial1-config').style.display = 'block';
-    }
-    pinMode.onchange();
-
-    // disable and hide the failsafe position field if not using the set-position failsafe mode
-    const failsafeMode = _(`pwm_${index}_fsmode`);
-    failsafeMode.onchange = () => {
-      const failsafeField = _(`pwm_${index}_fs`);
-      if (failsafeMode.value == 0) {
-        failsafeField.disabled = false;
-        failsafeField.style.display = 'block';
-      }
-      else {
-        failsafeField.disabled = true;
-        failsafeField.style.display = 'none';
-      }
-    };
-    failsafeMode.onchange();
-  });
-
-  modeSelectionInit = false;
-
-  // put some constraints on pinRx/Tx mode selects
-  if (pinRxIndex !== undefined && pinTxIndex !== undefined) {
-    const pinRxMode = _(`pwm_${pinRxIndex}_mode`);
-    const pinTxMode = _(`pwm_${pinTxIndex}_mode`);
-    pinRxMode.onchange = () => {
-      if (pinRxMode.value == 9) { // Serial
-        pinTxMode.value = 9;
-        setDisabled(pinRxIndex, true);
-        setDisabled(pinTxIndex, true);
-        pinTxMode.disabled = true;
-        _('serial-config').style.display = 'block';
-        _('baud-config').style.display = 'block';
-      }
-      else {
-        pinTxMode.value = 0;
-        setDisabled(pinRxIndex, false);
-        setDisabled(pinTxIndex, false);
-        pinTxMode.disabled = false;
-        _('serial-config').style.display = 'none';
-        _('baud-config').style.display = 'none';
-      }
-    }
-    pinTxMode.onchange = () => {
-      if (pinTxMode.value == 9) { // Serial
-        pinRxMode.value = 9;
-        setDisabled(pinRxIndex, true);
-        setDisabled(pinTxIndex, true);
-        pinTxMode.disabled = true;
-        _('serial-config').style.display = 'block';
-        _('baud-config').style.display = 'block';
-      }
-    }
-    const pinTx = pinTxMode.value;
-    pinRxMode.onchange();
-    if (pinRxMode.value != 9) pinTxMode.value = pinTx;
-  }
-}
-@@end
-
 function init() {
   // setup network radio button handling
   _('nt0').onclick = () => _('credentials').style.display = 'block';
   _('nt1').onclick = () => _('credentials').style.display = 'block';
   _('nt2').onclick = () => _('credentials').style.display = 'none';
   _('nt3').onclick = () => _('credentials').style.display = 'none';
-@@if not isTX:
-  // setup model match checkbox handler
-  _('model-match').onclick = () => {
-    if (_('model-match').checked) {
-      _('modelNum').style.display = 'block';
-      if (storedModelId === 255) {
-        _('modelid').value = '';
-      } else {
-        _('modelid').value = storedModelId;
-      }
-    } else {
-      _('modelNum').style.display = 'none';
-      _('modelid').value = '255';
-    }
-  };
-  // Start on the model tab
-  mui.tabs.activate('pane-justified-3');
-@@else:
   // Start on the options tab
   mui.tabs.activate('pane-justified-1');
-@@end
   initFiledrag();
   initOptions();
 }
@@ -358,87 +155,6 @@ function updateConfig(data, options) {
   } else {
     _('apmode').style.display = 'block';
   }
-@@if not isTX:
-  if (data.hasOwnProperty('modelid') && data.modelid !== 255) {
-    _('modelNum').style.display = 'block';
-    _('model-match').checked = true;
-    storedModelId = data.modelid;
-  } else {
-    _('modelNum').style.display = 'none';
-    _('model-match').checked = false;
-    storedModelId = 255;
-  }
-  _('modelid').value = storedModelId;
-  _('force-tlm').checked = data.hasOwnProperty('force-tlm') && data['force-tlm'];
-  _('serial-protocol').onchange = () => {
-    const proto = Number(_('serial-protocol').value);
-    if (_('is-airport').checked) {
-      _('rcvr-uart-baud').disabled = false;
-      _('rcvr-uart-baud').value = options['rcvr-uart-baud'];
-      _('serial-config').style.display = 'none';
-      _('sbus-config').style.display = 'none';
-      return;
-    }
-    _('serial-config').style.display = 'block';
-    if (proto === 0 || proto === 1) { // Airport or CRSF
-      _('rcvr-uart-baud').disabled = false;
-      _('rcvr-uart-baud').value = options['rcvr-uart-baud'];
-      _('sbus-config').style.display = 'none';
-    }
-    else if (proto === 2 || proto === 3 || proto === 5) { // SBUS (and inverted) or DJI-RS Pro
-      _('rcvr-uart-baud').disabled = true;
-      _('rcvr-uart-baud').value = '100000';
-      _('sbus-config').style.display = 'block';
-      _('sbus-failsafe').value = data['sbus-failsafe'];
-    }
-    else if (proto === 4) { // SUMD
-      _('rcvr-uart-baud').disabled = true;
-      _('rcvr-uart-baud').value = '115200';
-      _('sbus-config').style.display = 'none';
-    }
-    else if (proto === 6) { // HoTT
-      _('rcvr-uart-baud').disabled = true;
-      _('rcvr-uart-baud').value = '19200';
-      _('sbus-config').style.display = 'none';
-    }
-  }
-
-  _('serial1-protocol').onchange = () => {
-    if (_('is-airport').checked) {
-      _('rcvr-uart-baud').disabled = false;
-      _('rcvr-uart-baud').value = options['rcvr-uart-baud'];
-      _('serial1-config').style.display = 'none';
-      _('sbus-config').style.display = 'none';
-      return;
-    }
-  }
-
-  updatePwmSettings(data.pwm);
-  _('serial-protocol').value = data['serial-protocol'];
-  _('serial-protocol').onchange();
-  _('serial1-protocol').value = data['serial1-protocol'];
-  _('serial1-protocol').onchange();
-  _('is-airport').onchange = () => {
-    _('serial-protocol').onchange();
-    _('serial1-protocol').onchange();
-  }
-  _('is-airport').onchange;
-  _('vbind').value = data.vbind;
-  _('vbind').onchange = () => {
-    _('bindphrase').style.display = _('vbind').value === '1' ? 'none' : 'block';
-  }
-  _('vbind').onchange();
-
-  // set initial visibility status of Serial2 protocol selection
-  _('serial1-config').style.display = 'none';
-  data.pwm?.forEach((item,index) => {
-    const _pinMode = _(`pwm_${index}_mode`)
-    if (_pinMode.value == 14) // Serial2 TX
-      _('serial1-config').style.display = 'block';
-  });
-
-@@end
-@@if isTX:
   if (data.hasOwnProperty['button-colors']) {
     if (_('button1-color')) _('button1-color').oninput = changeCurrentColors;
     if (data['button-colors'][0] === -1) _('button1-color-div').style.display = 'none';
@@ -453,7 +169,6 @@ function updateConfig(data, options) {
   } else {
     _('button-tab').style.display = 'none';
   }
-@@end
 }
 
 function initOptions() {
@@ -520,13 +235,8 @@ function fileSelectHandler(e) {
   // ESP32 expects .bin, ESP8285 RX expect .bin.gz
   const files = e.target.files || e.dataTransfer.files;
   const fileExt = files[0].name.split('.').pop();
-@@if (is8285 and not isTX):
-  const expectedFileExt = 'gz';
-  const expectedFileExtDesc = '.bin.gz file. <br />Do NOT decompress/unzip/extract the file!';
-@@else:
   const expectedFileExt = 'bin';
   const expectedFileExtDesc = '.bin file.';
-@@endif
   if (fileExt === expectedFileExt) {
     uploadFile(files[0]);
   } else {
@@ -580,11 +290,7 @@ function completeHandler(event) {
     // This is basically a delayed display of the success dialog with a fake progress
     let percent = 0;
     const interval = setInterval(()=>{
-@@if (is8285):
-      percent = percent + 1;
-@@else:
       percent = percent + 2;
-@@end
       _('progressBar').value = percent;
       _('status').innerHTML = percent + '% flashed... please wait';
       if (percent === 100) {
@@ -659,7 +365,6 @@ function abortHandler(event) {
   });
 }
 
-@@if isTX:
 _('fileselect').addEventListener('change', (e) => {
   const files = e.target.files || e.dataTransfer.files;
   const reader = new FileReader();
@@ -689,7 +394,6 @@ _('fileselect').addEventListener('change', (e) => {
   }
   reader.readAsText(files[0]);
 }, false);
-@@end
 
 // =========================================================
 
@@ -745,9 +449,6 @@ function setupNetwork(event) {
   }
 }
 
-@@if not isTX:
-_('reset-model').addEventListener('click', callback('Reset Model Settings', 'An error occurred reseting model settings', '/reset?model', null));
-@@end
 _('reset-options').addEventListener('click', callback('Reset Runtime Options', 'An error occurred reseting runtime options', '/reset?options', null));
 
 _('sethome').addEventListener('submit', setupNetwork);
@@ -818,12 +519,10 @@ function submitOptions(e) {
           confirmText: 'Reboot',
           cancelText: 'Close'
         }).then((e) => {
-@@if isTX:
           originalUID = _('uid').value;
           originalUIDType = 'Overridden';
           _('phrase').value = '';
           updateUIDType(originalUIDType);
-@@end
         if (e === 'confirm') {
             const xhr = new XMLHttpRequest();
             xhr.open('POST', '/reboot');
@@ -845,7 +544,6 @@ function submitOptions(e) {
 
 _('submit-options').addEventListener('click', submitOptions);
 
-@@if isTX:
 function submitButtonActions(e) {
   e.stopPropagation();
   e.preventDefault();
@@ -876,7 +574,6 @@ function submitButtonActions(e) {
   }
 }
 _('submit-actions').addEventListener('click', submitButtonActions);
-@@end
 
 function updateOptions(data) {
   for (const [key, value] of Object.entries(data)) {
@@ -897,7 +594,6 @@ function updateOptions(data) {
   _('submit-options').disabled = false;
 }
 
-@@if isTX:
 function toRGB(c)
 {
   r = c & 0xE0 ;
@@ -1066,7 +762,6 @@ function appendRow(b,p,v) {
 </td>
 `
 }
-@@end
 
 md5 = function() {
   const k = [];

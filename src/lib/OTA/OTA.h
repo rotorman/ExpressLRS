@@ -89,12 +89,6 @@ typedef struct {
                 uint8_t payload[ELRS4_TELEMETRY_BYTES_PER_CALL];
             };
         } tlm_dl; // PACKET_TYPE_TLM
-        /** PACKET_TYPE_AIRPORT **/
-        struct {
-            uint8_t free:2,
-                    count:6;
-            uint8_t payload[ELRS4_TELEMETRY_BYTES_PER_CALL];
-        } PACKED airport;
     };
     uint8_t crcLow;
 } PACKED OTA_Packet4_s;
@@ -147,13 +141,6 @@ typedef struct {
                 uint8_t payload[ELRS8_TELEMETRY_BYTES_PER_CALL]; // containsLinkStats == false
             };
         } PACKED tlm_dl;
-        /** PACKET_TYPE_AIRPORT **/
-        struct {
-            uint8_t packetType: 2,
-                    free: 1,
-                    count: 5;
-            uint8_t payload[ELRS8_TELEMETRY_BYTES_PER_CALL];
-        } PACKED airport;
     };
     uint16_t crc;  // crc16 LittleEndian
 } PACKED OTA_Packet8_s;
@@ -186,8 +173,5 @@ extern GeneratePacketCrc_t OtaGeneratePacketCrc;
 
 typedef void (*PackChannelData_t)(OTA_Packet_s * const otaPktPtr, const uint32_t *channelData, bool TelemetryStatus, uint8_t tlmDenom);
 extern PackChannelData_t OtaPackChannelData;
-
-void OtaPackAirportData(OTA_Packet_s * const otaPktPtr, FIFO<AP_MAX_BUF_LEN> *inputBuffer);
-void OtaUnpackAirportData(OTA_Packet_s const * const otaPktPtr, FIFO<AP_MAX_BUF_LEN> *outputBuffer);
 
 #endif // H_OTA

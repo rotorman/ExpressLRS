@@ -83,15 +83,6 @@ def patch_unified(args, options):
     if args.fan_min_runtime is not None:
         json_flags['fan-runtime'] = args.fan_min_runtime
 
-    if args.airport_baud is not None:
-        json_flags['is-airport'] = True
-        if options.deviceType is DeviceType.RX:
-            json_flags['rcvr-uart-baud'] = args.airport_baud
-        else:
-            json_flags['airport-uart-baud'] = args.airport_baud
-    elif args.rx_baud is not None:
-        json_flags['rcvr-uart-baud'] = args.rx_baud
-
     if args.lock_on_first_connection is not None:
         json_flags['lock-on-first-connection'] = args.lock_on_first_connection
 
@@ -186,8 +177,6 @@ def main():
     parser.add_argument('--password', type=length_check(64, "password"), required=False, help='Home network password')
     parser.add_argument('--auto-wifi', type=int, help='Interval (in seconds) before WiFi auto starts, if no connection is made')
     parser.add_argument('--no-auto-wifi', action='store_true', help='Disables WiFi auto start if no connection is made')
-    # AirPort
-    parser.add_argument('--airport-baud', type=int, const=None, nargs='?', action='store', help='If configured as an AirPort device then this is the baud rate to use')
     # RX Params
     parser.add_argument('--rx-baud', type=int, const=420000, nargs='?', action='store', help='The receiver baudrate talking to the flight controller')
     parser.add_argument('--lock-on-first-connection', dest='lock_on_first_connection', action='store_true', help='Lock RF mode on first connection')

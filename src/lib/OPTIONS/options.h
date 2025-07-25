@@ -33,8 +33,8 @@ typedef struct _options {
     uint32_t    tlm_report_interval;
     bool        _unused1:1;
     bool        unlock_higher_power:1;
-    bool        is_airport:1;
-    uint32_t    uart_baud;              // only use for airport
+    bool        free:1;
+    uint32_t    uart_baud;
 } __attribute__((packed)) firmware_options_t;
 
 // Layout is PRODUCTNAME DEVICENAME OPTIONS HARDWARE
