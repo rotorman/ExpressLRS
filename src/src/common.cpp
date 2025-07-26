@@ -199,7 +199,6 @@ uint8_t TLMBurstMaxForRateRatio(uint16_t const rateHz, uint8_t const ratioDiv)
         --retVal;
     else
         retVal = 1;
-    //DBGLN("TLMburst: %d", retVal);
 
     return retVal;
 }

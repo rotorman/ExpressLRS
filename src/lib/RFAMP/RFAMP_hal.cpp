@@ -1,5 +1,4 @@
 #include "RFAMP_hal.h"
-#include "logging.h"
 
 RFAMP_hal *RFAMP_hal::instance = NULL;
 
@@ -10,8 +9,6 @@ RFAMP_hal::RFAMP_hal()
 
 void RFAMP_hal::init()
 {
-    DBGLN("RFAMP_hal Init");
-
     #define SET_BIT(n) ((n != UNDEF_PIN) ? 1ULL << n : 0)
 
     txrx_disable_clr_bits = 0;
@@ -50,35 +47,30 @@ void RFAMP_hal::init()
 
     if (GPIO_PIN_PA_ENABLE != UNDEF_PIN)
     {
-        DBGLN("Use PA enable pin: %d", GPIO_PIN_PA_ENABLE);
         pinMode(GPIO_PIN_PA_ENABLE, OUTPUT);
         digitalWrite(GPIO_PIN_PA_ENABLE, LOW);
     }
 
     if (GPIO_PIN_TX_ENABLE != UNDEF_PIN)
     {
-        DBGLN("Use TX pin: %d", GPIO_PIN_TX_ENABLE);
         pinMode(GPIO_PIN_TX_ENABLE, OUTPUT);
         digitalWrite(GPIO_PIN_TX_ENABLE, LOW);
     }
 
     if (GPIO_PIN_RX_ENABLE != UNDEF_PIN)
     {
-        DBGLN("Use RX pin: %d", GPIO_PIN_RX_ENABLE);
         pinMode(GPIO_PIN_RX_ENABLE, OUTPUT);
         digitalWrite(GPIO_PIN_RX_ENABLE, LOW);
     }
 
     if (GPIO_PIN_TX_ENABLE_2 != UNDEF_PIN)
     {
-        DBGLN("Use TX_2 pin: %d", GPIO_PIN_TX_ENABLE_2);
         pinMode(GPIO_PIN_TX_ENABLE_2, OUTPUT);
         digitalWrite(GPIO_PIN_TX_ENABLE_2, LOW);
     }
 
     if (GPIO_PIN_RX_ENABLE_2 != UNDEF_PIN)
     {
-        DBGLN("Use RX_2 pin: %d", GPIO_PIN_RX_ENABLE_2);
         pinMode(GPIO_PIN_RX_ENABLE_2, OUTPUT);
         digitalWrite(GPIO_PIN_RX_ENABLE_2, LOW);
     }

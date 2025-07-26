@@ -24,7 +24,6 @@ class Telemetry
 {
 public:
     Telemetry();
-    bool RXhandleUARTin(uint8_t data);
     void ResetState();
     bool ShouldCallBootloader();
     bool ShouldCallEnterBind();

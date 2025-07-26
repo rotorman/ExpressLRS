@@ -7,7 +7,6 @@
 
 #include "logos.h"
 #include "options.h"
-#include "logging.h"
 #include "common.h"
 #include "CRSF.h"
 
@@ -30,7 +29,6 @@ const uint16_t *main_menu_icons[] = {
 
     elrs_updatefw,
     elrs_rxwifi,
-    elrs_backpack,
     elrs_vrxwifi
 };
 
@@ -132,11 +130,6 @@ void TFTDisplay::doScreenBackLight(screen_backlight_t state)
     {
         digitalWrite(GPIO_PIN_SCREEN_BL, state);
     }
-}
-
-void TFTDisplay::printScreenshot()
-{
-    DBGLN("Unimplemented");
 }
 
 static void displayFontCenter(uint32_t font_start_x, uint32_t font_end_x, uint32_t font_start_y,

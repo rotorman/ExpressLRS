@@ -32,7 +32,6 @@
 #pragma once
 
 #include "targets.h"
-#include "logging.h"
 
 /**
  * @brief A FIFO which can be made thread/SMP safe using coarse-grained locking via `lock`/`unlock` methods.
@@ -79,7 +78,7 @@ public:
     {
         if (numElements == FIFO_SIZE)
         {
-            ERRLN("Buffer full, will flush");
+            // Buffer full, will flush
             flush();
             return;
         }
@@ -101,7 +100,7 @@ public:
     {
         if (numElements + len > FIFO_SIZE)
         {
-            ERRLN("Buffer full, will flush");
+            // Buffer full, will flush
             flush();
             return;
         }
@@ -135,7 +134,7 @@ public:
     {
         if (numElements == 0)
         {
-            // DBGLN(F("Buffer empty"));
+            // Buffer empty
             return 0;
         }
         numElements--;
@@ -155,7 +154,7 @@ public:
     {
         if (numElements < len)
         {
-            // DBGLN(F("Buffer underrun"));
+            // Buffer underrun
             flush();
             return;
         }
@@ -177,7 +176,7 @@ public:
     {
         if (numElements == 0)
         {
-            // DBGLN(F("Buffer empty"));
+            // Buffer empty
             return 0;
         }
         uint8_t data = buffer[head];

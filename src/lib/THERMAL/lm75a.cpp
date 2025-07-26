@@ -1,7 +1,5 @@
 #include <Wire.h>
 #include "lm75a.h"
-#include "logging.h"
-
 
 int LM75A::init()
 {
@@ -9,11 +7,8 @@ int LM75A::init()
 
     ReadAccRegister(LM75A_REG_TOS, buffer, 2);
 
-    DBGLN("thermal lma75 read Tos = 0x%x", buffer[0]);
-
     if(buffer[0] == 0)
     {
-        ERRLN("thermal lma75 init failed!");
         return -1;
     }
 

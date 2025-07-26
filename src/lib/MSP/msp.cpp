@@ -1,6 +1,4 @@
 #include "msp.h"
-
-#include "logging.h"
 #include "crc.h"
 
 /* ==========================================
@@ -111,7 +109,6 @@ MSP::processReceivedByte(uint8_t c)
                 m_inputState = MSP_COMMAND_RECEIVED;
             }
             else {
-                DBGLN("CRC failure on MSP packet - Got %d expected %d", c, m_crc);
                 m_inputState = MSP_IDLE;
             }
             break;

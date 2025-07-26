@@ -1,6 +1,4 @@
 #include "thermal.h"
-#include "logging.h"
-
 #include "lm75a.h"
 LM75A lm75a;
 #if defined(PLATFORM_ESP32_S3) || defined(PLATFORM_ESP32_C3)
@@ -36,11 +34,9 @@ void Thermal::init()
 #else
     if (status == -1)
     {
-        ERRLN("Thermal failed!");
         return;
     }
 #endif
-    DBGLN("Thermal OK!");
     temp_value = 0;
     thermal_status = THERMAL_STATUS_NORMAL;
     update_threshold(0);
@@ -55,7 +51,6 @@ uint8_t Thermal::read_temp()
 {
     if(thermal_status != THERMAL_STATUS_NORMAL)
     {
-        ERRLN("thermal not ready!");
         return 0;
     }
     if (OPT_HAS_THERMAL_LM75A)
@@ -82,13 +77,11 @@ void Thermal::update_threshold(int index)
     prevIndex = index;
     if(thermal_status != THERMAL_STATUS_NORMAL)
     {
-        ERRLN("thermal not ready!");
         return;
     }
     constexpr int size = sizeof(thermal_threshold_data)/sizeof(thermal_threshold_data[0]);
     if(index > size/2)
     {
-        ERRLN("thermal index out of range!");
         return;
     }
     if (OPT_HAS_THERMAL_LM75A)

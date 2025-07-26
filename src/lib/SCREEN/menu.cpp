@@ -4,7 +4,6 @@
 #include "common.h"
 #include "config.h"
 #include "helpers.h"
-#include "logging.h"
 #include "POWERMGNT.h"
 #include "handset.h"
 #include "OTA.h"
@@ -17,7 +16,6 @@ extern Thermal thermal;
 extern FiniteStateMachine state_machine;
 
 extern bool RxWiFiReadyToSend;
-extern bool TxBackpackWiFiReadyToSend;
 extern void ResetPower();
 extern void setWifiUpdateMode();
 extern void SetSyncSpam();
@@ -297,9 +295,6 @@ static void executeWiFi(bool init)
             case STATE_WIFI_RX:
                 RxWiFiReadyToSend = true;
                 break;
-            case STATE_WIFI_BACKPACK:
-                TxBackpackWiFiReadyToSend = true;
-                break;
         }
         if (state_machine.getParentState() == STATE_WIFI_TX)
         {
@@ -322,9 +317,6 @@ static void executeWiFi(bool init)
             break;
         case STATE_WIFI_RX:
             running = RxWiFiReadyToSend;
-            break;
-        case STATE_WIFI_BACKPACK:
-            running = TxBackpackWiFiReadyToSend;
             break;
         default:
             running = false;
@@ -428,7 +420,6 @@ fsm_state_event_t const wifi_ext_menu_events[] = {MENU_EVENTS(wifi_ext_menu_fsm)
 fsm_state_entry_t const wifi_menu_fsm[] = {
     {STATE_WIFI_TX, nullptr, displayMenuScreen, 20000, wifi_menu_update_events, ARRAY_SIZE(wifi_menu_update_events)},
     {STATE_WIFI_RX, nullptr, displayMenuScreen, 20000, wifi_ext_menu_events, ARRAY_SIZE(wifi_ext_menu_events)},
-    {STATE_WIFI_BACKPACK, [](){return OPT_USE_TX_BACKPACK;}, displayMenuScreen, 20000, wifi_ext_menu_events, ARRAY_SIZE(wifi_ext_menu_events)},
     {STATE_LAST}
 };
 

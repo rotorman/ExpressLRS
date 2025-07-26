@@ -1,6 +1,5 @@
 #if defined(Regulatory_Domain_EU_CE_2400)
 #include "common.h"
-#include "logging.h"
 #include "LBT.h"
 
 LQCALC<100> LBTSuccessCalc;
@@ -48,7 +47,6 @@ static uint32_t ICACHE_RAM_ATTR SpreadingFactorToRSSIvalidDelayUs(
   }
   else
   {
-    ERRLN("LBT not support on this radio type");
     return 0;
   }
 }
@@ -88,7 +86,6 @@ static int8_t ICACHE_RAM_ATTR PowerEnumToLBTLimit(PowerLevels_e txPower, uint8_t
   }
   else
   {
-    ERRLN("LBT not support on this radio type");
     return 0;
   }
 }
@@ -157,9 +154,6 @@ SX12XX_Radio_Number_t ICACHE_RAM_ATTR ChannelIsClear(SX12XX_Radio_Number_t radio
       clearChannelsMask |= SX12XX_Radio_2;
     }
   }
-
-  // Useful to debug if and how long the rssi wait is, and rssi threshold rssiCutOff
-  // DBGLN("wait: %d, cutoff: %d, rssi: %d %d, %s", validRSSIdelayUs - elapsed, rssiCutOff, rssiInst1, rssiInst2, clearChannelsMask ? "clear" : "in use");
 
   if(clearChannelsMask)
   {

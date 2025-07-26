@@ -1,7 +1,6 @@
 #include "lua.h"
 #include "common.h"
 #include "CRSF.h"
-#include "logging.h"
 #include "CRSFHandset.h"
 
 //LUA VARIABLES//
@@ -218,7 +217,6 @@ static uint8_t sendCRSFparam(uint8_t fieldChunk, struct luaPropertiesCommon *lua
 }
 
 static void pushResponseChunk(struct luaItem_command *cmd) {
-  DBGVLN("sending response for [%s] chunk=%u step=%u", cmd->common.name, nextStatusChunk, cmd->step);
   if (sendCRSFparam(nextStatusChunk, (struct luaPropertiesCommon *)cmd) == 0) {
     nextStatusChunk = 0;
   } else {
@@ -328,7 +326,6 @@ bool luaHandleUpdateParameter()
       if (parameterIndex == 0)
       {
         // special case for elrs linkstat request
-        DBGVLN("ELRS status request");
         updateElrsFlags();
         sendELRSstatus();
       } else if (parameterIndex == 0x2E) {
@@ -337,7 +334,6 @@ bool luaHandleUpdateParameter()
         uint8_t id = parameterIndex;
         uint8_t arg = parameterArg;
         struct luaPropertiesCommon *p = paramDefinitions[id];
-        DBGLN("Set Lua [%s]=%u", p->name, arg);
         if (id < LUA_MAX_PARAMS && paramCallbacks[id]) {
           // While the command is executing, the handset will send `WRITE state=lcsQuery`.
           // paramCallbacks will set the value when nextStatusChunk == 0, or send any
@@ -361,7 +357,6 @@ bool luaHandleUpdateParameter()
       {
         uint8_t fieldId = parameterIndex;
         uint8_t fieldChunk = parameterArg;
-        DBGVLN("Read lua param %u %u", fieldId, fieldChunk);
         if (fieldId < LUA_MAX_PARAMS && paramDefinitions[fieldId])
         {
           struct luaItem_command *field = (struct luaItem_command *)paramDefinitions[fieldId];
@@ -379,7 +374,7 @@ bool luaHandleUpdateParameter()
       break;
 
     default:
-      DBGLN("Unknown LUA %x", parameterType);
+      break;
   }
 
   UpdateParamReq = false;

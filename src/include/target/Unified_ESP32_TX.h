@@ -93,15 +93,6 @@
 #define GPIO_PIN_SCREEN_BL hardware_pin(HARDWARE_screen_bl)         // Backlight
 #define OPT_SCREEN_REVERSED hardware_flag(HARDWARE_screen_reversed)
 
-// Backpack
-#define OPT_USE_TX_BACKPACK hardware_flag(HARDWARE_use_backpack)
-#define BACKPACK_LOGGING_BAUD hardware_int(HARDWARE_debug_backpack_baud)
-#define GPIO_PIN_DEBUG_RX hardware_pin(HARDWARE_debug_backpack_rx)
-#define GPIO_PIN_DEBUG_TX hardware_pin(HARDWARE_debug_backpack_tx)
-#define GPIO_PIN_BACKPACK_BOOT hardware_pin(HARDWARE_backpack_boot)
-#define GPIO_PIN_BACKPACK_EN hardware_pin(HARDWARE_backpack_en)
-#define PASSTHROUGH_BAUD hardware_int(HARDWARE_passthrough_baud)
-
 // I2C
 #define GPIO_PIN_SCL hardware_pin(HARDWARE_i2c_scl)
 #define GPIO_PIN_SDA hardware_pin(HARDWARE_i2c_sda)

@@ -4,15 +4,10 @@
 #include "CRSF.h"
 #include "telemetry.h"
 #include "median.h"
-#include "logging.h"
 
 // Sample 5x samples over 500ms (unless SlowUpdate)
 #define VBAT_SMOOTH_CNT         5
-#if defined(DEBUG_VBAT_ADC)
-#define VBAT_SAMPLE_INTERVAL    20U // faster updates in debug mode
-#else
 #define VBAT_SAMPLE_INTERVAL    100U
-#endif
 
 typedef uint16_t vbatAnalogStorage_t;
 static MedianAvgFilter<vbatAnalogStorage_t, VBAT_SMOOTH_CNT>vbatSmooth;
@@ -64,10 +59,8 @@ static int start()
 static void reportVbat()
 {
     uint32_t adc = vbatSmooth.calc();
-#if !defined(DEBUG_VBAT_ADC)
     if (vbatAdcUnitCharacterics)
         adc = esp_adc_cal_raw_to_voltage(adc, vbatAdcUnitCharacterics);
-#endif
 
     int32_t vbat;
     // For negative offsets, anything between abs(OFFSET) and 0 is considered 0
@@ -93,14 +86,6 @@ static int timeout()
     }
 
     uint32_t adc = analogRead(GPIO_ANALOG_VBAT);
-#if defined(DEBUG_VBAT_ADC)
-    // When doing DEBUG_VBAT_ADC, every value is adjusted (for logging)
-    // in normal mode only the final value is adjusted to save CPU cycles
-    if (vbatAdcUnitCharacterics)
-        adc = esp_adc_cal_raw_to_voltage(adc, vbatAdcUnitCharacterics);
-    DBGLN("$ADC,%u", adc);
-#endif
-
     unsigned int idx = vbatSmooth.add(adc);
     if (idx == 0 && connectionState == connected)
         reportVbat();

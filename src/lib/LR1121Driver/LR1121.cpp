@@ -1,18 +1,10 @@
 #include "LR1121_Regs.h"
 #include "LR1121_hal.h"
 #include "LR1121.h"
-#include "logging.h"
 #include <math.h>
 
 LR1121Hal hal;
 LR1121Driver *LR1121Driver::instance = NULL;
-
-//DEBUG_LR1121_OTA_TIMING
-
-#if defined(DEBUG_LR1121_OTA_TIMING)
-static uint32_t beginTX;
-static uint32_t endTX;
-#endif
 
 // RxTimeout is expressed in periods of the 32.768kHz RTC
 #define RX_TIMEOUT_PERIOD_BASE_NANOS 1000000000 / 32768 // TODO check for LR1121
@@ -47,13 +39,10 @@ bool LR1121Driver::Begin(uint32_t minimumFrequency, uint32_t maximumFrequency)
     hal.WriteCommand(LR11XX_SYSTEM_GET_VERSION_OC, SX12XX_Radio_1);
     hal.ReadCommand(version, sizeof(version), SX12XX_Radio_1);
 
-    DBGLN("Read LR1121 #1 Use Case (0x03 = LR1121): %d", version[2]);
     if (version[2] != 0x03)
     {
-    DBGLN("LR1121 #1 failed to be detected.");
         return false;
     }
-    DBGLN("LR1121 #1 Ready");
 
     if (GPIO_PIN_NSS_2 != UNDEF_PIN)
     {
@@ -62,13 +51,10 @@ bool LR1121Driver::Begin(uint32_t minimumFrequency, uint32_t maximumFrequency)
         hal.WriteCommand(LR11XX_SYSTEM_GET_VERSION_OC, SX12XX_Radio_2);
         hal.ReadCommand(version, sizeof(version), SX12XX_Radio_2);
 
-        DBGLN("Read LR1121 #2 Use Case (0x03 = LR1121): %d", version[2]);
         if (version[2] != 0x03)
         {
-        DBGLN("LR1121 #2 failed to be detected.");
             return false;
         }
-        DBGLN("LR1121 #2 Ready");
     }
 
     //Clear Errors
@@ -151,7 +137,6 @@ void LR1121Driver::Config(uint8_t bw, uint8_t sf, uint8_t cr, uint32_t regfreq,
     useFEC = false;
     if (useFSK)
     {
-        DBGLN("Config FSK");
         uint32_t bitrate = (uint32_t)bw * 10000;
         uint8_t bwf = sf;
         uint32_t fdev = (uint32_t)cr * 1000;
@@ -169,14 +154,9 @@ void LR1121Driver::Config(uint8_t bw, uint8_t sf, uint8_t cr, uint32_t regfreq,
     }
     else
     {
-        DBGLN("Config LoRa");
         ConfigModParamsLoRa(bw, sf, cr, radioNumber);
 
-    #if defined(DEBUG_FREQ_CORRECTION) // TODO Check if this available with the LR1121?
-        lr11xx_RadioLoRaPacketLengthsModes_t packetLengthType = LR1121_LORA_PACKET_VARIABLE_LENGTH;
-    #else
         lr11xx_RadioLoRaPacketLengthsModes_t packetLengthType = LR1121_LORA_PACKET_FIXED_LENGTH;
-    #endif
 
         SetPacketParamsLoRa(PreambleLength, packetLengthType, PayloadLength, IQinverted, radioNumber);
     }
@@ -550,10 +530,6 @@ void ICACHE_RAM_ATTR LR1121Driver::ClearIrqStatus(SX12XX_Radio_Number_t radioNum
 
 void ICACHE_RAM_ATTR LR1121Driver::TXnbISR()
 {
-#ifdef DEBUG_LR1121_OTA_TIMING
-    endTX = micros();
-    DBGLN("TOA: %d", endTX - beginTX);
-#endif
     CommitOutputPower();
     TXdoneCallback();
 }
@@ -561,16 +537,6 @@ void ICACHE_RAM_ATTR LR1121Driver::TXnbISR()
 void ICACHE_RAM_ATTR LR1121Driver::TXnb(uint8_t * data, uint8_t size, bool sendGeminiBuffer, uint8_t * dataGemini, SX12XX_Radio_Number_t radioNumber)
 {
     transmittingRadio = radioNumber;
-
-    // //catch TX timeout
-    // if (currOpmode == SX1280_MODE_TX)
-    // {
-    //     DBGLN("Timeout!");
-    //     SetMode(SX1280_MODE_FS, SX12XX_Radio_All);
-    //     ClearIrqStatus(SX1280_IRQ_RADIO_ALL, SX12XX_Radio_All);
-    //     TXnbISR();
-    //     return;
-    // }
 
     if (radioNumber == SX12XX_Radio_NONE)
     {

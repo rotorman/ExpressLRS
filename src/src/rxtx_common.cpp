@@ -1,8 +1,6 @@
 #include "targets.h"
 #include "common.h"
 #include "config.h"
-#include "logging.h"
-
 #include <functional>
 #include <Wire.h>
 
@@ -29,7 +27,6 @@ static void setupWire()
 
     if(gpio_sda != UNDEF_PIN && gpio_scl != UNDEF_PIN)
     {
-        DBGLN("Starting wire on SCL %d, SDA %d", gpio_scl, gpio_sda);
         // ESP hopes to get Wire::begin(int, int)
         // ESP32 hopes to get Wire::begin(int = -1, int = -1, uint32 = 0)
         Wire.begin(gpio_sda, gpio_scl);
@@ -55,9 +52,7 @@ void deferExecutionMicros(unsigned long us, std::function<void()> f)
             return;
         }
     }
-
     // Bail out, there are no slots available!
-    DBGLN("No more deferred function slots available!");
 }
 
 void executeDeferredFunction(unsigned long now)

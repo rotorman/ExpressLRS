@@ -3,8 +3,6 @@
 #include <driver/ledc.h>
 #include <driver/mcpwm.h>
 
-#include "logging.h"
-
 #if defined(PLATFORM_ESP32_S3) || defined(PLATFORM_ESP32_C3)
 #define SPEED_MODE LEDC_LOW_SPEED_MODE
 #else
@@ -71,10 +69,7 @@ static void ledcSetupEx(uint8_t chan, ledc_timer_t timer, uint32_t freq, uint8_t
         .freq_hz = freq,
         .clk_cfg = LEDC_USE_APB_CLK,
     };
-    if (ledc_timer_config(&ledc_timer) != ESP_OK)
-    {
-        ERRLN("ledc setup failed!");
-    }
+    ledc_timer_config(&ledc_timer);
 }
 
 static void ledcAttachPinEx(uint8_t pin, uint8_t chan, ledc_timer_t timer)
@@ -87,11 +82,7 @@ static void ledcAttachPinEx(uint8_t pin, uint8_t chan, ledc_timer_t timer)
         .timer_sel = (ledc_timer_t)timer,
         .duty = 0,
         .hpoint = 0};
-    auto err = ledc_channel_config(&ledc_channel);
-    if (err != OK)
-    {
-        ERRLN("ledc_channel_config failed with error 0x%x on pin %d", err, pin);
-    }
+    ledc_channel_config(&ledc_channel);
 }
 
 pwm_channel_t PWMController::allocate(uint8_t pin, uint32_t frequency)
@@ -138,11 +129,7 @@ pwm_channel_t PWMController::allocate(uint8_t pin, uint32_t frequency)
             .duty_mode = MCPWM_DUTY_MODE_0,
             .counter_mode = MCPWM_UP_COUNTER,
         };
-        auto err = mcpwm_gpio_init(mcpwm_config[channel].unit, mcpwm_config[channel].signal, pin);
-        if (err != ESP_OK)
-        {
-            DBGLN("mcpwm_gpio_init failed with error 0x%x on pin %d", err, pin);
-        }
+        mcpwm_gpio_init(mcpwm_config[channel].unit, mcpwm_config[channel].signal, pin);
         mcpwm_init(mcpwm_config[channel].unit, mcpwm_config[channel].timer, &pwm_config);
         mcpwm_frequencies[channel] = frequency;
         return channel | MCPWM_CHANNEL_FLAG;
@@ -176,7 +163,6 @@ pwm_channel_t PWMController::allocate(uint8_t pin, uint32_t frequency)
                     ledc_config[ch].pin = pin;
                     ledc_config[ch].resolution_bits = bits;
                     ledc_config[ch].interval = 1000000U / frequency;
-                    DBGLN("allocate ledc_ch %d on pin %d using ledc_tim: %d, bits: %d", ch, pin, timer_idx, bits);
                     return ch | LEDC_CHANNEL_FLAG;
                 }
             }
@@ -185,7 +171,6 @@ pwm_channel_t PWMController::allocate(uint8_t pin, uint32_t frequency)
     }
 
     // 3. bail out, nothing left
-    DBGLN("No MCPWM or LEDC channels available for frequency %dHz", frequency);
     return -1;
 }
 
@@ -207,10 +192,6 @@ void PWMController::release(pwm_channel_t channel)
         mcpwm_frequencies[ch] = 0;
     }
 #endif
-    else
-    {
-        ERRLN("Invalid PWM channel %x", channel);
-    }
 }
 
 void PWMController::setDuty(pwm_channel_t channel, uint16_t duty)

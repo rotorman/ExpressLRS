@@ -2,7 +2,6 @@
 #include "devScreen.h"
 
 #include "common.h"
-#include "logging.h"
 
 #include "OLED/oleddisplay.h"
 #include "TFT/tftdisplay.h"
@@ -89,13 +88,6 @@ static int handle(void)
         {
             fsm_event = (fsm_event | LONG_PRESSED);
         }
-#if defined(DEBUG_SCREENSHOT)
-        if (key == INPUT_KEY_DOWN_PRESS && isLongPressed)
-        {
-            DBGLN("state_%d", state_machine.getCurrentState());
-            Display::printScreenshot();
-        }
-#endif
         state_machine.handleEvent(now, fsm_event);
     }
     else

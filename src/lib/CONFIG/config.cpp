@@ -5,7 +5,6 @@
 #include "POWERMGNT.h"
 #include "OTA.h"
 #include "helpers.h"
-#include "logging.h"
 
 #define ALL_CHANGED         (EVENT_CONFIG_MODEL_CHANGED | EVENT_CONFIG_MAIN_CHANGED | EVENT_CONFIG_FAN_CHANGED | EVENT_CONFIG_MOTION_CHANGED | EVENT_CONFIG_BUTTON_CHANGED)
 
@@ -128,7 +127,6 @@ void TxConfig::Load()
     uint32_t version = 0;
     if (nvs_get_u32(handle, "tx_version", &version) == ESP_OK && ((version & CONFIG_MAGIC_MASK) == TX_CONFIG_MAGIC))
         version = version & ~CONFIG_MAGIC_MASK;
-    DBGLN("Config version %u", version);
 
     // Can't upgrade from version <5, or when flashing a previous version, just use defaults.
     if (version < 5 || version > TX_CONFIG_VERSION)
@@ -152,33 +150,12 @@ void TxConfig::Load()
     if (nvs_get_u32(handle, "motion", &value) == ESP_OK)
         m_config.motionMode = value;
 
-    if (version >= 6)
-    {
-        // dvr (v6)
-        if (nvs_get_u8(handle, "dvraux", &value8) == ESP_OK)
-            m_config.dvrAux = value8;
-        if (nvs_get_u8(handle, "dvrstartdelay", &value8) == ESP_OK)
-            m_config.dvrStartDelay = value8;
-        if (nvs_get_u8(handle, "dvrstopdelay", &value8) == ESP_OK)
-            m_config.dvrStopDelay = value8;
-    }
-    else
-    {
-        // Need to write the dvr defaults
-        m_modified |= EVENT_CONFIG_MAIN_CHANGED;
-    }
-
     if (version >= 7) {
         // load button actions
         if (nvs_get_u32(handle, "button1", &value) == ESP_OK)
             m_config.buttonColors[0].raw = value;
         if (nvs_get_u32(handle, "button2", &value) == ESP_OK)
             m_config.buttonColors[1].raw = value;
-        // backpackdisable was actually added after 7, but if not found will default to 0 (enabled)
-        if (nvs_get_u8(handle, "backpackdisable", &value8) == ESP_OK)
-            m_config.backpackDisable = value8;
-        if (nvs_get_u8(handle, "backpacktlmen", &value8) == ESP_OK)
-            m_config.backpackTlmMode = value8;
     }
 
     for(unsigned i=0; i<CONFIG_TX_MODEL_CNT; i++)
@@ -246,14 +223,6 @@ TxConfig::Commit()
     {
         uint32_t value = m_config.motionMode;
         nvs_set_u32(handle, "motion", value);
-    }
-    if (m_modified & EVENT_CONFIG_MAIN_CHANGED)
-    {
-        nvs_set_u8(handle, "backpackdisable", m_config.backpackDisable);
-        nvs_set_u8(handle, "backpacktlmen", m_config.backpackTlmMode);
-        nvs_set_u8(handle, "dvraux", m_config.dvrAux);
-        nvs_set_u8(handle, "dvrstartdelay", m_config.dvrStartDelay);
-        nvs_set_u8(handle, "dvrstopdelay", m_config.dvrStopDelay);
     }
     if (m_modified & EVENT_CONFIG_BUTTON_CHANGED)
     {
@@ -384,56 +353,6 @@ TxConfig::SetMotionMode(uint8_t motionMode)
     {
         m_config.motionMode = motionMode;
         m_modified |= EVENT_CONFIG_MOTION_CHANGED;
-    }
-}
-
-void
-TxConfig::SetDvrAux(uint8_t dvrAux)
-{
-    if (GetDvrAux() != dvrAux)
-    {
-        m_config.dvrAux = dvrAux;
-        m_modified |= EVENT_CONFIG_MAIN_CHANGED;
-    }
-}
-
-void
-TxConfig::SetDvrStartDelay(uint8_t dvrStartDelay)
-{
-    if (GetDvrStartDelay() != dvrStartDelay)
-    {
-        m_config.dvrStartDelay = dvrStartDelay;
-        m_modified |= EVENT_CONFIG_MAIN_CHANGED;
-    }
-}
-
-void
-TxConfig::SetDvrStopDelay(uint8_t dvrStopDelay)
-{
-    if (GetDvrStopDelay() != dvrStopDelay)
-    {
-        m_config.dvrStopDelay = dvrStopDelay;
-        m_modified |= EVENT_CONFIG_MAIN_CHANGED;
-    }
-}
-
-void
-TxConfig::SetBackpackDisable(bool backpackDisable)
-{
-    if (m_config.backpackDisable != backpackDisable)
-    {
-        m_config.backpackDisable = backpackDisable;
-        m_modified |= EVENT_CONFIG_MAIN_CHANGED;
-    }
-}
-
-void
-TxConfig::SetBackpackTlmMode(uint8_t mode)
-{
-    if (m_config.backpackTlmMode != mode)
-    {
-        m_config.backpackTlmMode = mode;
-        m_modified |= EVENT_CONFIG_MAIN_CHANGED;
     }
 }
 

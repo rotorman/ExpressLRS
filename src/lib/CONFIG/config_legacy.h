@@ -40,9 +40,6 @@ typedef struct {
     v6_model_config_t  model_config[64];
     uint8_t         fanMode;
     uint8_t         motionMode;
-    uint8_t         dvrAux:5;
-    uint8_t         dvrStartDelay:3;
-    uint8_t         dvrStopDelay:3;
 } v6_tx_config_t;
 
 // V7
@@ -68,9 +65,6 @@ typedef struct {
     v7_model_config_t  model_config[64];
     uint8_t         fanMode;
     uint8_t         motionMode;
-    uint8_t         dvrAux:5;
-    uint8_t         dvrStartDelay:3;
-    uint8_t         dvrStopDelay:3;
 } v7_tx_config_t;
 
 /***

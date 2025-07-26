@@ -1,7 +1,6 @@
 #include "targets.h"
 #include "common.h"
 #include "device.h"
-#include "logging.h"
 #include "POWERMGNT.h"
 #include "devADC.h"
 
@@ -64,7 +63,6 @@ static int timeout()
 
     pdet_storage_t dBmScaled = PDET_MV_DESCALE(PDET_DBM_SCALE(SKY85321_PDET_SLOPE) * PdetMvScaled) + PDET_DBM_SCALE(SKY85321_PDET_INTERCEPT);
     pdet_storage_t targetPowerDbmScaled = PDET_DBM_SCALE(targetPowerDbm);
-    DBGVLN("PdetMv=%u dBm=%u", PdetMvScaled, dBmScaled);
 
     if (dBmScaled < (targetPowerDbmScaled - PDET_HYSTERESIS_DBMSCALED) && POWERMGNT::currentSX1280Output() < SKY85321_MAX_DBM_INPUT)
     {

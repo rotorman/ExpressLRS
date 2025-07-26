@@ -1,7 +1,6 @@
 Import("env", "projenv")
 import os
 import shutil
-import upload_via_esp8266_backpack
 import esp_compress
 import elrs_helpers
 import BFinitPassthrough
@@ -30,35 +29,8 @@ print("PLATFORM : '%s'" % platform)
 print("BUILD ENV: '%s'" % target_name)
 print("build version: %s\n\n" % get_version(env))
 
-if platform in ['espressif8266']:
-    if "_WIFI" in target_name:
-        env.Replace(UPLOAD_PROTOCOL="custom")
-        env.Replace(UPLOADCMD=upload_via_esp8266_backpack.on_upload)
-    elif "_UART" in target_name:
-        env.Replace(
-            UPLOADER="$PROJECT_DIR/python/external/esptool/esptool.py",
-            UPLOAD_SPEED=460800,
-            UPLOADERFLAGS=[
-                "-b", "$UPLOAD_SPEED", "-p", "$UPLOAD_PORT",
-                "-c", "esp8266", "--before", "default_reset", "--after", "soft_reset", "write_flash"
-            ]
-        )
-    elif "_BETAFLIGHTPASSTHROUGH" in target_name:
-        env.Replace(
-            UPLOADER="$PROJECT_DIR/python/external/esptool/esptool.py",
-            UPLOAD_SPEED=420000,
-            UPLOADERFLAGS=[
-                "--passthrough", "-b", "$UPLOAD_SPEED", "-p", "$UPLOAD_PORT",
-                "-c", "esp8266", "--before", "no_reset", "--after", "soft_reset", "write_flash"
-            ]
-        )
-        env.AddPreAction("upload", BFinitPassthrough.init_passthrough)
-
-elif platform in ['espressif32']:
-    if "_WIFI" in target_name:
-        env.Replace(UPLOAD_PROTOCOL="custom")
-        env.Replace(UPLOADCMD=upload_via_esp8266_backpack.on_upload)
-    elif "_UART" in target_name:
+if platform in ['espressif32']:
+    if "_UART" in target_name:
         env.Replace(
             UPLOADER="$PROJECT_DIR/python/external/esptool/esptool.py",
             UPLOAD_SPEED=460800
@@ -83,15 +55,7 @@ elif platform in ['espressif32']:
         )
         env.AddPreAction("upload", BFinitPassthrough.init_passthrough)
 
-if "_WIFI" in target_name:
-    add_target_uploadoption("uploadconfirm", "Do not upload, just send confirm")
-    if "_TX_" in target_name:
-        env.SetDefault(UPLOAD_PORT="elrs_tx.local")
-    else:
-        env.SetDefault(UPLOAD_PORT="elrs_rx.local")
-
-if platform != 'native':
-    add_target_uploadoption("uploadforce", "Upload even if target mismatch")
+add_target_uploadoption("uploadforce", "Upload even if target mismatch")
 
 # Remove stale binary so the platform is forced to build a new one and attach options/hardware-layout files
 try:
@@ -99,8 +63,6 @@ try:
 except FileNotFoundError:
     None
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", UnifiedConfiguration.appendConfiguration)
-if platform in ['espressif8266'] and "_WIFI" in target_name:
-    env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", esp_compress.compressFirmware)
 
 def copyBootApp0bin(source, target, env):
     file = os.path.join(env.PioPlatform().get_package_dir("framework-arduinoespressif32"), "tools", "partitions", "boot_app0.bin")
@@ -108,7 +70,5 @@ def copyBootApp0bin(source, target, env):
 
 if platform in ['espressif32']:
     env.AddPreAction("$BUILD_DIR/${PROGNAME}.bin", copyBootApp0bin)
-
-if platform in ['espressif32', 'espressif8266']:
     if not os.path.exists('hardware'):
         elrs_helpers.git_cmd('clone', 'https://github.com/ExpressLRS/targets', 'hardware')

@@ -1,6 +1,5 @@
 #include "options.h"
 #include "helpers.h"
-#include "logging.h"
 #include <SPIFFS.h>
 #include <ArduinoJson.h>
 
@@ -93,13 +92,6 @@ static const struct {
     {HARDWARE_screen_type, "screen_type", INT},
     {HARDWARE_screen_reversed, "screen_reversed", BOOL},
     {HARDWARE_screen_bl, "screen_bl", INT},
-    {HARDWARE_use_backpack, "use_backpack", BOOL},
-    {HARDWARE_debug_backpack_baud, "debug_backpack_baud", INT},
-    {HARDWARE_debug_backpack_rx, "debug_backpack_rx", INT},
-    {HARDWARE_debug_backpack_tx, "debug_backpack_tx", INT},
-    {HARDWARE_backpack_boot, "backpack_boot", INT},
-    {HARDWARE_backpack_en, "backpack_en", INT},
-    {HARDWARE_passthrough_baud, "passthrough_baud", INT},
     {HARDWARE_i2c_scl, "i2c_scl", INT},
     {HARDWARE_i2c_sda, "i2c_sda", INT},
     {HARDWARE_misc_gsensor_int, "misc_gsensor_int", INT},

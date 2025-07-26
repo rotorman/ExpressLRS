@@ -2,7 +2,6 @@
 #include "PPMHandset.h"
 #include "common.h"
 #include "crsf_protocol.h"
-#include "logging.h"
 
 #include <driver/rmt.h>
 
@@ -67,7 +66,6 @@ void PPMHandset::handleInput()
     }
     else if (lastPPM && now - 1000 > lastPPM)
     {
-        DBGLN("PPM signal lost, disarming");
         if (disconnected)
         {
             disconnected();

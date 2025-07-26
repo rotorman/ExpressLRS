@@ -5,7 +5,6 @@
 #include "crsfmsp_common.h"
 #include "crsf_protocol.h"
 #include "crc.h"
-#include "logging.h"
 
 /* Takes a MSP frame and converts it to raw CRSF frame
    adding the CRSF header and checksum. Handles chunking of messages

@@ -82,24 +82,13 @@ typedef union {
     uint32_t raw;
 } tx_button_color_t;
 
-typedef enum {
-    BACKPACK_TELEM_MODE_OFF,
-    BACKPACK_TELEM_MODE_ESPNOW,
-    BACKPACK_TELEM_MODE_WIFI,
-    BACKPACK_TELEM_MODE_BLUETOOTH,
-} telem_mode_t;
-
 typedef struct {
     uint32_t        version;
     uint8_t         powerFanThreshold:4; // Power level to enable fan if present
     model_config_t  model_config[CONFIG_TX_MODEL_CNT];
     uint8_t         fanMode;            // some value used by thermal?
     uint8_t         motionMode:2,       // bool, but space for 2 more modes
-                    dvrStopDelay:3,
-                    backpackDisable:1,  // bool, disable backpack via EN pin if available
-                    backpackTlmMode:2;  // 0=Off, 1=Fwd tlm via espnow, 2=fwd tlm via wifi 3=(FUTURE) bluetooth
-    uint8_t         dvrStartDelay:3,
-                    dvrAux:5;
+                    free:6;
     tx_button_color_t buttonColors[2];  // FUTURE: TX RGB color / mode (sets color of TX, can be a static color or standard)
                                         // FUTURE: Model RGB color / mode (sets LED color mode on the model, but can be second TX led color too)
                                         // FUTURE: Custom button actions
@@ -125,11 +114,6 @@ public:
     uint8_t GetPowerFanThreshold() const { return m_config.powerFanThreshold; }
     uint8_t  GetFanMode() const { return m_config.fanMode; }
     uint8_t  GetMotionMode() const { return m_config.motionMode; }
-    uint8_t  GetDvrAux() const { return m_config.dvrAux; }
-    uint8_t  GetDvrStartDelay() const { return m_config.dvrStartDelay; }
-    uint8_t  GetDvrStopDelay() const { return m_config.dvrStopDelay; }
-    bool     GetBackpackDisable() const { return m_config.backpackDisable; }
-    uint8_t  GetBackpackTlmMode() const { return m_config.backpackTlmMode; }
     tx_button_color_t const *GetButtonActions(uint8_t button) const { return &m_config.buttonColors[button]; }
     model_config_t const &GetModelConfig(uint8_t model) const { return m_config.model_config[model]; }
     uint8_t GetPTRStartChannel() const { return m_model->ptrStartChannel; }
@@ -149,12 +133,7 @@ public:
     void SetPowerFanThreshold(uint8_t powerFanThreshold);
     void SetFanMode(uint8_t fanMode);
     void SetMotionMode(uint8_t motionMode);
-    void SetDvrAux(uint8_t dvrAux);
-    void SetDvrStartDelay(uint8_t dvrStartDelay);
-    void SetDvrStopDelay(uint8_t dvrStopDelay);
     void SetButtonActions(uint8_t button, tx_button_color_t actions[2]);
-    void SetBackpackDisable(bool backpackDisable);
-    void SetBackpackTlmMode(uint8_t mode);
     void SetPTRStartChannel(uint8_t ptrStartChannel);
     void SetPTREnableChannel(uint8_t ptrEnableChannel);
 

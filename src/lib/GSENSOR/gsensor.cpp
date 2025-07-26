@@ -1,8 +1,5 @@
 #include "targets.h"
-
 #include "gsensor.h"
-#include "logging.h"
-
 #include "stk8baxx.h"
 STK8xxx stk8xxx;
 
@@ -45,12 +42,10 @@ bool Gsensor::init()
 
     if(id == -1)
     {
-        ERRLN("Gsensor failed!");
         return false;
     }
     else
     {
-        DBGLN("Gsensor OK with chipid = %x!", id);
         gensor_status = GSENSOR_STATUS_NORMAL;
     }
 
@@ -186,10 +181,6 @@ void Gsensor::getGSensorData(float *X_DataOut, float *Y_DataOut, float *Z_DataOu
     {
         if (OPT_HAS_GSENSOR_STK8xxx)
             stk8xxx.STK8xxx_Getregister_data(X_DataOut, Y_DataOut, Z_DataOut);
-    }
-    else
-    {
-        ERRLN("Gsensor abnormal status = %d", gensor_status);
     }
 }
 

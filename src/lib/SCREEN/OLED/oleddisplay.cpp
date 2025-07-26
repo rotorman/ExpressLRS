@@ -4,7 +4,6 @@
 
 #include "XBMStrings.h" // Contains all the ELRS logos and animations for the UI
 #include "options.h"
-#include "logging.h"
 #include "common.h"
 #include "CRSF.h"
 
@@ -49,11 +48,6 @@ void OLEDDisplay::doScreenBackLight(screen_backlight_t state)
     {
         u8g2->setPowerSave(false);
     }
-}
-
-void OLEDDisplay::printScreenshot()
-{
-    u8g2->writeBufferXBM(*TxBackpack);
 }
 
 void OLEDDisplay::displaySplashScreen()
@@ -395,9 +389,6 @@ static void helperDrawImage(menu_item_t menu)
             case STATE_WIFI_RX:
                 u8g2->drawXBM(x_pos, y_pos-5, 32, 32, rxwifi_img32);
                 break;
-            case STATE_WIFI_BACKPACK:
-                u8g2->drawXBM(x_pos, y_pos-5, 32, 32, backpack_img32);
-                break;
             default:
                 break;
         }
@@ -444,9 +435,6 @@ static void helperDrawImage(menu_item_t menu)
                 break;
             case STATE_WIFI_RX:
                 u8g2->drawXBM(x_pos, y_pos-5, 64, 64, rxwifi_img64);
-                break;
-            case STATE_WIFI_BACKPACK:
-                u8g2->drawXBM(x_pos, y_pos-5, 64, 64, backpack_img64);
                 break;
             default:
                 break;

@@ -10,8 +10,6 @@ class MCUType(Enum):
 class DeviceType(Enum):
     TX = 0
     RX = 1
-    TX_Backpack = 2
-    VRx_Backpack = 3
 
 class RadioType(Enum):
     SX127X = 0

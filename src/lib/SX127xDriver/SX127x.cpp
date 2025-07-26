@@ -1,5 +1,4 @@
 #include "SX127x.h"
-#include "logging.h"
 #include "RFAMP_hal.h"
 
 SX127xHal hal;
@@ -51,15 +50,12 @@ bool SX127xDriver::Begin(uint32_t minimumFrequency, uint32_t maximumFrequency)
   hal.IsrCallback_2 = &SX127xDriver::IsrCallback_2;
 
   hal.reset();
-  DBGLN("SX127x Begin");
-
   RFAMP.init();
 
   // currFreq must be set before calling Radio.Begin so that lowFrequencyMode can be set correctly.
   if (currFreq < (uint32_t)((double)525000000 / (double)FREQ_STEP))
   {
     lowFrequencyMode = SX1278_LOW_FREQ;
-    DBGLN("Setting 'lowFrequencyMode' used for 433MHz.");
   }
 
   SetMode(SX127x_OPMODE_STANDBY, SX12XX_Radio_All);
@@ -255,10 +251,6 @@ void SX127xDriver::SetSyncWord(uint8_t syncWord)
     _syncWord++;
   }
 
-  if(syncWord != _syncWord){
-    DBGLN("Using syncword: %d instead of: %d", _syncWord, syncWord);
-  }
-
   hal.writeRegister(SX127X_REG_SYNC_WORD, _syncWord, SX12XX_Radio_All);
   currSyncWord = _syncWord;
 }
@@ -380,26 +372,22 @@ void ICACHE_RAM_ATTR SX127xDriver::SetRxTimeoutUs(uint32_t interval)
     timeoutSymbols = interval / symbolTimeUs;
     hal.writeRegisterBits(SX127X_REG_SYMB_TIMEOUT_MSB, timeoutSymbols >> 8, SX127X_REG_SYMB_TIMEOUT_MSB_MASK, SX12XX_Radio_All);  // set the timeout MSB
     hal.writeRegister(SX127X_REG_SYMB_TIMEOUT_LSB, timeoutSymbols & 0xFF, SX12XX_Radio_All);
-    DBGLN("SetRxTimeout(%u), symbolTime=%uus symbols=%u", interval, (uint32_t)symbolTimeUs, timeoutSymbols);
   }
 }
 
 bool SX127xDriver::DetectChip(SX12XX_Radio_Number_t radioNumber)
 {
-  DBG("Detecting radio %x... ", radioNumber);
   uint8_t i = 0;
   bool flagFound = false;
   while ((i < 3) && !flagFound)
   {
     uint8_t version = hal.readRegister(SX127X_REG_VERSION, radioNumber);
-    DBG("%x", version);
     if (version == SX127X_VERSION)
     {
       flagFound = true;
     }
     else
     {
-      DBGLN(" not found! (%d of 3 tries) REG_VERSION == 0x%x", i+1, version);
       delay(200);
       i++;
     }
@@ -407,12 +395,7 @@ bool SX127xDriver::DetectChip(SX12XX_Radio_Number_t radioNumber)
 
   if (!flagFound)
   {
-    DBGLN(" not found!");
     return false;
-  }
-  else
-  {
-    DBGLN(" found! (match by REG_VERSION == 0x%x", SX127X_VERSION);
   }
   return true;
 }
@@ -431,12 +414,6 @@ void ICACHE_RAM_ATTR SX127xDriver::TXnbISR()
 
 void ICACHE_RAM_ATTR SX127xDriver::TXnb(uint8_t * data, uint8_t size, bool sendGeminiBuffer, uint8_t * dataGemini, SX12XX_Radio_Number_t radioNumber)
 {
-  // if (currOpmode == SX127x_OPMODE_TX)
-  // {
-  //   DBGLN("abort TX");
-  //   return; // we were already TXing so abort. this should never happen!!!
-  // }
-
   transmittingRadio = radioNumber;
 
   SetMode(SX127x_OPMODE_STANDBY, SX12XX_Radio_All);

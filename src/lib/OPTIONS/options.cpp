@@ -1,8 +1,6 @@
 #include "targets.h"
 #include "options.h"
 
-#include "logging.h"
-
 #define QUOTE(arg) #arg
 #define STR(macro) QUOTE(macro)
 const unsigned char target_name[] = "\xBE\xEF\xCA\xFE" STR(TARGET_NAME);
@@ -203,8 +201,6 @@ static bool options_LoadProductAndDeviceName(EspFlashStream &strmFlash)
 
 bool options_init()
 {
-    debugCreateInitLogger();
-
     uint32_t baseAddr = 0;
     SPIFFS.begin(true);
     const esp_partition_t *runningPart = esp_ota_get_running_partition();
@@ -228,8 +224,6 @@ bool options_init()
         ELRSOPTS_DEVICENAME_SIZE +
         ELRSOPTS_OPTIONS_SIZE +
         ELRSOPTS_HARDWARE_SIZE;
-
-    debugFreeInitLogger();
 
     return hasHardware;
 }

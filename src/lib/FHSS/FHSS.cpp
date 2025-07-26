@@ -1,5 +1,4 @@
 #include "FHSS.h"
-#include "logging.h"
 #include "options.h"
 #include <string.h>
 
@@ -78,11 +77,6 @@ void FHSSrandomiseFHSSsequence(const uint32_t seed)
     sync_channel = FHSSconfig->freq_count / 2;
     freq_spread = (FHSSconfig->freq_stop - FHSSconfig->freq_start) * FREQ_SPREAD_SCALE / (FHSSconfig->freq_count - 1);
     primaryBandCount = (FHSS_SEQUENCE_LEN / FHSSconfig->freq_count) * FHSSconfig->freq_count;
-
-    DBGLN("Setting %s Mode", FHSSconfig->domain);
-    DBGLN("Number of FHSS frequencies = %u", FHSSconfig->freq_count);
-    DBGLN("Sync channel = %u", sync_channel);
-
     FHSSrandomiseFHSSsequenceBuild(seed, FHSSconfig->freq_count, sync_channel, FHSSsequence);
 
 #if defined(RADIO_LR1121)
@@ -90,10 +84,6 @@ void FHSSrandomiseFHSSsequence(const uint32_t seed)
     sync_channel_DualBand = FHSSconfigDualBand->freq_count / 2;
     freq_spread_DualBand = (FHSSconfigDualBand->freq_stop - FHSSconfigDualBand->freq_start) * FREQ_SPREAD_SCALE / (FHSSconfigDualBand->freq_count - 1);
     secondaryBandCount = (FHSS_SEQUENCE_LEN / FHSSconfigDualBand->freq_count) * FHSSconfigDualBand->freq_count;
-
-    DBGLN("Setting Dual Band %s Mode", FHSSconfigDualBand->domain);
-    DBGLN("Number of FHSS frequencies = %u", FHSSconfigDualBand->freq_count);
-    DBGLN("Sync channel Dual Band = %u", sync_channel_DualBand);
 
     FHSSusePrimaryFreqBand = false;
     FHSSrandomiseFHSSsequenceBuild(seed, FHSSconfigDualBand->freq_count, sync_channel_DualBand, FHSSsequence_DualBand);
@@ -146,15 +136,6 @@ void FHSSrandomiseFHSSsequenceBuild(const uint32_t seed, uint32_t freqCount, uin
             inSequence[offset+rand] = temp;
         }
     }
-
-    // output FHSS sequence
-    for (uint16_t i=0; i < FHSSgetSequenceCount(); i++)
-    {
-        DBG("%u ",inSequence[i]);
-        if (i % 10 == 9)
-            DBGCR;
-    }
-    DBGCR;
 }
 
 bool isDomain868()

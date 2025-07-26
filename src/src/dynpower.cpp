@@ -64,7 +64,6 @@ void DynamicPower_Update(uint32_t now)
   // power is too strong and saturate the RX LNA
   if (newTlmAvail && (rssi >= -5))
   {
-    DBGVLN("-power (overload)");
     POWERMGNT::decPower();
   }
 
@@ -108,7 +107,6 @@ void DynamicPower_Update(uint32_t now)
       linkstatsInterval = std::max(linkstatsInterval, (uint32_t)512U);
       if ((now - dynpower_last_linkstats_millis) > (linkstatsInterval + 2U))
       {
-        DBGLN("+power (tlm)");
         POWERMGNT::incPower();
       }
     }
@@ -155,12 +153,10 @@ void DynamicPower_Update(uint32_t now)
       int8_t avg_rssi = dynpower_mean_rssi.mean(); // resets it too
       if ((avg_rssi < rssi_inc_threshold) && (powerHeadroom > 0))
       {
-        DBGLN("+power (rssi)");
         POWERMGNT::incPower();
       }
       else if (avg_rssi > rssi_dec_threshold && lq_avg >= DYNPOWER_LQ_THRESH_DN)
       {
-        DBGVLN("-power (rssi)"); // Verbose because this spams when idle
         POWERMGNT::decPower();
       }
     }
@@ -172,13 +168,11 @@ void DynamicPower_Update(uint32_t now)
     // Increase the power for each (X) SNR below the threshold
     if (snrScaled >= ExpressLRS_currAirRate_RFperfParams->DynpowerSnrThreshDn && lq_avg >= DYNPOWER_LQ_THRESH_DN)
     {
-      DBGVLN("-power (snr)"); // Verbose because this spams when idle
       POWERMGNT::decPower();
     }
 
     while ((snrScaled <= ExpressLRS_currAirRate_RFperfParams->DynpowerSnrThreshUp) && (powerHeadroom > 0))
     {
-      DBGLN("+power (snr)");
       POWERMGNT::incPower();
       // Every power doubling will theoretically increase the SNR by 3dB, but closer to 2dB in testing
       snrScaled += SNR_SCALE(2);
@@ -189,7 +183,6 @@ void DynamicPower_Update(uint32_t now)
   // If instant LQ is low, but the SNR/RSSI did nothing, inc power by one step
   if ((powerHeadroom > 0) && (startPowerLevel == POWERMGNT::currPower()) && (lq_current <= DYNPOWER_LQ_THRESH_UP))
   {
-    DBGLN("+power (lq)");
     POWERMGNT::incPower();
   }
 }

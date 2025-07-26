@@ -33,8 +33,6 @@ class Display
 public:
     virtual void init() = 0;
     virtual void doScreenBackLight(screen_backlight_t state) = 0;
-    virtual void printScreenshot() = 0;
-
     virtual void displaySplashScreen() = 0;
     virtual void displayIdleScreen(uint8_t changed, uint8_t rate_index, uint8_t power_index, uint8_t ratio_index, uint8_t motion_index, uint8_t fan_index, bool dynamic, uint8_t running_power_index, uint8_t temperature, message_index_t message_index) = 0;
     virtual void displayMainMenu(menu_item_t menu) = 0;

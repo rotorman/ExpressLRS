@@ -1,6 +1,4 @@
 #include "devButton.h"
-
-#include "logging.h"
 #include "button.h"
 #include "config.h"
 #include "helpers.h"
@@ -26,7 +24,6 @@ size_t button_GetActionCnt()
 
 static void handlePress(uint8_t button, bool longPress, uint8_t count)
 {
-    DBGLN("handlePress(%u, %u, %u)", button, (uint8_t)longPress, count);
     const button_action_t *button_actions = config.GetButtonActions(button)->val.actions;
     for (unsigned i=0 ; i<button_GetActionCnt() ; i++)
     {

@@ -2,7 +2,6 @@
 
 #include <Wire.h>
 #include "stk8baxx.h"
-#include "logging.h"
 
 #define PID_SIZE	16
 uint8_t chipid_temp = 0x00;
@@ -128,11 +127,9 @@ bool STK8xxx::STK8xxx_Check_chipid()
     {
         if (chipid_temp == stk8xxx_pid_list[i])
         {
-        	DBGLN("read stkchip id ok, chip_id = 0x%x", chipid_temp);
             return true;
         }
     }
-	ERRLN("read stkchip id fail!");
     return false;
 }
 

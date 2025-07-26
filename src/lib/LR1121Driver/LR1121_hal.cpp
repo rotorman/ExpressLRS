@@ -1,6 +1,5 @@
 #include "LR1121_hal.h"
 #include "LR1121_Regs.h"
-#include "logging.h"
 #include <SPIEx.h>
 
 LR1121Hal *LR1121Hal::instance = NULL;
@@ -24,8 +23,6 @@ void LR1121Hal::end()
 
 void LR1121Hal::init()
 {
-    DBGLN("Hal Init");
-
     pinMode(GPIO_PIN_BUSY, INPUT);
     if (GPIO_PIN_BUSY_2 != UNDEF_PIN)
     {
@@ -67,8 +64,6 @@ void LR1121Hal::init()
 
 void LR1121Hal::reset(bool bootloader)
 {
-    DBGLN("LR1121 Reset");
-
     if (GPIO_PIN_RST != UNDEF_PIN)
     {
         if (bootloader)

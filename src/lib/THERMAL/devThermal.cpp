@@ -1,7 +1,6 @@
 #include "targets.h"
 #include "devThermal.h"
 #include "config.h"
-#include "logging.h"
 
 #define THERMAL_DURATION 1000
 
@@ -87,7 +86,6 @@ static void setFanSpeed()
 
     uint32_t speed = GPIO_PIN_FAN_SPEEDS == nullptr ? defaultFanSpeeds[POWERMGNT::currPower()] : GPIO_PIN_FAN_SPEEDS[POWERMGNT::currPower()-POWERMGNT::getMinPower()];
     ledcWrite(fanChannel, speed);
-    DBGLN("Fan speed: %d (power) -> %u (pwm)", POWERMGNT::currPower(), speed);
 }
 
 /*
@@ -184,7 +182,6 @@ static void timeoutTacho()
     if (GPIO_PIN_FAN_TACHO != UNDEF_PIN)
     {
         currentRPM = get_rpm();
-        DBGVLN("RPM %d", currentRPM);
     }
 }
 #endif

@@ -25,7 +25,6 @@
 #include "POWERMGNT.h"
 #include "FHSS.h"
 #include "hwTimer.h"
-#include "logging.h"
 #include "options.h"
 #include "helpers.h"
 #include "devButton.h"
@@ -109,7 +108,6 @@ static bool captivePortal(AsyncWebServerRequest *request)
 
   if (!isIp(request->host()) && request->host() != (String(wifi_hostname) + ".local"))
   {
-    DBGLN("Request redirected to captive portal");
     request->redirect(String("http://") + toStringIp(request->client()->localIP()));
     return true;
   }
@@ -289,10 +287,6 @@ static void GetConfiguration(AsyncWebServerRequest *request)
 
     json["config"]["motion-mode"] = config.GetMotionMode();
 
-    json["config"]["backpack"]["dvr-start-delay"] = config.GetDvrStartDelay();
-    json["config"]["backpack"]["dvr-stop-delay"] = config.GetDvrStopDelay();
-    json["config"]["backpack"]["dvr-aux-channel"] = config.GetDvrAux();
-
     for (int model = 0 ; model < CONFIG_TX_MODEL_CNT ; model++)
     {
       const model_config_t &modelConfig = config.GetModelConfig(model);
@@ -355,13 +349,6 @@ static void ImportConfiguration(AsyncWebServerRequest *request, JsonVariant &jso
   if (json.containsKey("power-fan-threshold")) config.SetPowerFanThreshold(json["power-fan-threshold"]);
   if (json.containsKey("motion-mode")) config.SetMotionMode(json["motion-mode"]);
 
-  if (json.containsKey("backpack"))
-  {
-    if (json["backpack"].containsKey("dvr-start-delay")) config.SetDvrStartDelay(json["backpack"]["dvr-start-delay"]);
-    if (json["backpack"].containsKey("dvr-stop-delay")) config.SetDvrStopDelay(json["backpack"]["dvr-stop-delay"]);
-    if (json["backpack"].containsKey("dvr-aux-channel")) config.SetDvrAux(json["backpack"]["dvr-aux-channel"]);
-  }
-
   if (json.containsKey("model"))
   {
     for(JsonPair kv : json["model"].as<JsonObject>())
@@ -393,7 +380,6 @@ static void WebUpdateButtonColors(AsyncWebServerRequest *request, JsonVariant &j
 {
   int button1Color = json[0].as<int>();
   int button2Color = json[1].as<int>();
-  DBGLN("%d %d", button1Color, button2Color);
   setButtonColors(button1Color, button2Color);
   request->send(200);
 }
@@ -430,12 +416,10 @@ static void WebUpdateSendNetworks(AsyncWebServerRequest *request)
 {
   int numNetworks = WiFi.scanComplete();
   if (numNetworks >= 0 && millis() - lastScanTimeMS < STALE_WIFI_SCAN) {
-    DBGLN("Found %d networks", numNetworks);
     std::set<String> vs;
     String s="[";
     for(int i=0 ; i<numNetworks ; i++) {
       String w = WiFi.SSID(i);
-      DBGLN("found %s", w.c_str());
       if (vs.find(w)==vs.end() && w.length()>0) {
         if (!vs.empty()) s += ",";
         s += "\"" + w + "\"";
@@ -465,14 +449,12 @@ static void sendResponse(AsyncWebServerRequest *request, const String &msg, WiFi
 
 static void WebUpdateAccessPoint(AsyncWebServerRequest *request)
 {
-  DBGLN("Starting Access Point");
   String msg = String("Access Point starting, please connect to access point '") + wifi_ap_ssid + "' with password '" + wifi_ap_password + "'";
   sendResponse(request, msg, WIFI_AP);
 }
 
 static void WebUpdateConnect(AsyncWebServerRequest *request)
 {
-  DBGLN("Connecting to network");
   String msg = String("Connecting to network '") + station_ssid + "', connect to http://" +
     wifi_hostname + ".local from a browser on that network";
   sendResponse(request, msg, WIFI_STA);
@@ -483,7 +465,6 @@ static void WebUpdateSetHome(AsyncWebServerRequest *request)
   String ssid = request->arg("network");
   String password = request->arg("password");
 
-  DBGLN("Setting network %s", ssid.c_str());
   strcpy(station_ssid, ssid.c_str());
   strcpy(station_password, password.c_str());
   if (request->hasArg("save")) {
@@ -496,7 +477,6 @@ static void WebUpdateSetHome(AsyncWebServerRequest *request)
 
 static void WebUpdateForget(AsyncWebServerRequest *request)
 {
-  DBGLN("Forget network");
   firmwareOptions.home_wifi_ssid[0] = 0;
   firmwareOptions.home_wifi_password[0] = 0;
   saveOptions();
@@ -541,7 +521,6 @@ static void WebUploadResponseHandler(AsyncWebServerRequest *request) {
   if (target_seen || Update.hasError()) {
     String msg;
     if (!Update.hasError() && Update.end()) {
-      DBGLN("Update complete, rebooting");
       msg = String("{\"status\": \"ok\", \"msg\": \"Update complete. ");
       msg += "Please wait for a few seconds while the device reboots.\"}";
       rebootTime = millis() + 200;
@@ -553,7 +532,6 @@ static void WebUploadResponseHandler(AsyncWebServerRequest *request) {
         p.println("Not enough data uploaded!");
       }
       p.trim();
-      DBGLN("Failed to upload firmware: %s", p.c_str());
       msg = String("{\"status\": \"error\", \"msg\": \"") + p + "\"}";
     }
     AsyncWebServerResponse *response = request->beginResponse(200, "application/json", msg);
@@ -576,10 +554,7 @@ static void WebUploadDataHandler(AsyncWebServerRequest *request, const String& f
   if (index == 0) {
     
     size_t filesize = request->header("X-FileSize").toInt();
-    DBGLN("Update: '%s' size %u", filename.c_str(), filesize);
-    if (!Update.begin(filesize, U_FLASH)) { // pass the size provided
-      Update.printError(LOGGING_UART);
-    }
+    Update.begin(filesize, U_FLASH); // pass the size provided
     target_seen = false;
     target_found.clear();
     target_complete = false;
@@ -587,7 +562,6 @@ static void WebUploadDataHandler(AsyncWebServerRequest *request, const String& f
     totalSize = 0;
   }
   if (len) {
-    DBGVLN("writing %d", len);
     if (Update.write(data, len) == len) {
       if (force_update || (totalSize == 0 && *data == 0x1F))
         target_seen = true;
@@ -616,8 +590,6 @@ static void WebUploadDataHandler(AsyncWebServerRequest *request, const String& f
         }
       }
       totalSize += len;
-    } else {
-      DBGLN("write failed to write %d", len);
     }
   }
 }
@@ -736,12 +708,8 @@ static void startWiFi(unsigned long now)
     POWERMGNT::setPower(MinPower);
 
     setWifiUpdateMode();
-
-    DBGLN("Stopping Radio");
     Radio.End();
   }
-
-  DBGLN("Begin Webupdater");
 
   WiFi.persistent(false);
   WiFi.disconnect();
@@ -764,7 +732,6 @@ static void startMDNS()
 {
   if (!MDNS.begin(wifi_hostname))
   {
-    DBGLN("Error starting mDNS");
     return;
   }
 
@@ -875,7 +842,6 @@ static void startServices()
   startMDNS();
 
   servicesStarted = true;
-  DBGLN("HTTPUpdateServer ready! Open http://%s.local in your browser", wifi_hostname);
 }
 
 static void HandleWebUpdate()
@@ -884,7 +850,6 @@ static void HandleWebUpdate()
   wl_status_t status = WiFi.status();
 
   if (status != laststatus && wifiMode == WIFI_STA) {
-    DBGLN("WiFi status %d", status);
     switch(status) {
       case WL_NO_SSID_AVAIL:
       case WL_CONNECT_FAILED:
@@ -903,12 +868,10 @@ static void HandleWebUpdate()
   if (status != WL_CONNECTED && wifiMode == WIFI_STA && (now - changeTime) > 30000) {
     changeTime = now;
     changeMode = WIFI_AP;
-    DBGLN("Connection failed %d", status);
   }
   if (changeMode != wifiMode && changeMode != WIFI_OFF && (now - changeTime) > 500) {
     switch(changeMode) {
       case WIFI_AP:
-        DBGLN("Changing to AP mode");
         WiFi.disconnect();
         wifiMode = WIFI_AP;
         WiFi.setHostname(wifi_hostname); // hostname must be set before the mode is set to STA
@@ -920,7 +883,6 @@ static void HandleWebUpdate()
         startServices();
         break;
       case WIFI_STA:
-        DBGLN("Connecting to network '%s'", station_ssid);
         wifiMode = WIFI_STA;
         WiFi.setHostname(wifi_hostname); // hostname must be set before the mode is set to STA
         WiFi.mode(wifiMode);
@@ -979,7 +941,6 @@ static int timeout()
   // if webupdate was requested before or .wifi_auto_on_interval has elapsed but uart is not detected
   // start webupdate, there might be wrong configuration flashed.
   if(firmwareOptions.wifi_auto_on_interval != -1 && webserverPreventAutoStart == false && connectionState < wifiUpdate && !wifiStarted){
-    DBGLN("No CRSF ever detected, starting WiFi");
     setWifiUpdateMode();
     return DURATION_IMMEDIATELY;
   }

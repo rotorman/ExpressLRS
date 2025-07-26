@@ -41,7 +41,6 @@ void FiveWayButton::calcFuzzValues()
 
         // And the fuzz is half the distance to the closest value
         fuzzValues[i] = closestDist / 2;
-        //DBG("joy%u=%u f=%u, ", i, ival, fuzzValues[i]);
     } // for i
 }
 
@@ -106,7 +105,6 @@ void FiveWayButton::update(int *keyValue, bool *keyLongPressed)
         if (newKey != INPUT_KEY_NO_PRESS)
         {
             keyDownStart = now;
-            //DBGLN("down=%u", newKey);
         }
     }
     else
@@ -114,7 +112,6 @@ void FiveWayButton::update(int *keyValue, bool *keyLongPressed)
         // if key released
         if (newKey == INPUT_KEY_NO_PRESS)
         {
-            //DBGLN("up=%u", keyInProcess);
             if (!isLongPressed)
             {
                 if ((now - keyDownStart) > KEY_DEBOUNCE_MS)

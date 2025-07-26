@@ -226,15 +226,6 @@ td img.icon-pwm {
 					<tr><td></td><td>SDA pin<img class="icon-input"/><img class="icon-output"/></td><td><input size='3' id='screen_sda' name='screen_sda' type='text'/></td><td>Data (I2C)</td></tr>
 					<tr><td></td><td>BL pin<img class="icon-output"/></td><td><input size='3' id='screen_bl' name='screen_bl' type='text'/></td><td>Backlight</td></tr>
 
-					<tr><td colspan='2'><b>Backpack / Logging</td></tr>
-					<tr><td></td><td>Enable Backpack</td><td><input size='3' id='use_backpack' name='use_backpack' type='checkbox'/></td><td>If a TX backpack is connected</td></tr>
-					<tr><td></td><td>Baud Rate</td><td><input size='10' id='debug_backpack_baud' name='debug_backpack_baud' type='text'/></td><td>Baud rate used to communicate to the backpack (normally 460800)</td></tr>
-					<tr><td></td><td>RX pin<img class="icon-input"/></td><td><input size='3' id='debug_backpack_rx' name='debug_backpack_rx' type='text'/></td><td>Connected to TX pin on backpack</td></tr>
-					<tr><td></td><td>TX pin<img class="icon-output"/></td><td><input size='3' id='debug_backpack_tx' name='debug_backpack_tx' type='text'/></td><td>Connected to RX pin on backpack</td></tr>
-					<tr><td></td><td>BOOT pin<img class="icon-output"/></td><td><input size='3' id='backpack_boot' name='backpack_boot' type='text'/></td><td>Pin connected to GPIO0 pin on backpack ESP8285, allows passthrough flashing</td></tr>
-					<tr><td></td><td>EN pin<img class="icon-output"/></td><td><input size='3' id='backpack_en' name='backpack_en' type='text'/></td><td>Pin connected to EN pin on backpack ESP8285, allows passthrough flashing</td></tr>
-					<tr><td></td><td>Passthrough baud</td><td><input size='7' id='passthrough_baud' name='passthrough_baud' type='text'/></td><td>Baud rate to flash the backpack ESP8285 (default is to use the baud rate above)</td></tr>
-
 					<tr><td colspan='2'><b>I2C & Misc Devices</td></tr>
 					<tr><td></td><td>SCL pin<img class="icon-output"/></td><td><input size='3' id='i2c_scl' name='i2c_scl' type='text'/></td><td>I2C clock pin used to communicate with I2C devices (may be the same as OLED I2C)</td></tr>
 					<tr><td></td><td>SDA pin<img class="icon-input"/><img class="icon-output"/></td><td><input size='3' id='i2c_sda' name='i2c_sda' type='text'/></td><td>I2C data pin used to communicate with I2C devices (may be the same as OLED I2C)</td></tr>

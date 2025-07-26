@@ -2,7 +2,6 @@
 #include "AutoDetect.h"
 #include "CRSFHandset.h"
 #include "PPMHandset.h"
-#include "logging.h"
 
 #include <driver/rmt.h>
 
@@ -71,7 +70,6 @@ void AutoDetect::handleInput()
             input_detect++;
             if (input_detect > 100)
             {
-                DBGLN("PPM signal detected");
                 rmt_driver_uninstall(PPM_RMT_CHANNEL);
                 startPPM();
             }
@@ -81,7 +79,6 @@ void AutoDetect::handleInput()
             input_detect--;
             if (input_detect < -100)
             {
-                DBGLN("Serial signal detected");
                 rmt_driver_uninstall(PPM_RMT_CHANNEL);
                 startCRSF();
             }
@@ -91,7 +88,6 @@ void AutoDetect::handleInput()
     {
         if (now - 1000 > lastDetect && input_detect != 0)
         {
-            DBGLN("No signal detected");
             input_detect = 0;
         }
     }

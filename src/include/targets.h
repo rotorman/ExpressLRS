@@ -14,17 +14,6 @@
 #undef ICACHE_RAM_ATTR //fix to allow both esp32 and esp8266 to use ICACHE_RAM_ATTR for mapping to IRAM
 #define ICACHE_RAM_ATTR IRAM_ATTR
 
-/*
- * Features
- * define features based on pins before defining pins as UNDEF_PIN
- */
-
-#if defined(DEBUG_CRSF_NO_OUTPUT)
-#define OPT_CRSF_RCVR_NO_SERIAL true
-#else
-#define OPT_CRSF_RCVR_NO_SERIAL false
-#endif
-
 #if defined(RADIO_SX128X)
 #define Regulatory_Domain_ISM_2400 1
 // ISM 2400 band is in use => undefine other requlatory domain defines

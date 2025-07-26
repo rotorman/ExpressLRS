@@ -33,8 +33,6 @@
 
 #define HAS_RADIO (GPIO_PIN_SCK != UNDEF_PIN)
 
-extern char backpackVersion[];
-
 static char version_domain[20+1+6+1];
 char pwrFolderDynamicName[] = "TX Power (1000 Dynamic)";
 static char modelMatchUnit[] = " (ID: 00)";
@@ -47,10 +45,6 @@ static const char switchmodeOpts8ch[] = "8ch;16ch Rate/2;12ch Mixed";
 static const char switchmodeOpts8chMav[] = ";16ch Rate/2;";
 static const char antennamodeOpts[] = "Gemini;Ant 1;Ant 2;Switch";
 static const char antennamodeOptsDualBand[] = "Gemini;;;";
-static const char luastrDvrAux[] = "Off;" STR_LUA_ALLAUX_UPDOWN;
-static const char luastrDvrDelay[] = "0s;5s;15s;30s;45s;1min;2min";
-static const char luastrHeadTrackingEnable[] = "Off;On;" STR_LUA_ALLAUX_UPDOWN;
-static const char luastrHeadTrackingStart[] = "EdgeTX;" STR_LUA_ALLAUX;
 static const char luastrOffOn[] = "Off;On";
 static char luastrPacketRates[] = STR_LUA_PACKETRATES;
 
@@ -173,66 +167,7 @@ static struct luaItem_command luaRxWebUpdate = {
     lcsIdle, // step
     STR_EMPTYSPACE
 };
-
-static struct luaItem_command luaTxBackpackUpdate = {
-    {"Enable Backpack WiFi", CRSF_COMMAND},
-    lcsIdle, // step
-    STR_EMPTYSPACE
-};
 //---------------------------- WiFi -----------------------------
-
-//---------------------------- BACKPACK ------------------
-static struct luaItem_folder luaBackpackFolder = {
-    {"Backpack", CRSF_FOLDER},
-};
-
-static struct luaItem_selection luaBackpackEnable = {
-    {"Backpack", CRSF_TEXT_SELECTION},
-    0, // value
-    luastrOffOn,
-    STR_EMPTYSPACE};
-
-static struct luaItem_selection luaDvrAux = {
-    {"DVR Rec", CRSF_TEXT_SELECTION},
-    0, // value
-    luastrDvrAux,
-    STR_EMPTYSPACE};
-
-static struct luaItem_selection luaDvrStartDelay = {
-    {"DVR Srt Dly", CRSF_TEXT_SELECTION},
-    0, // value
-    luastrDvrDelay,
-    STR_EMPTYSPACE};
-
-static struct luaItem_selection luaDvrStopDelay = {
-    {"DVR Stp Dly", CRSF_TEXT_SELECTION},
-    0, // value
-    luastrDvrDelay,
-    STR_EMPTYSPACE};
-
-static struct luaItem_selection luaHeadTrackingEnableChannel = {
-    {"HT Enable", CRSF_TEXT_SELECTION},
-    0, // value
-    luastrHeadTrackingEnable,
-    STR_EMPTYSPACE};
-
-static struct luaItem_selection luaHeadTrackingStartChannel = {
-    {"HT Start Channel", CRSF_TEXT_SELECTION},
-    0, // value
-    luastrHeadTrackingStart,
-    STR_EMPTYSPACE};
-
-static struct luaItem_selection luaBackpackTelemetry = {
-    {"Telemetry", CRSF_TEXT_SELECTION},
-    0, // value
-    "Off;ESPNOW;WiFi",
-    STR_EMPTYSPACE};
-
-static struct luaItem_string luaBackpackVersion = {
-    {"Version", CRSF_INFO},
-    backpackVersion};
-
-//---------------------------- BACKPACK ------------------
 
 static char luaBadGoodString[10];
 
@@ -241,8 +176,6 @@ extern void ResetPower();
 extern uint8_t adjustPacketRateForBaud(uint8_t rate);
 extern void SetSyncSpam();
 extern bool RxWiFiReadyToSend;
-extern bool BackpackTelemReadyToSend;
-extern bool TxBackpackWiFiReadyToSend;
 extern unsigned long rebootTime;
 extern void setWifiUpdateMode();
 
@@ -291,31 +224,6 @@ static void luadevUpdateTlmBandwidth()
 
     itoa(bandwidthValue, &tlmBandwidth[2], 10);
     strcat(tlmBandwidth, "bps)");
-  }
-}
-
-static void luadevUpdateBackpackOpts()
-{
-  if (config.GetBackpackDisable())
-  {
-    // If backpack is disabled, set all the Backpack select options to "Disabled"
-    LUA_FIELD_HIDE(luaDvrAux);
-    LUA_FIELD_HIDE(luaDvrStartDelay);
-    LUA_FIELD_HIDE(luaDvrStopDelay);
-    LUA_FIELD_HIDE(luaHeadTrackingEnableChannel);
-    LUA_FIELD_HIDE(luaHeadTrackingStartChannel);
-    LUA_FIELD_HIDE(luaBackpackTelemetry);
-    LUA_FIELD_HIDE(luaBackpackVersion);
-  }
-  else
-  {
-    LUA_FIELD_SHOW(luaDvrAux);
-    LUA_FIELD_SHOW(luaDvrStartDelay);
-    LUA_FIELD_SHOW(luaDvrStopDelay);
-    LUA_FIELD_SHOW(luaHeadTrackingEnableChannel);
-    LUA_FIELD_SHOW(luaHeadTrackingStartChannel);
-    LUA_FIELD_SHOW(luaBackpackTelemetry);
-    LUA_FIELD_SHOW(luaBackpackVersion);
   }
 }
 
@@ -379,10 +287,6 @@ static void luahandSimpleSendCmd(struct luaPropertiesCommon *item, uint8_t arg)
     {
       RxWiFiReadyToSend = true;
     }
-    else if ((void *)item == (void *)&luaTxBackpackUpdate && OPT_USE_TX_BACKPACK)
-    {
-      TxBackpackWiFiReadyToSend = true;
-    }
     sendLuaCommandResponse((struct luaItem_command *)item, lcsExecuting, msg);
   } /* if doExecute */
   else if(arg == lcsCancel || ((millis() - lastLcsPoll)> 2000))
@@ -431,7 +335,6 @@ void luadevUpdateFolderNames()
 
   // These aren't folder names, just string labels slapped in the units field generally
   luadevUpdateTlmBandwidth();
-  luadevUpdateBackpackOpts();
 }
 
 static void recalculatePacketRateOptions(int minInterval)
@@ -650,55 +553,6 @@ static void registerLuaParameters()
   registerLUAParameter(&luaWebUpdate, &luahandWifiBle, luaWiFiFolder.common.id);
   if (HAS_RADIO) {
     registerLUAParameter(&luaRxWebUpdate, &luahandSimpleSendCmd, luaWiFiFolder.common.id);
-
-    if (OPT_USE_TX_BACKPACK) {
-      registerLUAParameter(&luaTxBackpackUpdate, &luahandSimpleSendCmd, luaWiFiFolder.common.id);
-      // Backpack folder
-      registerLUAParameter(&luaBackpackFolder);
-      if (GPIO_PIN_BACKPACK_EN != UNDEF_PIN)
-      {
-        registerLUAParameter(
-            &luaBackpackEnable, [](luaPropertiesCommon *item, uint8_t arg) {
-                // option is Off/On (enable) and config storage is On/Off (disable)
-                config.SetBackpackDisable(arg == 0);
-            }, luaBackpackFolder.common.id);
-      }
-      registerLUAParameter(
-          &luaDvrAux, [](luaPropertiesCommon *item, uint8_t arg) {
-              if (config.GetBackpackDisable() == false)
-                config.SetDvrAux(arg);
-          },
-          luaBackpackFolder.common.id);
-      registerLUAParameter(
-          &luaDvrStartDelay, [](luaPropertiesCommon *item, uint8_t arg) {
-              if (config.GetBackpackDisable() == false)
-                config.SetDvrStartDelay(arg);
-          },
-          luaBackpackFolder.common.id);
-      registerLUAParameter(
-          &luaDvrStopDelay, [](luaPropertiesCommon *item, uint8_t arg) {
-            if (config.GetBackpackDisable() == false)
-              config.SetDvrStopDelay(arg);
-          },
-          luaBackpackFolder.common.id);
-      registerLUAParameter(
-          &luaHeadTrackingEnableChannel, [](luaPropertiesCommon *item, uint8_t arg) {
-              config.SetPTREnableChannel(arg);
-          },
-          luaBackpackFolder.common.id);
-      registerLUAParameter(
-          &luaHeadTrackingStartChannel, [](luaPropertiesCommon *item, uint8_t arg) {
-              config.SetPTRStartChannel(arg);
-          },
-          luaBackpackFolder.common.id);
-      registerLUAParameter(
-            &luaBackpackTelemetry, [](luaPropertiesCommon *item, uint8_t arg) {
-                config.SetBackpackTlmMode(arg);
-                BackpackTelemReadyToSend = true;
-            }, luaBackpackFolder.common.id);
-
-      registerLUAParameter(&luaBackpackVersion, nullptr, luaBackpackFolder.common.id);
-    }
   }
 
   if (HAS_RADIO) {
@@ -768,17 +622,6 @@ static int event()
   uint8_t dynamic = config.GetDynamicPower() ? config.GetBoostChannel() + 1 : 0;
   setLuaTextSelectionValue(&luaDynamicPower, dynamic);
 
-  if (OPT_USE_TX_BACKPACK)
-  {
-    setLuaTextSelectionValue(&luaBackpackEnable, config.GetBackpackDisable() ? 0 : 1);
-    setLuaTextSelectionValue(&luaDvrAux, config.GetBackpackDisable() ? 0 : config.GetDvrAux());
-    setLuaTextSelectionValue(&luaDvrStartDelay, config.GetBackpackDisable() ? 0 : config.GetDvrStartDelay());
-    setLuaTextSelectionValue(&luaDvrStopDelay, config.GetBackpackDisable() ? 0 : config.GetDvrStopDelay());
-    setLuaTextSelectionValue(&luaHeadTrackingEnableChannel, config.GetBackpackDisable() ? 0 : config.GetPTREnableChannel());
-    setLuaTextSelectionValue(&luaHeadTrackingStartChannel, config.GetBackpackDisable() ? 0 : config.GetPTRStartChannel());
-    setLuaTextSelectionValue(&luaBackpackTelemetry, config.GetBackpackDisable() ? 0 : config.GetBackpackTlmMode());
-    setLuaStringValue(&luaBackpackVersion, backpackVersion);
-  }
   luadevUpdateFolderNames();
   return DURATION_IMMEDIATELY;
 }

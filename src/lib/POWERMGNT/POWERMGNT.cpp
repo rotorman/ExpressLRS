@@ -1,5 +1,4 @@
 #include "targets.h"
-#include "logging.h"
 #include "POWERMGNT.h"
 
 uint8_t powerToCrsfPower(PowerLevels_e Power)
@@ -238,9 +237,7 @@ void POWERMGNT::setPower(PowerLevels_e Power)
         {
             Radio.SetOutputPower(POWER_OUTPUT_VALUES2[Power - MinPower]);
         }
-        #if defined(PLATFORM_ESP32_S3) || defined(PLATFORM_ESP32_C3)
-        ERRLN("ESP32-S3/C3 and ESP8285 MCUs do not have a DAC");
-        #else
+        #if !defined(PLATFORM_ESP32_S3) && !defined(PLATFORM_ESP32_C3)
         dacWrite(GPIO_PIN_RFamp_APC2, powerValues[Power - MinPower]);
         #endif
     }

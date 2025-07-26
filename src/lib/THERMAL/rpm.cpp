@@ -1,7 +1,6 @@
 #include "targets.h"
 
 #if !defined(PLATFORM_ESP32_C3)
-#include "logging.h"
 #include <driver/pcnt.h>
 #include <soc/pcnt_struct.h>
 

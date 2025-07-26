@@ -19,7 +19,6 @@
 #include "devGsensor.h"
 #include "devThermal.h"
 #include "devPDET.h"
-#include "devBackpack.h"
 
 #if defined(PLATFORM_ESP32_S3)
 #include "USB.h"
@@ -33,8 +32,6 @@
 MSP msp;
 ELRS_EEPROM eeprom;
 TxConfig config;
-Stream *TxBackpack;
-Stream *TxUSB;
 
 #define UART_INPUT_BUF_LEN 1024
 FIFO<UART_INPUT_BUF_LEN> uartInputBuffer;
@@ -43,7 +40,6 @@ unsigned long rebootTime = 0;
 extern bool webserverPreventAutoStart;
 //// MSP Data Handling ///////
 bool NextPacketIsMspData = false;  // if true the next packet will contain the msp data
-char backpackVersion[32] = "";
 uint8_t packageIndexRadio1 = 0xFF;
 uint8_t packageIndexRadio2 = 0xFF;
 uint8_t tlmSenderDoubleBuffer[20] = {0};
@@ -86,7 +82,6 @@ device_affinity_t ui_devices[] = {
   {&ADC_device, 1},
   {&WIFI_device, 0},
   {&Button_device, 0},
-  {&Backpack_device, 0},
   {&Screen_device, 0},
   {&Gsensor_device, 0},
   {&Thermal_device, 0},
@@ -119,12 +114,7 @@ void ICACHE_RAM_ATTR LinkStatsFromOta(OTA_LinkStats_s * const ls)
   CRSF::LinkStatistics.uplink_RSSI_1 = -(ls->uplink_RSSI_1);
   CRSF::LinkStatistics.uplink_RSSI_2 = -(ls->uplink_RSSI_2);
   CRSF::LinkStatistics.uplink_Link_quality = ls->lq;
-#if defined(DEBUG_FREQ_CORRECTION)
-  // Don't descale the FreqCorrection value being send in SNR
-  CRSF::LinkStatistics.uplink_SNR = snrScaled;
-#else
   CRSF::LinkStatistics.uplink_SNR = SNR_DESCALE(snrScaled);
-#endif
   CRSF::LinkStatistics.active_antenna = ls->antenna;
   connectionHasModelMatch = ls->modelMatch;
   // -- downlink_SNR / downlink_RSSI is updated for any packet received, not just Linkstats
@@ -138,7 +128,6 @@ bool ICACHE_RAM_ATTR ProcessTLMpacket(SX12xxDriverCommon::rx_status const status
 {
   if (status != SX12xxDriverCommon::SX12XX_RX_OK)
   {
-    DBGLN("TLM HW CRC error");
     return false;
   }
 
@@ -147,7 +136,6 @@ bool ICACHE_RAM_ATTR ProcessTLMpacket(SX12xxDriverCommon::rx_status const status
 
   if (!OtaValidatePacketCrc(otaPktPtr))
   {
-    DBGLN("TLM crc error");
     return false;
   }
 
@@ -440,11 +428,7 @@ void SetRFLinkRate(uint8_t index) // Set speed of RF link
     && (OtaSwitchModeCurrent == newSwitchMode))
     return;
 
-  DBGLN("set rate %u", index);
   uint32_t interval = ModParams->interval;
-#if defined(DEBUG_FREQ_CORRECTION) && defined(RADIO_SX128X)
-  interval = interval * 12 / 10; // increase the packet interval by 20% to allow adding packet header
-#endif
   hwTimer::updateInterval(interval);
 
   FHSSusePrimaryFreqBand = !(ModParams->radio_type == RADIO_TYPE_LR1121_LORA_2G4) && !(ModParams->radio_type == RADIO_TYPE_LR1121_GFSK_2G4);
@@ -905,8 +889,6 @@ static void UpdateConnectDisconnectStatus()
     {
       setConnectionState(connected);
       CRSFHandset::ForwardDevicePings = true;
-      DBGLN("got downlink conn");
-
       uartInputBuffer.flush();
     }
   }
@@ -954,7 +936,6 @@ void OnPowerGetCalibration(mspPacket_t *packet)
   UNUSED(index);
   int8_t values[PWR_COUNT] = {0};
   POWERMGNT::GetPowerCaliValues(values, PWR_COUNT);
-  DBGLN("power get calibration value %d",  values[index]);
 }
 
 void OnPowerSetCalibration(mspPacket_t *packet)
@@ -964,7 +945,6 @@ void OnPowerSetCalibration(mspPacket_t *packet)
 
   if((index < 0) || (index > PWR_COUNT))
   {
-    DBGLN("calibration error index %d out of range", index);
     return;
   }
   hwTimer::stop();
@@ -974,7 +954,6 @@ void OnPowerSetCalibration(mspPacket_t *packet)
   POWERMGNT::GetPowerCaliValues(values, PWR_COUNT);
   values[index] = value;
   POWERMGNT::SetPowerCaliValues(values, PWR_COUNT);
-  DBGLN("power calibration done %d, %d", index, value);
   hwTimer::resume();
 }
 
@@ -1010,8 +989,6 @@ static void EnterBindingMode()
 
   // Start transmitting again
   hwTimer::resume();
-
-  DBGLN("Entered binding mode at freq = %d", Radio.currFreq);
 }
 
 static void ExitBindingMode()
@@ -1028,8 +1005,6 @@ static void ExitBindingMode()
   UARTconnected();
 
   SetRFLinkRate(config.GetRate()); //return to original rate
-
-  DBGLN("Exiting binding mode");
 }
 
 void EnterBindingModeSafely()
@@ -1059,15 +1034,6 @@ void ProcessMSPPacket(uint32_t now, mspPacket_t *packet)
       break;
     }
   }
-  else if (packet->function == MSP_ELRS_BACKPACK_SET_PTR && packet->payloadSize == 6)
-  {
-    processPanTiltRollPacket(now, packet);
-  }
-  if (packet->function == MSP_ELRS_GET_BACKPACK_VERSION)
-  {
-    memset(backpackVersion, 0, sizeof(backpackVersion));
-    memcpy(backpackVersion, packet->payload, min((size_t)packet->payloadSize, sizeof(backpackVersion)-1));
-  }
 }
 
 void ParseMSPData(uint8_t *buf, uint8_t size)
@@ -1080,88 +1046,6 @@ void ParseMSPData(uint8_t *buf, uint8_t size)
       msp.markPacketReceived();
     }
   }
-}
-
-static void HandleUARTin()
-{
-  // Read from the USB serial port
-  if (TxUSB->available())
-  {
-    auto size = std::min(uartInputBuffer.free(), (uint16_t)TxUSB->available());
-    if (size > 0)
-    {
-      uint8_t buf[size];
-      TxUSB->readBytes(buf, size);
-      uartInputBuffer.lock();
-      uartInputBuffer.pushBytes(buf, size);
-      uartInputBuffer.unlock();
-    }
-  }
-
-  // Read from the Backpack serial port
-  if (TxBackpack->available())
-  {
-    auto size = std::min(uartInputBuffer.free(), (uint16_t)TxBackpack->available());
-    if (size > 0)
-    {
-      uint8_t buf[size];
-      TxBackpack->readBytes(buf, size);
-
-      // Try to parse any MSP packets from the Backpack
-      ParseMSPData(buf, size);
-    }
-  }
-}
-
-static void setupSerial()
-{  /*
-   * Setup the logging/backpack serial port, and the USB serial port.
-   * This is always done because we need a place to send data even if there is no backpack!
-   */
-
-// Setup TxBackpack
-  Stream *serialPort;
-
-  if (GPIO_PIN_DEBUG_RX != UNDEF_PIN && GPIO_PIN_DEBUG_TX != UNDEF_PIN)
-  {
-    serialPort = new HardwareSerial(2);
-    ((HardwareSerial *)serialPort)->begin(BACKPACK_LOGGING_BAUD, SERIAL_8N1, GPIO_PIN_DEBUG_RX, GPIO_PIN_DEBUG_TX);
-  }
-  else
-  {
-    serialPort = new NullStream();
-  }
-  TxBackpack = serialPort;
-
-#if defined(PLATFORM_ESP32_S3)
-  Serial.begin(460800);
-#endif
-
-// Setup TxUSB
-#if defined(PLATFORM_ESP32_S3)
-  USBSerial.begin(firmwareOptions.uart_baud);
-  TxUSB = &USBSerial;
-#else
-  if (GPIO_PIN_DEBUG_RX == U0RXD_GPIO_NUM && GPIO_PIN_DEBUG_TX == U0TXD_GPIO_NUM)
-  {
-    // The backpack or Airpoirt is already assigned on UART0 (pins 3, 1)
-    // This is also USB on modules that use DIPs
-    // Set TxUSB to TxBackpack so that data goes to the same place
-    TxUSB = TxBackpack;
-  }
-  else if (GPIO_PIN_RCSIGNAL_RX == U0RXD_GPIO_NUM && GPIO_PIN_RCSIGNAL_TX == U0TXD_GPIO_NUM)
-  {
-    // This is an internal module, or an external module configured with a relay.  Do not setup TxUSB.
-    TxUSB = new NullStream();
-  }
-  else
-  {
-    // The backpack is on a separate UART to UART0
-    // Set TxUSB to pins 3, 1 so that we can access TxUSB and TxBackpack independantly
-    TxUSB = new HardwareSerial(1);
-    ((HardwareSerial *)TxUSB)->begin(firmwareOptions.uart_baud, SERIAL_8N1, U0RXD_GPIO_NUM, U0TXD_GPIO_NUM);
-  }
-#endif
 }
 
 /**
@@ -1181,7 +1065,6 @@ static void setupTarget()
     digitalWrite(GPIO_PIN_ANT_CTRL_COMPL, !diversityAntennaState);
   }
 
-  setupSerial();
   setupTargetCommon();
 }
 
@@ -1213,9 +1096,6 @@ static void setupBindingFromConfig()
     esp_read_mac(UID, ESP_MAC_WIFI_STA);
   }
 
-  DBGLN("UID=(%d, %d, %d, %d, %d, %d)",
-    UID[0], UID[1], UID[2], UID[3], UID[4], UID[5]);
-
   OtaUpdateCrcInitFromUid();
 }
 
@@ -1246,8 +1126,6 @@ void setup()
     devicesRegister(ui_devices, ARRAY_SIZE(ui_devices));
     // Initialise the devices
     devicesInit();
-    DBGLN("Initialised devices");
-
     setupBindingFromConfig();
     FHSSrandomiseFHSSsequence(uidMacSeedGet());
 
@@ -1255,8 +1133,6 @@ void setup()
     Radio.TXdoneCallback = &TXdoneISR;
 
     handset->registerCallbacks(UARTconnected, UARTdisconnected, ModelUpdateReq, EnterBindingModeSafely);
-
-    DBGLN("ExpressLRS TX Module Booted...");
 
     eeprom.Begin(); // Init the eeprom
     config.SetStorageProvider(&eeprom); // Pass pointer to the Config class for access to storage
@@ -1298,13 +1174,7 @@ void setup()
       setConnectionState(noCrossfire);
     }
   }
-  else
-  {
-    // In the failure case we set the logging to the null logger so nothing crashes
-    // if it decides to log something
-    TxBackpack = new NullStream();
-  }
-
+  
   registerButtonFunction(ACTION_BIND, EnterBindingMode);
   registerButtonFunction(ACTION_INCREASE_POWER, cyclePower);
 
@@ -1323,17 +1193,12 @@ void loop()
   // Update UI devices
   devicesUpdate(now);
 
-  // Not a device because it must be run on the loop core
-  checkBackpackUpdate();
-
   // If the reboot time is set and the current time is past the reboot time then reboot.
   if (rebootTime != 0 && now > rebootTime) {
     ESP.restart();
   }
 
   executeDeferredFunction(micros());
-
-  HandleUARTin();
 
   if (connectionState > MODE_STATES)
   {
@@ -1353,7 +1218,6 @@ void loop()
 
     CRSFHandset::makeLinkStatisticsPacket(linkStatisticsFrame);
     handset->sendTelemetryToTX(linkStatisticsFrame);
-    sendCRSFTelemetryToBackpack(linkStatisticsFrame);
     TLMpacketReported = now;
   }
 
@@ -1363,7 +1227,6 @@ void loop()
       {
         // Send all other tlm to handset
         handset->sendTelemetryToTX(CRSFinBuffer);
-        sendCRSFTelemetryToBackpack(CRSFinBuffer);
       }
       TelemetryReceiver.Unlock();
   }

@@ -1,6 +1,5 @@
 #include "SX127xHal.h"
 #include "SX127xRegs.h"
-#include "logging.h"
 #include <SPIEx.h>
 
 SX127xHal *SX127xHal::instance = NULL;
@@ -24,8 +23,6 @@ void SX127xHal::end()
 
 void SX127xHal::init()
 {
-    DBGLN("Hal Init");
-
     pinMode(GPIO_PIN_DIO0, INPUT);
     if (GPIO_PIN_DIO0_2 != UNDEF_PIN)
     {
@@ -56,8 +53,6 @@ void SX127xHal::init()
 
 void SX127xHal::reset(void)
 {
-    DBGLN("SX127x Reset");
-
     if (GPIO_PIN_RST != UNDEF_PIN)
     {
         pinMode(GPIO_PIN_RST, OUTPUT);
@@ -74,8 +69,6 @@ void SX127xHal::reset(void)
             pinMode(GPIO_PIN_RST_2, INPUT);
         }
     }
-
-    DBGLN("SX127x Ready!");
 }
 
 uint8_t ICACHE_RAM_ATTR SX127xHal::readRegisterBits(uint8_t reg, uint8_t mask, SX12XX_Radio_Number_t radioNumber)

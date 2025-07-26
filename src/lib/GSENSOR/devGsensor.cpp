@@ -8,7 +8,6 @@
 #include "gsensor.h"
 #include "POWERMGNT.h"
 #include "config.h"
-#include "logging.h"
 
 Gsensor gsensor;
 
