@@ -6,7 +6,7 @@
 #include "OTA.h"
 #include "helpers.h"
 
-#define ALL_CHANGED         (EVENT_CONFIG_MODEL_CHANGED | EVENT_CONFIG_MAIN_CHANGED | EVENT_CONFIG_FAN_CHANGED | EVENT_CONFIG_BUTTON_CHANGED)
+#define ALL_CHANGED         (EVENT_CONFIG_MODEL_CHANGED | EVENT_CONFIG_MAIN_CHANGED | EVENT_CONFIG_BUTTON_CHANGED)
 
 // Really awful but safe(?) type punning of model_config_t/v6_model_config_t to and from uint32_t
 template<class T> static const void U32_to_Model(uint32_t const u32, T * const model)
@@ -125,15 +125,6 @@ void TxConfig::Load()
     SetDefaults(false);
 
     uint32_t value;
-    uint8_t value8;
-
-    // fanthresh (v5)
-    if (nvs_get_u8(handle, "fanthresh", &value8) == ESP_OK)
-        m_config.powerFanThreshold = value8;
-
-    // Both of these were added to config v5 without incrementing the version
-    if (nvs_get_u32(handle, "fan", &value) == ESP_OK)
-        m_config.fanMode = value;
 
     if (version >= 7) {
         // load button actions
@@ -197,12 +188,6 @@ TxConfig::Commit()
         char model[10] = "model";
         itoa(m_modelId, model+5, 10);
         nvs_set_u32(handle, model, value);
-    }
-    if (m_modified & EVENT_CONFIG_FAN_CHANGED)
-    {
-        uint32_t value = m_config.fanMode;
-        nvs_set_u32(handle, "fan", value);
-        nvs_set_u8(handle, "fanthresh", m_config.powerFanThreshold);
     }
     if (m_modified & EVENT_CONFIG_BUTTON_CHANGED)
     {
@@ -288,31 +273,11 @@ TxConfig::SetModelMatch(bool modelMatch)
 }
 
 void
-TxConfig::SetPowerFanThreshold(uint8_t powerFanThreshold)
-{
-    if (m_config.powerFanThreshold != powerFanThreshold)
-    {
-        m_config.powerFanThreshold = powerFanThreshold;
-        m_modified |= EVENT_CONFIG_FAN_CHANGED;
-    }
-}
-
-void
 TxConfig::SetStorageProvider(ELRS_EEPROM *eeprom)
 {
     if (eeprom)
     {
         m_eeprom = eeprom;
-    }
-}
-
-void
-TxConfig::SetFanMode(uint8_t fanMode)
-{
-    if (m_config.fanMode != fanMode)
-    {
-        m_config.fanMode = fanMode;
-        m_modified |= EVENT_CONFIG_FAN_CHANGED;
     }
 }
 
@@ -350,7 +315,6 @@ TxConfig::SetDefaults(bool commit)
     memset(&m_config, 0, sizeof(m_config));
 
     m_config.version = TX_CONFIG_VERSION | TX_CONFIG_MAGIC;
-    m_config.powerFanThreshold = PWR_250mW;
     m_modified = ALL_CHANGED;
 
     if (commit)

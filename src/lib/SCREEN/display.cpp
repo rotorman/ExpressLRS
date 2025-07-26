@@ -17,8 +17,6 @@ const char *Display::main_menu_strings[][2] = {
     {"TX", "POWER"},
     {"TELEM", "RATIO"},
     {"MOTION", "DETECT"},
-    {"FAN", "CONTROL"},
-    {"BLE", "GAMEPAD"},
     {"BIND", "MODE"},
     {"WIFI", "ADMIN"},
 
@@ -26,9 +24,6 @@ const char *Display::main_menu_strings[][2] = {
     {"DYNAMIC", "POWER"},
 
     {"TX", "WIFI"},
-    {"RX", "WIFI"},
-    {"BACKPAC", "WIFI"},
-    {"VRX", "WIFI"},
 };
 
 #if defined(RADIO_SX128X)
@@ -101,12 +96,6 @@ static const char *ratio_curr_string[] = {
     "1:128"
 };
 
-static const char *smartfan_string[] = {
-    "AUTO",
-    "ON",
-    "OFF"
-};
-
 int Display::getValueCount(menu_item_t menu)
 {
     switch (menu)
@@ -121,8 +110,6 @@ int Display::getValueCount(menu_item_t menu)
         return ARRAY_SIZE(switch_mode);
     case STATE_TELEMETRY:
         return ARRAY_SIZE(ratio_string);
-    case STATE_SMARTFAN:
-        return ARRAY_SIZE(smartfan_string);
 
     case STATE_POWER:
     case STATE_POWER_MAX:
@@ -150,8 +137,6 @@ const char *Display::getValue(menu_item_t menu, uint8_t value_index)
         return ratio_string[value_index];
     case STATE_TELEMETRY_CURR:
         return ratio_curr_string[value_index];
-    case STATE_SMARTFAN:
-        return smartfan_string[value_index];
 
     case STATE_POWER:
     case STATE_POWER_MAX:

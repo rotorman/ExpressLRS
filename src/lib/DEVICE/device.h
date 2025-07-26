@@ -19,7 +19,6 @@ enum deviceEvent_t {
 
     EVENT_CONFIG_MODEL_CHANGED = 1 << 8,
     EVENT_CONFIG_MAIN_CHANGED = 1 << 10, // catch-all for global config item
-    EVENT_CONFIG_FAN_CHANGED = 1 << 11,
     EVENT_CONFIG_BUTTON_CHANGED = 1 << 13,
     EVENT_CONFIG_UID_CHANGED = 1 << 14,
     EVENT_CONFIG_POWER_COUNT_CHANGED = 1 << 15,

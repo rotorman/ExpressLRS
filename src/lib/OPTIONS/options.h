@@ -26,14 +26,10 @@ typedef struct _options {
     uint8_t     uid[6];         // MY_UID derived from MY_BINDING_PHRASE
     uint32_t    flash_discriminator;    // Discriminator value used to determine if the device has been reflashed and therefore
                                         // the SPIFSS settings are obsolete and the flashed settings should be used in preference
-    uint32_t    fan_min_runtime;
     int32_t     wifi_auto_on_interval;
     char        home_wifi_ssid[33];
     char        home_wifi_password[65];
     uint32_t    tlm_report_interval;
-    bool        _unused1:1;
-    bool        unlock_higher_power:1;
-    bool        free:1;
     uint32_t    uart_baud;
 } __attribute__((packed)) firmware_options_t;
 

@@ -23,9 +23,7 @@ typedef struct {
 
 typedef struct {
     uint32_t        version;
-    uint8_t         powerFanThreshold:4; // Power level to enable fan if present
     v5_model_config_t  model_config[64];
-    uint8_t         fanMode;
 } v5_tx_config_t;
 
 // V6
@@ -35,9 +33,7 @@ typedef struct {
     uint32_t        version;
     char            ssid[33];
     char            password[33];
-    uint8_t         powerFanThreshold:4; // Power level to enable fan if present
     v6_model_config_t  model_config[64];
-    uint8_t         fanMode;
 } v6_tx_config_t;
 
 // V7
@@ -59,9 +55,7 @@ typedef struct {
     uint32_t        version;
     char            ssid[33];
     char            password[33];
-    uint8_t         powerFanThreshold:4; // Power level to enable fan if present
     v7_model_config_t  model_config[64];
-    uint8_t         fanMode;
 } v7_tx_config_t;
 
 /***

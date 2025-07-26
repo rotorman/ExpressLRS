@@ -77,11 +77,6 @@ def patch_unified(args, options):
 
     if args.tlm_report is not None:
         json_flags['tlm-interval'] = args.tlm_report
-    if args.fan_min_runtime is not None:
-        json_flags['fan-runtime'] = args.fan_min_runtime
-
-    if args.lock_on_first_connection is not None:
-        json_flags['lock-on-first-connection'] = args.lock_on_first_connection
 
     if args.domain is not None:
         json_flags['domain'] = domain_number(args.domain)
@@ -174,14 +169,8 @@ def main():
     parser.add_argument('--password', type=length_check(64, "password"), required=False, help='Home network password')
     parser.add_argument('--auto-wifi', type=int, help='Interval (in seconds) before WiFi auto starts, if no connection is made')
     parser.add_argument('--no-auto-wifi', action='store_true', help='Disables WiFi auto start if no connection is made')
-    # RX Params
-    parser.add_argument('--rx-baud', type=int, const=420000, nargs='?', action='store', help='The receiver baudrate talking to the flight controller')
-    parser.add_argument('--lock-on-first-connection', dest='lock_on_first_connection', action='store_true', help='Lock RF mode on first connection')
-    parser.add_argument('--no-lock-on-first-connection', dest='lock_on_first_connection', action='store_false', help='Do not lock RF mode on first connection')
-    parser.set_defaults(lock_on_first_connection=None)
     # TX Params
     parser.add_argument('--tlm-report', type=int, const=240, nargs='?', action='store', help='The interval (in milliseconds) between telemetry packets')
-    parser.add_argument('--fan-min-runtime', type=int, const=30, nargs='?', action='store', help='The minimum amount of time the fan should run for (in seconds) if it turns on')
     # Unified target
     parser.add_argument('--target', type=str, help='Unified target JSON path')
     # Flashing options

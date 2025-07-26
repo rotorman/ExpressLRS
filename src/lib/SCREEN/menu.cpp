@@ -42,11 +42,8 @@ static void displayIdleScreen(bool init)
     static uint8_t last_rate = 0xFF;
     static uint8_t last_power = 0xFF;
     static uint8_t last_tlm = 0xFF;
-    static uint8_t last_fan = 0xFF;
     static uint8_t last_dynamic = 0xFF;
     static uint8_t last_run_power = 0xFF;
-
-    uint32_t now = millis();
 
     uint8_t changed = init ? CHANGED_ALL : 0;
     message_index_t disp_message;
@@ -74,7 +71,6 @@ static void displayIdleScreen(bool init)
         changed |= last_dynamic != config.GetDynamicPower() ? CHANGED_POWER : 0;
         changed |= last_run_power != (uint8_t)(POWERMGNT::currPower()) ? CHANGED_POWER : 0;
         changed |= last_tlm != tlmIdx ? CHANGED_TELEMETRY : 0;
-        changed |= last_fan != config.GetFanMode() ? CHANGED_FAN : 0;
     }
 
     if (changed)
@@ -83,11 +79,10 @@ static void displayIdleScreen(bool init)
         last_rate = config.GetRate();
         last_power = config.GetPower();
         last_tlm = tlmIdx;
-        last_fan = config.GetFanMode();
         last_dynamic = config.GetDynamicPower();
         last_run_power = (uint8_t)(POWERMGNT::currPower());
 
-        display->displayIdleScreen(changed, last_rate, last_power, last_tlm, last_fan, last_dynamic, last_run_power, last_message);
+        display->displayIdleScreen(changed, last_rate, last_power, last_tlm, last_dynamic, last_run_power, last_message);
     }
 }
 
@@ -119,11 +114,6 @@ static void setupValueIndex(bool init)
         values_min = 0;
         values_max = display->getValueCount((menu_item_t)state_machine.getParentState())-1;
         values_index = config.GetTlm();
-        break;
-    case STATE_SMARTFAN:
-        values_min = 0;
-        values_max = display->getValueCount((menu_item_t)state_machine.getParentState())-1;
-        values_index = config.GetFanMode();
         break;
 
     case STATE_POWER_MAX:
@@ -211,9 +201,6 @@ static void saveValueIndex(bool init)
                 config.SetTlm(val);
                 SetSyncSpam();
             });
-            break;
-        case STATE_SMARTFAN:
-            config.SetFanMode(values_index);
             break;
 
         case STATE_POWER_MAX:
@@ -410,7 +397,6 @@ fsm_state_entry_t const main_menu_fsm[] = {
     {STATE_SWITCH, nullptr, displayMenuScreen, 20000, value_menu_events, ARRAY_SIZE(value_menu_events)},
     {STATE_POWER, nullptr, displayMenuScreen, 20000, power_menu_events, ARRAY_SIZE(power_menu_events)},
     {STATE_TELEMETRY, nullptr, displayMenuScreen, 20000, value_menu_events, ARRAY_SIZE(value_menu_events)},
-    {STATE_SMARTFAN, [](){return OPT_HAS_THERMAL;}, displayMenuScreen, 20000, value_menu_events, ARRAY_SIZE(value_menu_events)},
     {STATE_BIND, nullptr, displayMenuScreen, 20000, bind_menu_events, ARRAY_SIZE(bind_menu_events)},
     {STATE_WIFI, nullptr, displayMenuScreen, 20000, wifi_menu_events, ARRAY_SIZE(wifi_menu_events)},
     {STATE_LAST}

@@ -71,13 +71,6 @@ static struct luaItem_selection luaDynamicPower = {
     STR_EMPTYSPACE
 };
 
-static struct luaItem_selection luaFanThreshold = {
-    {"Fan Thresh", CRSF_TEXT_SELECTION},
-    0, // value
-    "10mW;25mW;50mW;100mW;250mW;500mW;1000mW;2000mW;Never",
-    STR_EMPTYSPACE // units embedded so it won't display "NevermW"
-};
-
 //----------------------------POWER------------------
 
 static struct luaItem_selection luaSwitch = {
@@ -425,11 +418,6 @@ static void registerLuaParameters()
       config.SetBoostChannel((arg - 1) > 0 ? arg - 1 : 0);
     }, luaPowerFolder.common.id);
   }
-  if (GPIO_PIN_FAN_EN != UNDEF_PIN || GPIO_PIN_FAN_PWM != UNDEF_PIN) {
-    registerLUAParameter(&luaFanThreshold, [](struct luaPropertiesCommon *item, uint8_t arg){
-      config.SetPowerFanThreshold(arg);
-    }, luaPowerFolder.common.id);
-  }
 
   // WIFI folder
   registerLUAParameter(&luaWiFiFolder);
@@ -476,10 +464,6 @@ static int event()
   luadevUpdateModelID();
   setLuaTextSelectionValue(&luaModelMatch, (uint8_t)config.GetModelMatch());
   setLuaTextSelectionValue(&luaPower, config.GetPower() - MinPower);
-  if (GPIO_PIN_FAN_EN != UNDEF_PIN || GPIO_PIN_FAN_PWM != UNDEF_PIN)
-  {
-    setLuaTextSelectionValue(&luaFanThreshold, config.GetPowerFanThreshold());
-  }
 
   uint8_t dynamic = config.GetDynamicPower() ? config.GetBoostChannel() + 1 : 0;
   setLuaTextSelectionValue(&luaDynamicPower, dynamic);

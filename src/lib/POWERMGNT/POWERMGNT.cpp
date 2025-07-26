@@ -64,7 +64,6 @@ PowerLevels_e crsfPowerToPower(uint8_t crsfpower)
  */
 
 PowerLevels_e PowerLevelContainer::CurrentPower = PWR_COUNT; // default "undefined" initial value
-PowerLevels_e POWERMGNT::FanEnableThreshold = PWR_250mW;
 int8_t POWERMGNT::CurrentSX1280Power = 0;
 
 static const int16_t *powerValues;

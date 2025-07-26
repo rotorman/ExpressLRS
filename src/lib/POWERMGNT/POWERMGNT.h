@@ -35,7 +35,6 @@ class POWERMGNT : public PowerLevelContainer
 
 private:
     static int8_t CurrentSX1280Power;
-    static PowerLevels_e FanEnableThreshold;
     static nvs_handle  handle;
     static void LoadCalibration();
 

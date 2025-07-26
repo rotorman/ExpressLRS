@@ -19,17 +19,13 @@ const uint16_t *main_menu_icons[] = {
     elrs_antenna,
     elrs_power,
     elrs_ratio,
-    elrs_motion,
-    elrs_fan,
     elrs_bind,
     elrs_wifimode,
 
     elrs_power,
     elrs_power,
 
-    elrs_updatefw,
-    elrs_rxwifi,
-    elrs_vrxwifi
+    elrs_updatefw
 };
 
 // Hex color code to 16-bit rgb:
@@ -171,7 +167,7 @@ void TFTDisplay::displaySplashScreen()
                         String(buffer), WHITE, BLACK);
 }
 
-void TFTDisplay::displayIdleScreen(uint8_t changed, uint8_t rate_index, uint8_t power_index, uint8_t ratio_index, uint8_t fan_index, bool dynamic, uint8_t running_power_index, message_index_t message_index)
+void TFTDisplay::displayIdleScreen(uint8_t changed, uint8_t rate_index, uint8_t power_index, uint8_t ratio_index, bool dynamic, uint8_t running_power_index, message_index_t message_index)
 {
     if (changed == CHANGED_ALL)
     {

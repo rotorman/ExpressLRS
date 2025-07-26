@@ -9,7 +9,6 @@ enum fsm_state_s {
     STATE_SWITCH,
     STATE_POWER,
     STATE_TELEMETRY,
-    STATE_SMARTFAN,
     STATE_BIND,
     STATE_WIFI,
 

@@ -274,9 +274,6 @@ static void GetConfiguration(AsyncWebServerRequest *request)
   }
   if (exportMode)
   {
-    json["config"]["fan-mode"] = config.GetFanMode();
-    json["config"]["power-fan-threshold"] = config.GetPowerFanThreshold();
-
     for (int model = 0 ; model < CONFIG_TX_MODEL_CNT ; model++)
     {
       const model_config_t &modelConfig = config.GetModelConfig(model);
@@ -334,8 +331,6 @@ static void ImportConfiguration(AsyncWebServerRequest *request, JsonVariant &jso
     json = json["config"];
   }
 
-  if (json.containsKey("fan-mode")) config.SetFanMode(json["fan-mode"]);
-  if (json.containsKey("power-fan-threshold")) config.SetPowerFanThreshold(json["power-fan-threshold"]);
   if (json.containsKey("model"))
   {
     for(JsonPair kv : json["model"].as<JsonObject>())
@@ -699,12 +694,7 @@ static void startMDNS()
 
   String options = "-DAUTO_WIFI_ON_INTERVAL=" + (firmwareOptions.wifi_auto_on_interval == -1 ? "-1" : String(firmwareOptions.wifi_auto_on_interval / 1000));
 
-  if (firmwareOptions.unlock_higher_power)
-  {
-    options += " -DUNLOCK_HIGHER_POWER";
-  }
   options += " -DTLM_REPORT_INTERVAL_MS=" + String(firmwareOptions.tlm_report_interval);
-  options += " -DFAN_MIN_RUNTIME=" + String(firmwareOptions.fan_min_runtime);
 
   String instance = String(wifi_hostname) + "_" + WiFi.macAddress();
   instance.replace(":", "");

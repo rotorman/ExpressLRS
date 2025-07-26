@@ -48,13 +48,6 @@ def process_json_flag(define):
         if parts.group(1) == "TLM_REPORT_INTERVAL_MS"  and not isRX:
             parts = re.search(r"-D(.*)\s*=\s*\"?([0-9]+).*\"?$", define)
             json_flags['tlm-interval'] = int(dequote(parts.group(2)))
-        if parts.group(1) == "FAN_MIN_RUNTIME"  and not isRX:
-            parts = re.search(r"-D(.*)\s*=\s*\"?([0-9]+).*\"?$", define)
-            json_flags['fan-runtime'] = int(dequote(parts.group(2)))
-    if define == "-DUNLOCK_HIGHER_POWER"  and not isRX:
-        json_flags['unlock-higher-power'] = True
-    if define == "-DLOCK_ON_FIRST_CONNECTION" and isRX:
-        json_flags['lock-on-first-connection'] = True
 
 def process_build_flag(define):
     if define.startswith("-D") or define.startswith("!-D"):

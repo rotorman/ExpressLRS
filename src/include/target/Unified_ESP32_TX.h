@@ -100,6 +100,3 @@
 #define GPIO_PIN_FAN_TACHO hardware_pin(HARDWARE_misc_fan_tacho)
 #define GPIO_PIN_FAN_SPEEDS hardware_u16_array(HARDWARE_misc_fan_speeds)
 #define GPIO_PIN_FAN_SPEEDS_COUNT hardware_int(HARDWARE_misc_fan_speeds_count)
-
-#define OPT_HAS_THERMAL_LM75A hardware_flag(HARDWARE_thermal_lm75a)
-#define OPT_HAS_THERMAL OPT_HAS_THERMAL_LM75A // If any of the sensors are present
