@@ -16,13 +16,6 @@
 #if defined(RADIO_SX127X)
 #define STR_LUA_PACKETRATES \
     "D50Hz(-112dBm);25Hz(-123dBm);50Hz(-120dBm);100Hz(-117dBm);100Hz Full(-112dBm);200Hz(-112dBm)"
-#elif defined(RADIO_LR1121)
-#define STR_LUA_PACKETRATES \
-    "100Hz Full(-112dBm);150Hz(-112dBm);" \
-    "50Hz(-115dBm);100Hz Full(-112dBm);150Hz(-112dBm);250Hz(-108dBm);333Hz Full(-105dBm);500Hz(-105dBm);" \
-    "DK250(-103dBm);DK500(-103dBm);K1000(-103dBm);" \
-    "D50Hz(-112dBm);25Hz(-123dBm);50Hz(-120dBm);100Hz(-117dBm);100Hz Full(-112dBm);200Hz(-112dBm);200Hz Full(-111dBm);250Hz(-111dBm);" \
-    "K1000 Full(-101dBm)"
 #elif defined(RADIO_SX128X)
 #define STR_LUA_PACKETRATES \
     "50Hz(-115dBm);100Hz Full(-112dBm);150Hz(-112dBm);250Hz(-108dBm);333Hz Full(-105dBm);500Hz(-105dBm);" \
@@ -47,23 +40,6 @@ static const char antennamodeOpts[] = "Gemini;Ant 1;Ant 2;Switch";
 static const char antennamodeOptsDualBand[] = "Gemini;;;";
 static const char luastrOffOn[] = "Off;On";
 static char luastrPacketRates[] = STR_LUA_PACKETRATES;
-
-#if defined(RADIO_LR1121)
-static char luastrRFBands[32];
-static enum RFMode : uint8_t
-{
-    RF_MODE_900 = 0,
-    RF_MODE_2G4 = 1,
-    RF_MODE_DUAL = 2,
-} rfMode;
-
-static struct luaItem_selection luaRFBand = {
-    {"RF Band", CRSF_TEXT_SELECTION},
-    0, // value
-    luastrRFBands,
-    STR_EMPTYSPACE
-};
-#endif
 
 static struct luaItem_selection luaAirRate = {
     {"Packet Rate", CRSF_TEXT_SELECTION},
@@ -340,27 +316,6 @@ static void recalculatePacketRateOptions(int minInterval)
         uint8_t rate = i;
         rate = RATE_MAX - 1 - rate;
         bool rateAllowed = (get_elrs_airRateConfig(rate)->interval * get_elrs_airRateConfig(rate)->numOfSends) >= minInterval;
-
-#if defined(RADIO_LR1121)
-        // Skip unsupported modes for hardware with only a single LR1121 or with a single RF path
-        rateAllowed &= isSupportedRFRate(rate);
-        if (rateAllowed)
-        {
-            const auto radio_type = get_elrs_airRateConfig(rate)->radio_type;
-            if (rfMode == RF_MODE_900)
-            {
-                rateAllowed = radio_type == RADIO_TYPE_LR1121_GFSK_900 || radio_type == RADIO_TYPE_LR1121_LORA_900;
-            }
-            if (rfMode == RF_MODE_2G4)
-            {
-                rateAllowed = radio_type == RADIO_TYPE_LR1121_GFSK_2G4 || radio_type == RADIO_TYPE_LR1121_LORA_2G4;
-            }
-            if (rfMode == RF_MODE_DUAL)
-            {
-                rateAllowed = radio_type == RADIO_TYPE_LR1121_LORA_DUAL;
-            }
-        }
-#endif
         const char *semi = strchrnul(pos, ';');
         if (rateAllowed)
         {
@@ -397,55 +352,6 @@ uint8_t adjustSwitchModeForAirRate(OtaSwitchMode_e eSwitchMode, uint8_t packetSi
 static void registerLuaParameters()
 {
   if (HAS_RADIO) {
-#if defined(RADIO_LR1121)
-    // Copy the frequency part out of the domain to the display string
-    char *bands = luastrRFBands;
-    for (const char *domain = FHSSconfig->domain; *domain ; domain++)
-    {
-      if (isdigit(*domain))
-      {
-        *bands++ = *domain;
-      }
-    }
-    *bands = '\0';
-    strlcat(luastrRFBands, "MHz;2.4GHz", sizeof(luastrRFBands));
-    // Only double LR1121 supports Dual Band modes
-    if (GPIO_PIN_NSS_2 != UNDEF_PIN)
-    {
-      strlcat(luastrRFBands, ";X-Band", sizeof(luastrRFBands));
-    }
-
-    registerLUAParameter(&luaRFBand, [](struct luaPropertiesCommon *item, uint8_t arg) {
-      if (arg != rfMode)
-      {
-        // Choose the fastest supported packet rate in this RF band.
-        rfMode = static_cast<RFMode>(arg);
-        for (int i=0; i < RATE_MAX ; i++)
-        {
-          if (isSupportedRFRate(i))
-          {
-            const auto radio_type = get_elrs_airRateConfig(i)->radio_type;
-            if (rfMode == RF_MODE_900 && (radio_type == RADIO_TYPE_LR1121_GFSK_900 || radio_type == RADIO_TYPE_LR1121_LORA_900))
-            {
-              config.SetRate(i);
-              break;
-            }
-            if (rfMode == RF_MODE_2G4 && (radio_type == RADIO_TYPE_LR1121_GFSK_2G4 || radio_type == RADIO_TYPE_LR1121_LORA_2G4))
-            {
-              config.SetRate(i);
-              break;
-            }
-            if (rfMode == RF_MODE_DUAL && radio_type == RADIO_TYPE_LR1121_LORA_DUAL)
-            {
-              config.SetRate(i);
-              break;
-            }
-          }
-        }
-        recalculatePacketRateOptions(handset->getMinPacketInterval());
-      }
-    });
-#endif
     registerLUAParameter(&luaAirRate, [](struct luaPropertiesCommon *item, uint8_t arg) {
       if (arg < RATE_MAX)
       {
@@ -491,14 +397,6 @@ static void registerLuaParameters()
         setLuaWarningFlag(LUA_FLAG_ERROR_CONNECTED, true);
       }
     });
-    if (isDualRadio())
-    {
-      registerLUAParameter(&luaAntenna, [](struct luaPropertiesCommon *item, uint8_t arg) {
-        // Force Gemini when using dual band modes.
-        uint8_t newAntennaMode = get_elrs_airRateConfig(config.GetRate())->radio_type == RADIO_TYPE_LR1121_LORA_DUAL ? TX_RADIO_MODE_GEMINI : arg;
-        config.SetAntennaMode(newAntennaMode);
-      });
-    }
     registerLUAParameter(&luaModelMatch, [](struct luaPropertiesCommon *item, uint8_t arg) {
       bool newModelMatch = arg;
       config.SetModelMatch(newModelMatch);
@@ -567,38 +465,17 @@ static int event()
   }
 
   uint8_t currentRate = adjustPacketRateForBaud(config.GetRate());
-#if defined(RADIO_LR1121)
-  // calculate RFMode from current packet-rate
-  switch (get_elrs_airRateConfig(currentRate)->radio_type)
-  {
-    case RADIO_TYPE_LR1121_LORA_900:
-    case RADIO_TYPE_LR1121_GFSK_900:
-      rfMode = RF_MODE_900;
-      break;
-    case RADIO_TYPE_LR1121_LORA_DUAL:
-      rfMode = RF_MODE_DUAL;
-      break;
-    default:
-      rfMode = RF_MODE_2G4;
-      break;
-  }
-  setLuaTextSelectionValue(&luaRFBand, rfMode);
-#endif
   recalculatePacketRateOptions(handset->getMinPacketInterval());
   setLuaTextSelectionValue(&luaAirRate, RATE_MAX - 1 - currentRate);
 
   setLuaTextSelectionValue(&luaTlmRate, config.GetTlm());
   luaTlmRate.options = tlmRatios;
 
-  luaAntenna.options = get_elrs_airRateConfig(config.GetRate())->radio_type == RADIO_TYPE_LR1121_LORA_DUAL ? antennamodeOptsDualBand : antennamodeOpts;
+  luaAntenna.options = antennamodeOpts;
 
   setLuaTextSelectionValue(&luaSwitch, config.GetSwitchMode());
   luaSwitch.options = OtaIsFullRes ? switchmodeOpts8ch : switchmodeOpts4ch;
 
-  if (isDualRadio())
-  {
-    setLuaTextSelectionValue(&luaAntenna, config.GetAntennaMode());
-  }
   luadevUpdateModelID();
   setLuaTextSelectionValue(&luaModelMatch, (uint8_t)config.GetModelMatch());
   setLuaTextSelectionValue(&luaPower, config.GetPower() - MinPower);

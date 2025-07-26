@@ -32,10 +32,6 @@
 
 #include "config.h"
 
-#if defined(RADIO_LR1121)
-#include "lr1121.h"
-#endif
-
 extern TxConfig config;
 extern void setButtonColors(uint8_t b1, uint8_t b2);
 
@@ -127,10 +123,6 @@ static struct {
   {"/hardware.js", "text/javascript", (uint8_t *)HARDWARE_JS, sizeof(HARDWARE_JS)},
   {"/cw.html", "text/html", (uint8_t *)CW_HTML, sizeof(CW_HTML)},
   {"/cw.js", "text/javascript", (uint8_t *)CW_JS, sizeof(CW_JS)},
-#if defined(RADIO_LR1121)
-  {"/lr1121.html", "text/html", (uint8_t *)LR1121_HTML, sizeof(LR1121_HTML)},
-  {"/lr1121.js", "text/javascript", (uint8_t *)LR1121_JS, sizeof(LR1121_JS)},
-#endif
 };
 
 static void WebUpdateSendContent(AsyncWebServerRequest *request)
@@ -297,7 +289,6 @@ static void GetConfiguration(AsyncWebServerRequest *request)
       modelJson["power"]["dynamic-power"] = modelConfig.dynamicPower;
       modelJson["power"]["boost-channel"] = modelConfig.boostChannel;
       modelJson["model-match"] = modelConfig.modelMatch;
-      modelJson["tx-antenna"] = modelConfig.txAntenna;
     }
   }
 
@@ -363,7 +354,6 @@ static void ImportConfiguration(AsyncWebServerRequest *request, JsonVariant &jso
         if (modelJson["power"].containsKey("boost-channel")) config.SetBoostChannel(modelJson["power"]["boost-channel"]);
       }
       if (modelJson.containsKey("model-match")) config.SetModelMatch(modelJson["model-match"]);
-      // if (modelJson.containsKey("tx-antenna")) config.SetTxAntenna(modelJson["tx-antenna"]);
       // have to commmit after each model is updated
       config.Commit();
     }
@@ -396,10 +386,6 @@ static void WebUpdateGetTarget(AsyncWebServerRequest *request)
 #endif
 #if defined(RADIO_SX127X)
   json["radio-type"] = "SX127X";
-  json["has-sub-ghz"] = true;
-#endif
-#if defined(RADIO_LR1121)
-  json["radio-type"] = "LR1121";
   json["has-sub-ghz"] = true;
 #endif
 
@@ -646,11 +632,6 @@ static void HandleContinuousWave(AsyncWebServerRequest *request) {
   if (request->hasArg("radio")) {
     SX12XX_Radio_Number_t radio = request->arg("radio").toInt() == 1 ? SX12XX_Radio_1 : SX12XX_Radio_2;
 
-#if defined(RADIO_LR1121)
-    bool setSubGHz = false;
-    setSubGHz = request->arg("subGHz").toInt() == 1;
-#endif
-
     AsyncWebServerResponse *response = request->beginResponse(204);
     response->addHeader("Connection", "close");
     request->send(response);
@@ -662,21 +643,13 @@ static void HandleContinuousWave(AsyncWebServerRequest *request) {
     POWERMGNT::init();
     POWERMGNT::setPower(POWERMGNT::getMinPower());
 
-#if defined(RADIO_LR1121)
-    Radio.startCWTest(setSubGHz ? FHSSconfig->freq_center : FHSSconfigDualBand->freq_center, radio);
-#else
     Radio.startCWTest(FHSSconfig->freq_center, radio);
 #if defined(RADIO_SX127X)
     deferExecutionMillis(50, [radio](){ Radio.cwRepeat(radio); });
 #endif
-#endif
   } else {
     int radios = (GPIO_PIN_NSS_2 == UNDEF_PIN) ? 1 : 2;
-    request->send(200, "application/json", String("{\"radios\": ") + radios + ", \"center\": "+ FHSSconfig->freq_center +
-#if defined(RADIO_LR1121)
-            ", \"center2\": "+ FHSSconfigDualBand->freq_center +
-#endif
-            "}");
+    request->send(200, "application/json", String("{\"radios\": ") + radios + ", \"center\": "+ FHSSconfig->freq_center + "}");
   }
 }
 
@@ -818,13 +791,6 @@ static void startServices()
   server.addHandler(new AsyncCallbackJsonWebHandler("/options.json", UpdateSettings));
   server.addHandler(new AsyncCallbackJsonWebHandler("/buttons", WebUpdateButtonColors));
   server.addHandler(new AsyncCallbackJsonWebHandler("/import", ImportConfiguration, 32768U));
-
-  #if defined(RADIO_LR1121)
-    server.on("/lr1121.html", WebUpdateSendContent);
-    server.on("/lr1121.js", WebUpdateSendContent);
-    server.on("/lr1121", HTTP_OPTIONS, corsPreflightResponse);
-    addLR1121Handlers(server);
-  #endif
 
   addCaptivePortalHandlers();
 

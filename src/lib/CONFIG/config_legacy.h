@@ -49,10 +49,10 @@ typedef struct {
                 boostChannel:3,
                 dynamicPower:1,
                 modelMatch:1,
-                txAntenna:2,
+                free1:2,
                 ptrStartChannel:4,
                 ptrEnableChannel:5,
-                free:3;
+                free2:3;
 } v7_model_config_t;
 
 typedef struct {

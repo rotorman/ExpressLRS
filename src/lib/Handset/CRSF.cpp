@@ -3,7 +3,7 @@
 #include "common.h"
 #include "FIFO.h"
 
-elrsLinkStatistics_t CRSF::LinkStatistics;
+crsfLinkStatistics_t CRSF::LinkStatistics;
 GENERIC_CRC8 crsf_crc(CRSF_CRC_POLY);
 
 uint8_t CRSF::MspData[ELRS_MSP_BUFFER] = {0};

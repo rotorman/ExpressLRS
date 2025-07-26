@@ -2,13 +2,8 @@
 #include "options.h"
 #include <string.h>
 
-#if defined(RADIO_SX127X) || defined(RADIO_LR1121)
-
-#if defined(RADIO_LR1121)
-#include "LR1121Driver.h"
-#else
+#if defined(RADIO_SX127X)
 #include "SX127xDriver.h"
-#endif
 
 const fhss_config_t domains[] = {
     {"AU915",  FREQ_HZ_TO_REG_VAL(915500000), FREQ_HZ_TO_REG_VAL(926900000), 20, 921000000},
@@ -20,12 +15,6 @@ const fhss_config_t domains[] = {
     {"US433",  FREQ_HZ_TO_REG_VAL(433250000), FREQ_HZ_TO_REG_VAL(438000000), 8, 434000000},
     {"US433W",  FREQ_HZ_TO_REG_VAL(423500000), FREQ_HZ_TO_REG_VAL(438000000), 20, 434000000},
 };
-
-#if defined(RADIO_LR1121)
-const fhss_config_t domainsDualBand[] = {
-    {"ISM2G4", FREQ_HZ_TO_REG_VAL(2400400000), FREQ_HZ_TO_REG_VAL(2479400000), 80, 2440000000}
-};
-#endif
 
 #elif defined(RADIO_SX128X)
 #include "SX1280Driver.h"
@@ -39,18 +28,15 @@ const fhss_config_t domains[] = {
 
 // Our table of FHSS frequencies. Define a regulatory domain to select the correct set for your location and radio
 const fhss_config_t *FHSSconfig;
-const fhss_config_t *FHSSconfigDualBand;
 
 // Actual sequence of hops as indexes into the frequency list
 uint8_t FHSSsequence[FHSS_SEQUENCE_LEN];
-uint8_t FHSSsequence_DualBand[FHSS_SEQUENCE_LEN];
 
 // Which entry in the sequence we currently are on
 uint8_t volatile FHSSptr;
 
 // Channel for sync packets and initial connection establishment
 uint_fast8_t sync_channel;
-uint_fast8_t sync_channel_DualBand;
 
 // Offset from the predefined frequency determined by AFC on Team900 (register units)
 int32_t FreqCorrection;
@@ -58,14 +44,8 @@ int32_t FreqCorrection_2;
 
 // Frequency hop separation
 uint32_t freq_spread;
-uint32_t freq_spread_DualBand;
-
-// Variable for Dual Band radios
-bool FHSSusePrimaryFreqBand = true;
-bool FHSSuseDualBand = false;
 
 uint16_t primaryBandCount;
-uint16_t secondaryBandCount;
 
 void FHSSrandomiseFHSSsequence(const uint32_t seed)
 {
@@ -74,17 +54,6 @@ void FHSSrandomiseFHSSsequence(const uint32_t seed)
     freq_spread = (FHSSconfig->freq_stop - FHSSconfig->freq_start) * FREQ_SPREAD_SCALE / (FHSSconfig->freq_count - 1);
     primaryBandCount = (FHSS_SEQUENCE_LEN / FHSSconfig->freq_count) * FHSSconfig->freq_count;
     FHSSrandomiseFHSSsequenceBuild(seed, FHSSconfig->freq_count, sync_channel, FHSSsequence);
-
-#if defined(RADIO_LR1121)
-    FHSSconfigDualBand = &domainsDualBand[0];
-    sync_channel_DualBand = FHSSconfigDualBand->freq_count / 2;
-    freq_spread_DualBand = (FHSSconfigDualBand->freq_stop - FHSSconfigDualBand->freq_start) * FREQ_SPREAD_SCALE / (FHSSconfigDualBand->freq_count - 1);
-    secondaryBandCount = (FHSS_SEQUENCE_LEN / FHSSconfigDualBand->freq_count) * FHSSconfigDualBand->freq_count;
-
-    FHSSusePrimaryFreqBand = false;
-    FHSSrandomiseFHSSsequenceBuild(seed, FHSSconfigDualBand->freq_count, sync_channel_DualBand, FHSSsequence_DualBand);
-    FHSSusePrimaryFreqBand = true;
-#endif
 }
 
 /**

@@ -23,14 +23,6 @@ function updateParams(data) {
   warn_offset = 100000;
   bad_offset = 125000;
 @@end
-@@if chip == 'LR1121':
-  xtalNominal = 32000000;
-  warn_offset = 100000;
-  bad_offset = 125000;
-  if (!_('optionsSetSubGHz').checked) {
-    cwFreq = data.center2;
-  }
-@@end
   _('frequency').textContent = (cwFreq / 1000000).toString();
   _('start-cw').disabled = false;
 }
@@ -43,11 +35,6 @@ function init() {
       if (data.radios === 2) {
         _('radioOption').style.display = 'block';
       }
-@@if chip == 'LR1121':
-      _('optionsSetSubGHz').onclick = () => {
-        updateParams(data);
-      }
-@@end
       updateParams(data);
     }
   };
@@ -66,10 +53,6 @@ _('start-cw').onclick = (e) => {
   xmlhttp.onreadystatechange = function() {};
   const formdata = new FormData;
   formdata.append('radio', _('optionsRadios1').checked ? 1 : 2);
-@@if chip == 'LR1121':
-  formdata.append('subGHz', _('optionsSetSubGHz').checked ? 1 : 0);
-  _('optionsSetSubGHz').disabled = true;
-@@end
   xmlhttp.send(formdata);
 };
 

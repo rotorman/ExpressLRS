@@ -323,11 +323,6 @@ void OLEDDisplay::displayLinkstats()
     u8g2->print(CRSF::LinkStatistics.downlink_Link_quality);
     u8g2->setCursor(LINKSTATS_COL_THIRD, LINKSTATS_ROW_THIRD);
     u8g2->print((int8_t)CRSF::LinkStatistics.downlink_RSSI_1);
-    if (isDualRadio())
-    {
-        u8g2->print('/');
-        u8g2->print((int8_t)CRSF::LinkStatistics.downlink_RSSI_2);
-    }
 
     if (!OPT_HAS_OLED_SPI_SMALL)
     {
@@ -358,9 +353,6 @@ static void helperDrawImage(menu_item_t menu)
                 break;
             case STATE_SWITCH:
                 u8g2->drawXBM(x_pos, y_pos, 32, 32, switch_img32);
-                break;
-            case STATE_ANTENNA:
-                u8g2->drawXBM(x_pos, y_pos, 32, 32, antenna_img32);
                 break;
             case STATE_POWER:
             case STATE_POWER_MAX:
@@ -402,9 +394,6 @@ static void helperDrawImage(menu_item_t menu)
                 break;
             case STATE_SWITCH:
                 u8g2->drawXBM(x_pos, y_pos, 64, 64, switch_img64);
-                break;
-            case STATE_ANTENNA:
-                u8g2->drawXBM(x_pos, y_pos, 64, 64, antenna_img64);
                 break;
             case STATE_POWER:
             case STATE_POWER_MAX:

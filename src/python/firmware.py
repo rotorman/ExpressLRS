@@ -14,7 +14,6 @@ class DeviceType(Enum):
 class RadioType(Enum):
     SX127X = 0
     SX1280 = 1
-    LR1121 = 2
 
 class FirmwareOptions(NamedTuple):
     mcuType: MCUType

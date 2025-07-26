@@ -44,39 +44,6 @@ const char *rate_string[] = {
     "100 Full",
     "50Hz"
 };
-#elif defined(RADIO_LR1121)
-static const char *rate_string[] = {
-    // 900
-    "200Hz",
-    "100Full",
-    "100Hz",
-    "50Hz",
-    // 2.4
-    "500Hz",
-    "333Full",
-    "250Hz",
-    "150Hz",
-    "100Full",
-    "50Hz",
-    // Dual
-    "X150Hz",
-    "X100Full",
-    // 900
-    "250Hz",
-    "200Full",
-    // K Modes
-    "DK500",
-    "K1000Full",
-};
-#else
-static const char *rate_string[] = {
-    "200Hz",
-    "100 Full",
-    "100Hz",
-    "50Hz",
-    "25Hz",
-    "D50Hz"
-};
 #endif
 
 static const char *switch_mode[] = {
@@ -88,13 +55,6 @@ static const char *switch_mode_full[] = {
     "8Ch",
     "16Ch /2",
     "12Ch Mix"
-};
-
-static const char *antenna_mode[] = {
-    "Gemini",
-    "Ant 1",
-    "Ant 2",
-    "Switch",
 };
 
 static const char *power_string[] = {
@@ -159,8 +119,6 @@ int Display::getValueCount(menu_item_t menu)
             return ARRAY_SIZE(switch_mode_full);
         }
         return ARRAY_SIZE(switch_mode);
-    case STATE_ANTENNA:
-        return ARRAY_SIZE(antenna_mode);
     case STATE_TELEMETRY:
         return ARRAY_SIZE(ratio_string);
     case STATE_SMARTFAN:
@@ -188,8 +146,6 @@ const char *Display::getValue(menu_item_t menu, uint8_t value_index)
             return switch_mode_full[value_index];
         }
         return switch_mode[value_index];
-    case STATE_ANTENNA:
-        return antenna_mode[value_index];
     case STATE_TELEMETRY:
         return ratio_string[value_index];
     case STATE_TELEMETRY_CURR:

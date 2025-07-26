@@ -91,7 +91,6 @@ void CRSFHandset::flush_port_input()
 
 void CRSFHandset::makeLinkStatisticsPacket(uint8_t *buffer)
 {
-    // Note size of crsfLinkStatistics_t used, not full elrsLinkStatistics_t
     constexpr uint8_t payloadLen = sizeof(crsfLinkStatistics_t);
 
     buffer[0] = CRSF_ADDRESS_RADIO_TRANSMITTER;

@@ -390,12 +390,6 @@ void TFTDisplay::displayLinkstats()
     gfx->print(CRSF::LinkStatistics.downlink_Link_quality);
     gfx->setCursor(LINKSTATS_COL_THIRD, LINKSTATS_ROW_THIRD);
     gfx->print((int8_t)CRSF::LinkStatistics.downlink_RSSI_1);
-    if (isDualRadio())
-    {
-        gfx->print('/');
-        gfx->print((int8_t)CRSF::LinkStatistics.downlink_RSSI_2);
-    }
-
     gfx->setCursor(LINKSTATS_COL_THIRD, LINKSTATS_ROW_FOURTH);
     gfx->print(CRSF::LinkStatistics.downlink_SNR);
 }

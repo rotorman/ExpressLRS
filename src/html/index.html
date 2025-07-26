@@ -1,4 +1,4 @@
-@@require(PLATFORM, VERSION, isTX, hasSubGHz, is8285)
+@@require(PLATFORM, VERSION, isTX, hasSubGHz)
 <!DOCTYPE HTML>
 <html lang="en">
 
@@ -99,7 +99,7 @@
 			<div class="mui-tabs__pane" id="pane-justified-2">
 				<div class="mui-panel">
 					<h2>Firmware Update</h2>
-					Select the correct <strong>firmware.bin@@{ ".gz" if (is8285 and not isTX) else "" }</strong> for @@{PLATFORM} otherwise a bad flash may occur.
+					Select the correct <strong>firmware.bin</strong> for @@{PLATFORM} otherwise a bad flash may occur.
 					If this happens you will need to recover via USB/Serial. You may also download the <a href="firmware.bin" title="Click to download firmware">currently running firmware</a>.
 					<br/><br/>
 					<button id="upload_btn" class="mui-btn mui-btn--primary upload" style="margin: 0 auto; display:block;">

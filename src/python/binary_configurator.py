@@ -243,22 +243,16 @@ def main():
 
         pos = firmware.get_hardware(mm)
         options = FirmwareOptions(
-            MCUType.ESP32 if config['platform'].startswith('esp32') else MCUType.ESP8266,
-            DeviceType.RX if '.rx_' in args.target else DeviceType.TX,
-            RadioType.SX127X if '_900.' in args.target else RadioType.SX1280 if '_2400.' in args.target else RadioType.LR1121,
+            MCUType.ESP32,
+            DeviceType.TX,
+            RadioType.SX127X if '_900.' in args.target else RadioType.SX1280,
             config['lua_name'] if 'lua_name' in config else '',
-            config['stlink']['bootloader'] if 'stlink' in config else '',
-            config['stlink']['offset'] if 'stlink' in config else 0,
+            '',
+            0,
             config['firmware']
         )
         patch_unified(args, options)
         args.file.close()
-
-        if options.mcuType == MCUType.ESP8266:
-            import gzip
-            with open(args.file.name, 'rb') as f_in:
-                with gzip.open('firmware.bin.gz', 'wb') as f_out:
-                    shutil.copyfileobj(f_in, f_out)
 
         if args.flash:
             args.target = config.get('firmware')

@@ -354,27 +354,6 @@ typedef struct crsfPayloadLinkstatistics_s
     int8_t downlink_SNR;
 } PACKED crsfLinkStatistics_t;
 
-typedef struct elrsLinkStatistics_s : crsfLinkStatistics_t
-{
-    uint8_t downlink_RSSI_2;
-} PACKED elrsLinkStatistics_t;
-
-// typedef struct crsfOpenTXsyncFrame_s
-// {
-//     uint32_t adjustedRefreshRate;
-//     uint32_t lastUpdate;
-//     uint16_t refreshRate;
-//     int8_t refreshRate;
-//     uint16_t inputLag;
-//     uint8_t interval;
-//     uint8_t target;
-//     uint8_t downlink_RSSI;
-//     uint8_t downlink_Link_quality;
-//     int8_t downlink_SNR;
-// } crsfOpenTXsyncFrame_t;
-
-// typedef struct crsfOpenTXsyncFrame_s crsfOpenTXsyncFrame_t;
-
 enum {
     CRSF_FRAME_GPS_PAYLOAD_SIZE = sizeof(crsf_sensor_gps_t),
     CRSF_FRAME_VARIO_PAYLOAD_SIZE = sizeof(crsf_sensor_vario_t),

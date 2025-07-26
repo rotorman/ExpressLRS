@@ -247,13 +247,6 @@ void POWERMGNT::setPower(PowerLevels_e Power)
         Radio.SetOutputPower(CurrentSX1280Power);
     }
 
-#if defined(RADIO_LR1121)
-    if (POWER_OUTPUT_VALUES_DUAL != nullptr)
-    {
-        Radio.SetOutputPower(powerValuesDual[Power - MinPower], false); // Set the high frequency power setting.
-    }
-#endif
-
     CurrentPower = Power;
     devicesTriggerEvent(EVENT_POWER_CHANGED);
 }

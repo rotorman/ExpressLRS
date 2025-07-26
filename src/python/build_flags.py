@@ -136,7 +136,7 @@ if '-DRADIO_SX127X=1' in build_flags:
     if fnmatch.filter(build_flags, '*-DRegulatory_Domain_ISM_2400'):
         print_error('Regulatory_Domain_*_2400 not compatible with RADIO_SX127X')
 
-if '-DRADIO_SX127X=1' in build_flags or '-DRADIO_LR1121=1' in build_flags:
+if '-DRADIO_SX127X=1' in build_flags:
     # require a domain be set for 900
     if not fnmatch.filter(build_flags, '*-DRegulatory_Domain*'):
         print_error('Please define a Regulatory_Domain in user_defines.txt')

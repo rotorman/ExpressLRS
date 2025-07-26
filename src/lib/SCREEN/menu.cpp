@@ -129,11 +129,6 @@ static void setupValueIndex(bool init)
         values_max = display->getValueCount((menu_item_t)state_machine.getParentState())-1;
         values_index = config.GetSwitchMode();
         break;
-    case STATE_ANTENNA:
-        values_min = 0;
-        values_max = display->getValueCount((menu_item_t)state_machine.getParentState())-1;
-        values_index = config.GetAntennaMode();
-        break;
     case STATE_TELEMETRY:
         values_min = 0;
         values_max = display->getValueCount((menu_item_t)state_machine.getParentState())-1;
@@ -199,14 +194,13 @@ static void saveValueIndex(bool init)
             uint8_t newSwitchMode = adjustSwitchModeForAirRate(
                 (OtaSwitchMode_e)config.GetSwitchMode(), get_elrs_airRateConfig(actualRate)->PayloadLength);
             // Force Gemini when using dual band modes.
-            uint8_t newAntennaMode = get_elrs_airRateConfig(actualRate)->radio_type == RADIO_TYPE_LR1121_LORA_DUAL ? TX_RADIO_MODE_GEMINI : config.GetAntennaMode();
+            uint8_t newAntennaMode = 0;
             // If the switch mode is going to change, block the change while connected
             if (newSwitchMode == OtaSwitchModeCurrent || connectionState == disconnected)
             {
                 deferExecutionMillis(100, [actualRate, newSwitchMode, newAntennaMode](){
                     config.SetRate(actualRate);
                     config.SetSwitchMode(newSwitchMode);
-                    config.SetAntennaMode(newAntennaMode);
                     OtaUpdateSerializers((OtaSwitchMode_e)newSwitchMode, ExpressLRS_currAirRate_Modparams->PayloadLength);
                     SetSyncSpam();
                 });
@@ -224,12 +218,6 @@ static void saveValueIndex(bool init)
                     SetSyncSpam();
                 });
             }
-            break;
-        }
-        case STATE_ANTENNA: {
-            // Force Gemini when using dual band modes.
-            int newAntennaMode = get_elrs_airRateConfig(config.GetRate())->radio_type == RADIO_TYPE_LR1121_LORA_DUAL ? TX_RADIO_MODE_GEMINI : values_index;
-            config.SetAntennaMode(newAntennaMode);
             break;
         }
         case STATE_TELEMETRY:
@@ -434,7 +422,6 @@ fsm_state_event_t const wifi_menu_events[] = {MENU_EVENTS(wifi_menu_fsm)};
 fsm_state_entry_t const main_menu_fsm[] = {
     {STATE_PACKET, nullptr, displayMenuScreen, 20000, value_menu_events, ARRAY_SIZE(value_menu_events)},
     {STATE_SWITCH, nullptr, displayMenuScreen, 20000, value_menu_events, ARRAY_SIZE(value_menu_events)},
-    {STATE_ANTENNA, [](){return isDualRadio();}, displayMenuScreen, 20000, value_menu_events, ARRAY_SIZE(value_menu_events)},
     {STATE_POWER, nullptr, displayMenuScreen, 20000, power_menu_events, ARRAY_SIZE(power_menu_events)},
     {STATE_TELEMETRY, nullptr, displayMenuScreen, 20000, value_menu_events, ARRAY_SIZE(value_menu_events)},
     {STATE_SMARTFAN, [](){return OPT_HAS_THERMAL;}, displayMenuScreen, 20000, value_menu_events, ARRAY_SIZE(value_menu_events)},

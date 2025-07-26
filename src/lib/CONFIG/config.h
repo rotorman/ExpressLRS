@@ -61,10 +61,10 @@ typedef struct {
                 boostChannel:3, // dynamic power boost AUX channel
                 dynamicPower:1,
                 modelMatch:1,
-                txAntenna:2,    // FUTURE: Which TX antenna to use, 0=Auto
+                free1:2,    // FUTURE: Which TX antenna to use, 0=Auto
                 ptrStartChannel:4,
                 ptrEnableChannel:5,
-                free:2;
+                free2:2;
 } model_config_t;
 
 typedef struct {
@@ -106,7 +106,6 @@ public:
     bool GetDynamicPower() const { return m_model->dynamicPower; }
     uint8_t GetBoostChannel() const { return m_model->boostChannel; }
     uint8_t GetSwitchMode() const { return m_model->switchMode; }
-    uint8_t GetAntennaMode() const { return m_model->txAntenna; }
     bool GetModelMatch() const { return m_model->modelMatch; }
     bool     IsModified() const { return m_modified != 0; }
     uint8_t GetPowerFanThreshold() const { return m_config.powerFanThreshold; }
@@ -123,7 +122,6 @@ public:
     void SetDynamicPower(bool dynamicPower);
     void SetBoostChannel(uint8_t boostChannel);
     void SetSwitchMode(uint8_t switchMode);
-    void SetAntennaMode(uint8_t txAntenna);
     void SetModelMatch(bool modelMatch);
     void SetDefaults(bool commit);
     void SetStorageProvider(ELRS_EEPROM *eeprom);
