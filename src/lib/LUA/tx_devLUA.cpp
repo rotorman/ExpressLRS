@@ -29,10 +29,6 @@ static char modelMatchUnit[] = " (ID: 00)";
 static char tlmBandwidth[] = " (xxxxxbps)";
 static const char folderNameSeparator[2] = {' ',':'};
 static const char tlmRatios[] = "Std;Off;1:128;1:64;1:32;1:16;1:8;1:4;1:2;Race";
-static const char switchmodeOpts4ch[] = "Wide;Hybrid";
-static const char switchmodeOpts4chMav[] = ";Hybrid";
-static const char switchmodeOpts8ch[] = "8ch;16ch Rate/2;12ch Mixed";
-static const char switchmodeOpts8chMav[] = ";16ch Rate/2;";
 static const char luastrOffOn[] = "Off;On";
 static char luastrPacketRates[] = STR_LUA_PACKETRATES;
 
@@ -70,13 +66,6 @@ static struct luaItem_selection luaDynamicPower = {
 };
 
 //----------------------------POWER------------------
-
-static struct luaItem_selection luaSwitch = {
-    {"Switch Mode", CRSF_TEXT_SELECTION},
-    0, // value
-    switchmodeOpts4ch,
-    STR_EMPTYSPACE
-};
 
 static struct luaItem_selection luaModelMatch = {
     {"Model Match", CRSF_TEXT_SELECTION},
@@ -317,19 +306,6 @@ static void recalculatePacketRateOptions(int minInterval)
     }
 }
 
-uint8_t adjustSwitchModeForAirRate(OtaSwitchMode_e eSwitchMode, uint8_t packetSize)
-{
-  // Only the fullres modes have 3 switch modes, so reset the switch mode if outside the
-  // range for 4ch mode
-  if (packetSize == OTA4_PACKET_SIZE)
-  {
-    if (eSwitchMode > smHybridOr16ch)
-      return smWideOr8ch;
-  }
-
-  return eSwitchMode;
-}
-
 static void registerLuaParameters()
 {
   if (HAS_RADIO) {
@@ -337,24 +313,7 @@ static void registerLuaParameters()
       if (arg < RATE_MAX)
       {
         uint8_t selectedRate = RATE_MAX - 1 - arg;
-        uint8_t actualRate = adjustPacketRateForBaud(selectedRate);
-        uint8_t newSwitchMode = adjustSwitchModeForAirRate(
-          (OtaSwitchMode_e)config.GetSwitchMode(), get_elrs_airRateConfig(actualRate)->PayloadLength);
-        // If the switch mode is going to change, block the change while connected
-        bool isDisconnected = connectionState == disconnected;
-        if (newSwitchMode == OtaSwitchModeCurrent || isDisconnected)
-        {
-          config.SetRate(actualRate);
-          config.SetSwitchMode(newSwitchMode);
-          if (actualRate != selectedRate)
-          {
-            setLuaWarningFlag(LUA_FLAG_ERROR_BAUDRATE, true);
-          }
-        }
-        else
-        {
-          setLuaWarningFlag(LUA_FLAG_ERROR_CONNECTED, true);
-        }
+        adjustPacketRateForBaud(selectedRate);
       }
     });
     registerLUAParameter(&luaTlmRate, [](struct luaPropertiesCommon *item, uint8_t arg) {
@@ -362,20 +321,6 @@ static void registerLuaParameters()
       if (eRatio <= TLM_RATIO_DISARMED)
       {
         config.SetTlm(eRatio);
-      }
-    });
-    registerLUAParameter(&luaSwitch, [](struct luaPropertiesCommon *item, uint8_t arg) {
-      // Only allow changing switch mode when disconnected since we need to guarantee
-      // the pack and unpack functions are matched
-      bool isDisconnected = connectionState == disconnected;
-      if (isDisconnected)
-      {
-        config.SetSwitchMode(arg);
-        OtaUpdateSerializers((OtaSwitchMode_e)arg, ExpressLRS_currAirRate_Modparams->PayloadLength);
-      }
-      else
-      {
-        setLuaWarningFlag(LUA_FLAG_ERROR_CONNECTED, true);
       }
     });
     registerLUAParameter(&luaModelMatch, [](struct luaPropertiesCommon *item, uint8_t arg) {
@@ -446,9 +391,6 @@ static int event()
 
   setLuaTextSelectionValue(&luaTlmRate, config.GetTlm());
   luaTlmRate.options = tlmRatios;
-
-  setLuaTextSelectionValue(&luaSwitch, config.GetSwitchMode());
-  luaSwitch.options = OtaIsFullRes ? switchmodeOpts8ch : switchmodeOpts4ch;
 
   luadevUpdateModelID();
   setLuaTextSelectionValue(&luaModelMatch, (uint8_t)config.GetModelMatch());

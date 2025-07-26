@@ -16,7 +16,6 @@ extern void ResetPower();
 extern void setWifiUpdateMode();
 extern void SetSyncSpam();
 extern uint8_t adjustPacketRateForBaud(uint8_t rate);
-extern uint8_t adjustSwitchModeForAirRate(OtaSwitchMode_e eSwitchMode, uint8_t packetSize);
 
 extern Display *display;
 
@@ -105,11 +104,6 @@ static void setupValueIndex(bool init)
         values_max = display->getValueCount((menu_item_t)state_machine.getParentState())-1;
         values_index = config.GetRate();
         break;
-    case STATE_SWITCH:
-        values_min = 0;
-        values_max = display->getValueCount((menu_item_t)state_machine.getParentState())-1;
-        values_index = config.GetSwitchMode();
-        break;
     case STATE_TELEMETRY:
         values_min = 0;
         values_max = display->getValueCount((menu_item_t)state_machine.getParentState())-1;
@@ -166,34 +160,7 @@ static void saveValueIndex(bool init)
     switch (state_machine.getParentState())
     {
         case STATE_PACKET: {
-            uint8_t actualRate = adjustPacketRateForBaud(val);
-            uint8_t newSwitchMode = adjustSwitchModeForAirRate(
-                (OtaSwitchMode_e)config.GetSwitchMode(), get_elrs_airRateConfig(actualRate)->PayloadLength);
-            // Force Gemini when using dual band modes.
-            // If the switch mode is going to change, block the change while connected
-            uint8_t buu = 0;
-            if (newSwitchMode == OtaSwitchModeCurrent || connectionState == disconnected)
-            {
-                deferExecutionMillis(100, [actualRate, newSwitchMode, buu](){
-                    config.SetRate(actualRate);
-                    config.SetSwitchMode(newSwitchMode);
-                    OtaUpdateSerializers((OtaSwitchMode_e)newSwitchMode, ExpressLRS_currAirRate_Modparams->PayloadLength);
-                    SetSyncSpam();
-                });
-            }
-            break;
-        }
-        case STATE_SWITCH: {
-            // Only allow changing switch mode when disconnected since we need to guarantee
-            // the pack and unpack functions are matched
-            if (connectionState == disconnected)
-            {
-                deferExecutionMillis(100, [val](){
-                    config.SetSwitchMode(val);
-                    OtaUpdateSerializers((OtaSwitchMode_e)val, ExpressLRS_currAirRate_Modparams->PayloadLength);
-                    SetSyncSpam();
-                });
-            }
+            adjustPacketRateForBaud(val);
             break;
         }
         case STATE_TELEMETRY:
