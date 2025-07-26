@@ -624,20 +624,7 @@ void ICACHE_RAM_ATTR SendRCdataToRF()
     }
   }
 
-#if defined(Regulatory_Domain_EU_CE_2400)
-  transmittingRadio &= ChannelIsClear(transmittingRadio);   // weed out the radio(s) if channel in use
-
-  if (transmittingRadio == SX12XX_Radio_NONE)
-  {
-    // No packet will be sent due to LBT.
-    // Defer TXdoneCallback() to prepare for TLM when the IRQ is normally triggered.
-    deferExecutionMicros(ExpressLRS_currAirRate_RFperfParams->TOA, Radio.TXdoneCallback);
-  }
-  else
-#endif
-  {
-    Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength, false, (uint8_t*)&otaPkt, transmittingRadio);
-  }
+  Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength, false, (uint8_t*)&otaPkt, transmittingRadio);
 }
 
 void ICACHE_RAM_ATTR nonceAdvance()
@@ -688,12 +675,7 @@ void ICACHE_RAM_ATTR timerCallback()
   if (TelemetryRcvPhase == ttrpPreReceiveGap)
   {
     TelemetryRcvPhase = ttrpExpectingTelem;
-#if defined(Regulatory_Domain_EU_CE_2400)
-    // Use downlink LQ for LBT success ratio instead for EU/CE reg domain
-    CRSF::LinkStatistics.downlink_Link_quality = LBTSuccessCalc.getLQ();
-#else
     CRSF::LinkStatistics.downlink_Link_quality = LQCalc.getLQ();
-#endif
     LQCalc.inc();
     return;
   }
@@ -754,9 +736,6 @@ void ResetPower()
     POWERMGNT::setPower((PowerLevels_e)config.GetPower());
   }
   // TLM interval is set on the next SYNC packet
-#if defined(Regulatory_Domain_EU_CE_2400)
-  LBTEnabled = (config.GetPower() > PWR_10mW);
-#endif
 }
 
 static void ChangeRadioParams()
@@ -837,13 +816,6 @@ bool ICACHE_RAM_ATTR RXdoneISR(SX12xxDriverCommon::rx_status const status)
   }
 
   bool packetSuccessful = ProcessTLMpacket(status);
-#if defined(Regulatory_Domain_EU_CE_2400)
-  if (packetSuccessful)
-  {
-    SetClearChannelAssessmentTime();
-  }
-#endif
-
   return packetSuccessful;
 }
 
@@ -858,16 +830,6 @@ void ICACHE_RAM_ATTR TXdoneISR()
   {
     HandleFHSS();
     HandlePrepareForTLM();
-#if defined(Regulatory_Domain_EU_CE_2400)
-    if (TelemetryRcvPhase != ttrpPreReceiveGap)
-    {
-      // Start RX for Listen Before Talk early because it takes about 100us
-      // from RX enable to valid instant RSSI values are returned.
-      // If rx was already started by TLM prepare above, this call will let RX
-      // continue as normal.
-      SetClearChannelAssessmentTime();
-    }
-#endif // non-CE
   }
   busyTransmitting = false;
 }
@@ -1166,10 +1128,6 @@ void setup()
 
       // Set the pkt rate, TLM ratio, and power from the stored eeprom values
       ChangeRadioParams();
-
-  #if defined(Regulatory_Domain_EU_CE_2400)
-      SetClearChannelAssessmentTime();
-  #endif
       hwTimer::init(nullptr, timerCallback);
       setConnectionState(noCrossfire);
     }

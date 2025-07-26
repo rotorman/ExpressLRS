@@ -7,7 +7,6 @@
 #include "FHSS.h"
 #include "helpers.h"
 #include "hwTimer.h"
-#include "LBT.h"
 #include "LQCALC.h"
 #include "OTA.h"
 #include "POWERMGNT.h"

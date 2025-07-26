@@ -133,14 +133,8 @@ condense_flags()
 
 if '-DRADIO_SX127X=1' in build_flags:
     # disallow setting 2400 modes for SX127x
-    if fnmatch.filter(build_flags, '*-DRegulatory_Domain_ISM_2400') or \
-            fnmatch.filter(build_flags, '*-DRegulatory_Domain_EU_CE_2400'):
+    if fnmatch.filter(build_flags, '*-DRegulatory_Domain_ISM_2400'):
         print_error('Regulatory_Domain_*_2400 not compatible with RADIO_SX127X')
-
-if '-DRADIO_LR1121=1' in build_flags:
-    # disallow setting EU_CE_2400 for LR1121
-    if fnmatch.filter(build_flags, '*-DRegulatory_Domain_EU_CE_2400'):
-        print_error('Regulatory_Domain_EU_CE_2400 not compatible with RADIO_LR1121')
 
 if '-DRADIO_SX127X=1' in build_flags or '-DRADIO_LR1121=1' in build_flags:
     # require a domain be set for 900

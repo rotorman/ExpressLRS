@@ -83,12 +83,6 @@ public:
     static PowerLevels_e getMaxPower() {
         PowerLevels_e power;
         power = MaxPower;
-        #if defined(Regulatory_Domain_EU_CE_2400)
-            if (power > PWR_100mW)
-            {
-                power = PWR_100mW;
-            }
-        #endif
         return power;
     }
 
