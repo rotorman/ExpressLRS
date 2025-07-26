@@ -61,10 +61,10 @@ typedef struct {
                 boostChannel:3, // dynamic power boost AUX channel
                 dynamicPower:1,
                 modelMatch:1,
-                free1:2,    // FUTURE: Which TX antenna to use, 0=Auto
+                _unused1:2,
                 ptrStartChannel:4,
                 ptrEnableChannel:5,
-                free2:2;
+                _unused2:2;
 } model_config_t;
 
 typedef struct {

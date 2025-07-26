@@ -170,11 +170,11 @@ static void saveValueIndex(bool init)
             uint8_t newSwitchMode = adjustSwitchModeForAirRate(
                 (OtaSwitchMode_e)config.GetSwitchMode(), get_elrs_airRateConfig(actualRate)->PayloadLength);
             // Force Gemini when using dual band modes.
-            uint8_t newAntennaMode = 0;
             // If the switch mode is going to change, block the change while connected
+            uint8_t buu = 0;
             if (newSwitchMode == OtaSwitchModeCurrent || connectionState == disconnected)
             {
-                deferExecutionMillis(100, [actualRate, newSwitchMode, newAntennaMode](){
+                deferExecutionMillis(100, [actualRate, newSwitchMode, buu](){
                     config.SetRate(actualRate);
                     config.SetSwitchMode(newSwitchMode);
                     OtaUpdateSerializers((OtaSwitchMode_e)newSwitchMode, ExpressLRS_currAirRate_Modparams->PayloadLength);

@@ -84,21 +84,6 @@ device_affinity_t ui_devices[] = {
   {&PDET_device, 0},
 };
 
-static bool diversityAntennaState = LOW;
-
-void switchDiversityAntennas()
-{
-  if (GPIO_PIN_ANT_CTRL != UNDEF_PIN)
-  {
-    diversityAntennaState = !diversityAntennaState;
-    digitalWrite(GPIO_PIN_ANT_CTRL, diversityAntennaState);
-  }
-  if (GPIO_PIN_ANT_CTRL_COMPL != UNDEF_PIN)
-  {
-    digitalWrite(GPIO_PIN_ANT_CTRL_COMPL, !diversityAntennaState);
-  }
-}
-
 void ICACHE_RAM_ATTR LinkStatsFromOta(OTA_LinkStats_s * const ls)
 {
   int8_t snrScaled = ls->SNR;
@@ -111,7 +96,7 @@ void ICACHE_RAM_ATTR LinkStatsFromOta(OTA_LinkStats_s * const ls)
   CRSF::LinkStatistics.uplink_RSSI_2 = -(ls->uplink_RSSI_2);
   CRSF::LinkStatistics.uplink_Link_quality = ls->lq;
   CRSF::LinkStatistics.uplink_SNR = SNR_DESCALE(snrScaled);
-  CRSF::LinkStatistics.active_antenna = ls->antenna;
+  CRSF::LinkStatistics.active_antenna = 0;
   connectionHasModelMatch = ls->modelMatch;
   // -- downlink_SNR / downlink_RSSI is updated for any packet received, not just Linkstats
   // -- uplink_TX_Power is updated when sending to the handset, so it updates when missing telemetry
@@ -468,14 +453,6 @@ void ICACHE_RAM_ATTR timerCallback()
   if (connectionState == awaitingModelId)
     return;
 
-  // Tx Antenna Diversity
-  if ((OtaNonce % ExpressLRS_currAirRate_Modparams->numOfSends == 0 || // Swicth with new packet data
-      OtaNonce % ExpressLRS_currAirRate_Modparams->numOfSends == ExpressLRS_currAirRate_Modparams->numOfSends / 2) && // Swicth in the middle of DVDA sends
-      TelemetryRcvPhase == ttrpTransmitting) // Only switch when transmitting.  A diversity rx will send tlm back on the best antenna.  So dont switch away from it.
-  {
-    switchDiversityAntennas();
-  }
-
   // Nonce advances on every timer tick
   if (!InBindingMode)
     OtaNonce++;
@@ -826,17 +803,6 @@ void ParseMSPData(uint8_t *buf, uint8_t size)
  ***/
 static void setupTarget()
 {
-  if (GPIO_PIN_ANT_CTRL != UNDEF_PIN)
-  {
-    pinMode(GPIO_PIN_ANT_CTRL, OUTPUT);
-    digitalWrite(GPIO_PIN_ANT_CTRL, diversityAntennaState);
-  }
-  if (GPIO_PIN_ANT_CTRL_COMPL != UNDEF_PIN)
-  {
-    pinMode(GPIO_PIN_ANT_CTRL_COMPL, OUTPUT);
-    digitalWrite(GPIO_PIN_ANT_CTRL_COMPL, !diversityAntennaState);
-  }
-
   setupTargetCommon();
 }
 

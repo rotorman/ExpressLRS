@@ -13,7 +13,6 @@ const char *Display::message_string[] = {
 const char *Display::main_menu_strings[][2] = {
     {"PACKET", "RATE"},
     {"SWITCH", "MODE"},
-    {"ANTENNA", "MODE"},
     {"TX", "POWER"},
     {"TELEM", "RATIO"},
     {"MOTION", "DETECT"},

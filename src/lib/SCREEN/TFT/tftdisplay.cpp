@@ -16,7 +16,6 @@ extern WiFiMode_t wifiMode;
 const uint16_t *main_menu_icons[] = {
     elrs_rate,
     elrs_switch,
-    elrs_antenna,
     elrs_power,
     elrs_ratio,
     elrs_bind,

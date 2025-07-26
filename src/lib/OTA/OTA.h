@@ -38,7 +38,7 @@ typedef struct {
 
 typedef struct {
     uint8_t uplink_RSSI_1:7,
-            antenna:1;
+            _unused1:1;
     uint8_t uplink_RSSI_2:7,
             modelMatch:1;
     uint8_t lq:7,

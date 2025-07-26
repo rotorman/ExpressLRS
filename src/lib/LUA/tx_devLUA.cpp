@@ -33,8 +33,6 @@ static const char switchmodeOpts4ch[] = "Wide;Hybrid";
 static const char switchmodeOpts4chMav[] = ";Hybrid";
 static const char switchmodeOpts8ch[] = "8ch;16ch Rate/2;12ch Mixed";
 static const char switchmodeOpts8chMav[] = ";16ch Rate/2;";
-static const char antennamodeOpts[] = "Gemini;Ant 1;Ant 2;Switch";
-static const char antennamodeOptsDualBand[] = "Gemini;;;";
 static const char luastrOffOn[] = "Off;On";
 static char luastrPacketRates[] = STR_LUA_PACKETRATES;
 
@@ -77,13 +75,6 @@ static struct luaItem_selection luaSwitch = {
     {"Switch Mode", CRSF_TEXT_SELECTION},
     0, // value
     switchmodeOpts4ch,
-    STR_EMPTYSPACE
-};
-
-static struct luaItem_selection luaAntenna = {
-    {"Antenna Mode", CRSF_TEXT_SELECTION},
-    0, // value
-    antennamodeOpts,
     STR_EMPTYSPACE
 };
 
@@ -455,8 +446,6 @@ static int event()
 
   setLuaTextSelectionValue(&luaTlmRate, config.GetTlm());
   luaTlmRate.options = tlmRatios;
-
-  luaAntenna.options = antennamodeOpts;
 
   setLuaTextSelectionValue(&luaSwitch, config.GetSwitchMode());
   luaSwitch.options = OtaIsFullRes ? switchmodeOpts8ch : switchmodeOpts4ch;

@@ -331,7 +331,6 @@ typedef struct crsf_sensor_flight_mode_s
  * uint8_t Uplink RSSI Ant. 2 ( dBm * -1 )
  * uint8_t Uplink Package success rate / Link quality ( % )
  * int8_t Uplink SNR ( db )
- * uint8_t Diversity active antenna ( enum ant. 1 = 0, ant. 2 )
  * uint8_t RF Mode ( enum 4fps = 0 , 50fps, 150hz)
  * uint8_t Uplink TX Power ( enum 0mW = 0, 10mW, 25 mW, 100 mW, 500 mW, 1000 mW, 2000mW )
  * uint8_t Downlink RSSI ( dBm * -1 )
