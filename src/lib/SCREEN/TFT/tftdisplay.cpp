@@ -171,25 +171,20 @@ void TFTDisplay::displaySplashScreen()
                         String(buffer), WHITE, BLACK);
 }
 
-void TFTDisplay::displayIdleScreen(uint8_t changed, uint8_t rate_index, uint8_t power_index, uint8_t ratio_index, uint8_t fan_index, bool dynamic, uint8_t running_power_index, uint8_t temperature, message_index_t message_index)
+void TFTDisplay::displayIdleScreen(uint8_t changed, uint8_t rate_index, uint8_t power_index, uint8_t ratio_index, uint8_t fan_index, bool dynamic, uint8_t running_power_index, message_index_t message_index)
 {
     if (changed == CHANGED_ALL)
     {
         // Everything has changed! So clear the right side
         gfx->fillRect(SCREEN_X/2, 0, SCREEN_X/2, SCREEN_Y, WHITE);
-    }
 
-    if (changed & CHANGED_TEMP)
-    {
         // Left side logo, version, and temp
         gfx->fillRect(0, 0, SCREEN_X/2, SCREEN_Y, elrs_banner_bgColor[message_index]);
         gfx->drawBitmap(IDLE_PAGE_START_X, IDLE_PAGE_START_Y, elrs_banner_bmp, SCREEN_LARGE_ICON_SIZE, SCREEN_LARGE_ICON_SIZE,
                         WHITE);
 
-        // Update the temperature
         char buffer[20];
-        // \367 = (char)247 = degree symbol
-        snprintf(buffer, sizeof(buffer), "%.6s %02d\367C", version, temperature);
+        snprintf(buffer, sizeof(buffer), "%.6s", version);
         displayFontCenter(0, SCREEN_X/2, SCREEN_LARGE_ICON_SIZE + (SCREEN_Y - SCREEN_LARGE_ICON_SIZE - SCREEN_SMALL_FONT_SIZE)/2,
                             SCREEN_SMALL_FONT_SIZE, SCREEN_SMALL_FONT,
                             String(buffer), WHITE, elrs_banner_bgColor[message_index]);

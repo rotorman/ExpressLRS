@@ -16,7 +16,6 @@
 #include "devWIFI.h"
 #include "devButton.h"
 #include "devScreen.h"
-#include "devThermal.h"
 #include "devPDET.h"
 
 #if defined(PLATFORM_ESP32_S3)
@@ -82,7 +81,6 @@ device_affinity_t ui_devices[] = {
   {&WIFI_device, 0},
   {&Button_device, 0},
   {&Screen_device, 0},
-  {&Thermal_device, 0},
   {&PDET_device, 0},
 };
 

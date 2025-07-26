@@ -9,10 +9,6 @@
 #include "OTA.h"
 #include "deferred.h"
 
-#include "thermal.h"
-#define UPDATE_TEMP_TIMEOUT 5000
-extern Thermal thermal;
-
 extern FiniteStateMachine state_machine;
 
 extern bool RxWiFiReadyToSend;
@@ -43,7 +39,6 @@ static void displaySplashScreen(bool init)
 static void displayIdleScreen(bool init)
 {
     static message_index_t last_message = MSG_INVALID;
-    static uint8_t last_temperature = 25;
     static uint8_t last_rate = 0xFF;
     static uint8_t last_power = 0xFF;
     static uint8_t last_tlm = 0xFF;
@@ -51,14 +46,7 @@ static void displayIdleScreen(bool init)
     static uint8_t last_dynamic = 0xFF;
     static uint8_t last_run_power = 0xFF;
 
-    uint8_t temperature = last_temperature;
-    static uint32_t last_update_temp_ms = 0;
     uint32_t now = millis();
-    if(now - last_update_temp_ms > UPDATE_TEMP_TIMEOUT || last_update_temp_ms == 0)
-    {
-        temperature = thermal.getTempValue();
-        last_update_temp_ms = now;
-    }
 
     uint8_t changed = init ? CHANGED_ALL : 0;
     message_index_t disp_message;
@@ -81,7 +69,6 @@ static void displayIdleScreen(bool init)
     if (changed == 0)
     {
         changed |= last_message != disp_message ? CHANGED_ALL : 0;
-        changed |= last_temperature != temperature ? CHANGED_TEMP : 0;
         changed |= last_rate != config.GetRate() ? CHANGED_RATE : 0;
         changed |= last_power != config.GetPower() ? CHANGED_POWER : 0;
         changed |= last_dynamic != config.GetDynamicPower() ? CHANGED_POWER : 0;
@@ -93,7 +80,6 @@ static void displayIdleScreen(bool init)
     if (changed)
     {
         last_message = disp_message;
-        last_temperature = temperature;
         last_rate = config.GetRate();
         last_power = config.GetPower();
         last_tlm = tlmIdx;
@@ -101,7 +87,7 @@ static void displayIdleScreen(bool init)
         last_dynamic = config.GetDynamicPower();
         last_run_power = (uint8_t)(POWERMGNT::currPower());
 
-        display->displayIdleScreen(changed, last_rate, last_power, last_tlm, last_fan, last_dynamic, last_run_power, last_temperature, last_message);
+        display->displayIdleScreen(changed, last_rate, last_power, last_tlm, last_fan, last_dynamic, last_run_power, last_message);
     }
 }
 
