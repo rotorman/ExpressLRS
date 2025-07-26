@@ -398,10 +398,6 @@ static void helperDrawImage(menu_item_t menu)
             case STATE_WIFI_BACKPACK:
                 u8g2->drawXBM(x_pos, y_pos-5, 32, 32, backpack_img32);
                 break;
-            case STATE_WIFI_VRX:
-                u8g2->drawXBM(x_pos, y_pos-5, 32, 32, vrxwifi_img32);
-                break;
-
             default:
                 break;
         }
@@ -452,10 +448,6 @@ static void helperDrawImage(menu_item_t menu)
             case STATE_WIFI_BACKPACK:
                 u8g2->drawXBM(x_pos, y_pos-5, 64, 64, backpack_img64);
                 break;
-            case STATE_WIFI_VRX:
-                u8g2->drawXBM(x_pos, y_pos-5, 64, 64, vrxwifi_img64);
-                break;
-
             default:
                 break;
         }

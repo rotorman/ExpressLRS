@@ -21,7 +21,6 @@ enum fsm_state_s {
     STATE_WIFI_TX,
     STATE_WIFI_RX,
     STATE_WIFI_BACKPACK,
-    STATE_WIFI_VRX,
 
 
     // These do not have menu text or icons

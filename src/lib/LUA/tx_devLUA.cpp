@@ -179,12 +179,6 @@ static struct luaItem_command luaTxBackpackUpdate = {
     lcsIdle, // step
     STR_EMPTYSPACE
 };
-
-static struct luaItem_command luaVRxBackpackUpdate = {
-    {"Enable VRx WiFi", CRSF_COMMAND},
-    lcsIdle, // step
-    STR_EMPTYSPACE
-};
 //---------------------------- WiFi -----------------------------
 
 //---------------------------- BACKPACK ------------------
@@ -249,7 +243,6 @@ extern void SetSyncSpam();
 extern bool RxWiFiReadyToSend;
 extern bool BackpackTelemReadyToSend;
 extern bool TxBackpackWiFiReadyToSend;
-extern bool VRxBackpackWiFiReadyToSend;
 extern unsigned long rebootTime;
 extern void setWifiUpdateMode();
 
@@ -389,10 +382,6 @@ static void luahandSimpleSendCmd(struct luaPropertiesCommon *item, uint8_t arg)
     else if ((void *)item == (void *)&luaTxBackpackUpdate && OPT_USE_TX_BACKPACK)
     {
       TxBackpackWiFiReadyToSend = true;
-    }
-    else if ((void *)item == (void *)&luaVRxBackpackUpdate && OPT_USE_TX_BACKPACK)
-    {
-      VRxBackpackWiFiReadyToSend = true;
     }
     sendLuaCommandResponse((struct luaItem_command *)item, lcsExecuting, msg);
   } /* if doExecute */
@@ -664,7 +653,6 @@ static void registerLuaParameters()
 
     if (OPT_USE_TX_BACKPACK) {
       registerLUAParameter(&luaTxBackpackUpdate, &luahandSimpleSendCmd, luaWiFiFolder.common.id);
-      registerLUAParameter(&luaVRxBackpackUpdate, &luahandSimpleSendCmd, luaWiFiFolder.common.id);
       // Backpack folder
       registerLUAParameter(&luaBackpackFolder);
       if (GPIO_PIN_BACKPACK_EN != UNDEF_PIN)

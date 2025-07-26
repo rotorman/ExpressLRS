@@ -12,7 +12,6 @@
 #define MSP_ELRS_BIND                       0x09
 #define MSP_ELRS_MODEL_ID                   0x0A
 #define MSP_ELRS_SET_TX_BACKPACK_WIFI_MODE  0x0C
-#define MSP_ELRS_SET_VRX_BACKPACK_WIFI_MODE 0x0D
 #define MSP_ELRS_SET_RX_WIFI_MODE           0x0E
 //#define MSP_ELRS_SET_RX_LOAN_MODE           0x0F // REMOVED
 #define MSP_ELRS_GET_BACKPACK_VERSION       0x10

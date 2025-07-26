@@ -14,7 +14,6 @@
 extern char backpackVersion[];
 
 bool TxBackpackWiFiReadyToSend = false;
-bool VRxBackpackWiFiReadyToSend = false;
 bool BackpackTelemReadyToSend = false;
 bool lastRecordingState = false;
 
@@ -404,12 +403,6 @@ static int timeout()
         {
             TxBackpackWiFiReadyToSend = false;
             BackpackWiFiToMSPOut(MSP_ELRS_SET_TX_BACKPACK_WIFI_MODE);
-        }
-
-        if (VRxBackpackWiFiReadyToSend)
-        {
-            VRxBackpackWiFiReadyToSend = false;
-            BackpackWiFiToMSPOut(MSP_ELRS_SET_VRX_BACKPACK_WIFI_MODE);
         }
 
         if (BackpackTelemReadyToSend)
