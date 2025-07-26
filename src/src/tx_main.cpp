@@ -16,7 +16,6 @@
 #include "devWIFI.h"
 #include "devButton.h"
 #include "devScreen.h"
-#include "devGsensor.h"
 #include "devThermal.h"
 #include "devPDET.h"
 
@@ -83,7 +82,6 @@ device_affinity_t ui_devices[] = {
   {&WIFI_device, 0},
   {&Button_device, 0},
   {&Screen_device, 0},
-  {&Gsensor_device, 0},
   {&Thermal_device, 0},
   {&PDET_device, 0},
 };

@@ -79,7 +79,7 @@ void OLEDDisplay::displaySplashScreen()
     u8g2->sendBuffer();
 }
 
-void OLEDDisplay::displayIdleScreen(uint8_t changed, uint8_t rate_index, uint8_t power_index, uint8_t ratio_index, uint8_t motion_index, uint8_t fan_index, bool dynamic, uint8_t running_power_index, uint8_t temperature, message_index_t message_index)
+void OLEDDisplay::displayIdleScreen(uint8_t changed, uint8_t rate_index, uint8_t power_index, uint8_t ratio_index, uint8_t fan_index, bool dynamic, uint8_t running_power_index, uint8_t temperature, message_index_t message_index)
 {
     u8g2->clearBuffer();
     String power = getValue(STATE_POWER, running_power_index);
@@ -370,9 +370,6 @@ static void helperDrawImage(menu_item_t menu)
             case STATE_TELEMETRY:
                 u8g2->drawXBM(x_pos, y_pos, 32, 32, ratio_img32);
                 break;
-            case STATE_POWERSAVE:
-                u8g2->drawXBM(x_pos, y_pos, 32, 32, powersaving_img32);
-                break;
             case STATE_SMARTFAN:
                 u8g2->drawXBM(x_pos, y_pos, 32, 32, fan_img32);
                 break;
@@ -416,9 +413,6 @@ static void helperDrawImage(menu_item_t menu)
                 break;
             case STATE_TELEMETRY:
                 u8g2->drawXBM(x_pos, y_pos, 64, 64, ratio_img64);
-                break;
-            case STATE_POWERSAVE:
-                u8g2->drawXBM(x_pos, y_pos, 64, 64, powersaving_img64);
                 break;
             case STATE_SMARTFAN:
                 u8g2->drawXBM(x_pos, y_pos, 64, 64, fan_img64);

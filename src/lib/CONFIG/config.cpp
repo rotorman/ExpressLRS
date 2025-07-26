@@ -6,7 +6,7 @@
 #include "OTA.h"
 #include "helpers.h"
 
-#define ALL_CHANGED         (EVENT_CONFIG_MODEL_CHANGED | EVENT_CONFIG_MAIN_CHANGED | EVENT_CONFIG_FAN_CHANGED | EVENT_CONFIG_MOTION_CHANGED | EVENT_CONFIG_BUTTON_CHANGED)
+#define ALL_CHANGED         (EVENT_CONFIG_MODEL_CHANGED | EVENT_CONFIG_MAIN_CHANGED | EVENT_CONFIG_FAN_CHANGED | EVENT_CONFIG_BUTTON_CHANGED)
 
 // Really awful but safe(?) type punning of model_config_t/v6_model_config_t to and from uint32_t
 template<class T> static const void U32_to_Model(uint32_t const u32, T * const model)
@@ -147,8 +147,6 @@ void TxConfig::Load()
     // Both of these were added to config v5 without incrementing the version
     if (nvs_get_u32(handle, "fan", &value) == ESP_OK)
         m_config.fanMode = value;
-    if (nvs_get_u32(handle, "motion", &value) == ESP_OK)
-        m_config.motionMode = value;
 
     if (version >= 7) {
         // load button actions
@@ -218,11 +216,6 @@ TxConfig::Commit()
         uint32_t value = m_config.fanMode;
         nvs_set_u32(handle, "fan", value);
         nvs_set_u8(handle, "fanthresh", m_config.powerFanThreshold);
-    }
-    if (m_modified & EVENT_CONFIG_MOTION_CHANGED)
-    {
-        uint32_t value = m_config.motionMode;
-        nvs_set_u32(handle, "motion", value);
     }
     if (m_modified & EVENT_CONFIG_BUTTON_CHANGED)
     {
@@ -343,16 +336,6 @@ TxConfig::SetFanMode(uint8_t fanMode)
     {
         m_config.fanMode = fanMode;
         m_modified |= EVENT_CONFIG_FAN_CHANGED;
-    }
-}
-
-void
-TxConfig::SetMotionMode(uint8_t motionMode)
-{
-    if (m_config.motionMode != motionMode)
-    {
-        m_config.motionMode = motionMode;
-        m_modified |= EVENT_CONFIG_MOTION_CHANGED;
     }
 }
 

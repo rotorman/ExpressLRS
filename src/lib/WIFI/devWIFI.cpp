@@ -285,8 +285,6 @@ static void GetConfiguration(AsyncWebServerRequest *request)
     json["config"]["fan-mode"] = config.GetFanMode();
     json["config"]["power-fan-threshold"] = config.GetPowerFanThreshold();
 
-    json["config"]["motion-mode"] = config.GetMotionMode();
-
     for (int model = 0 ; model < CONFIG_TX_MODEL_CNT ; model++)
     {
       const model_config_t &modelConfig = config.GetModelConfig(model);
@@ -347,8 +345,6 @@ static void ImportConfiguration(AsyncWebServerRequest *request, JsonVariant &jso
 
   if (json.containsKey("fan-mode")) config.SetFanMode(json["fan-mode"]);
   if (json.containsKey("power-fan-threshold")) config.SetPowerFanThreshold(json["power-fan-threshold"]);
-  if (json.containsKey("motion-mode")) config.SetMotionMode(json["motion-mode"]);
-
   if (json.containsKey("model"))
   {
     for(JsonPair kv : json["model"].as<JsonObject>())

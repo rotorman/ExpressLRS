@@ -87,8 +87,6 @@ typedef struct {
     uint8_t         powerFanThreshold:4; // Power level to enable fan if present
     model_config_t  model_config[CONFIG_TX_MODEL_CNT];
     uint8_t         fanMode;            // some value used by thermal?
-    uint8_t         motionMode:2,       // bool, but space for 2 more modes
-                    free:6;
     tx_button_color_t buttonColors[2];  // FUTURE: TX RGB color / mode (sets color of TX, can be a static color or standard)
                                         // FUTURE: Model RGB color / mode (sets LED color mode on the model, but can be second TX led color too)
                                         // FUTURE: Custom button actions
@@ -113,7 +111,6 @@ public:
     bool     IsModified() const { return m_modified != 0; }
     uint8_t GetPowerFanThreshold() const { return m_config.powerFanThreshold; }
     uint8_t  GetFanMode() const { return m_config.fanMode; }
-    uint8_t  GetMotionMode() const { return m_config.motionMode; }
     tx_button_color_t const *GetButtonActions(uint8_t button) const { return &m_config.buttonColors[button]; }
     model_config_t const &GetModelConfig(uint8_t model) const { return m_config.model_config[model]; }
     uint8_t GetPTRStartChannel() const { return m_model->ptrStartChannel; }
@@ -132,7 +129,6 @@ public:
     void SetStorageProvider(ELRS_EEPROM *eeprom);
     void SetPowerFanThreshold(uint8_t powerFanThreshold);
     void SetFanMode(uint8_t fanMode);
-    void SetMotionMode(uint8_t motionMode);
     void SetButtonActions(uint8_t button, tx_button_color_t actions[2]);
     void SetPTRStartChannel(uint8_t ptrStartChannel);
     void SetPTREnableChannel(uint8_t ptrEnableChannel);

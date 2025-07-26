@@ -26,7 +26,6 @@ typedef struct {
     uint8_t         powerFanThreshold:4; // Power level to enable fan if present
     v5_model_config_t  model_config[64];
     uint8_t         fanMode;
-    uint8_t         motionMode;
 } v5_tx_config_t;
 
 // V6
@@ -39,7 +38,6 @@ typedef struct {
     uint8_t         powerFanThreshold:4; // Power level to enable fan if present
     v6_model_config_t  model_config[64];
     uint8_t         fanMode;
-    uint8_t         motionMode;
 } v6_tx_config_t;
 
 // V7
@@ -64,7 +62,6 @@ typedef struct {
     uint8_t         powerFanThreshold:4; // Power level to enable fan if present
     v7_model_config_t  model_config[64];
     uint8_t         fanMode;
-    uint8_t         motionMode;
 } v7_tx_config_t;
 
 /***

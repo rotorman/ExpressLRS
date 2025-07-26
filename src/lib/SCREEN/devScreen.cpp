@@ -16,33 +16,12 @@ Display *display;
 #include "FiveWayButton/FiveWayButton.h"
 FiveWayButton fivewaybutton;
 
-#include "gsensor.h"
-extern Gsensor gsensor;
-static bool is_screen_flipped = false;
-static bool is_pre_screen_flipped = false;
-
 #define SCREEN_DURATION 20
 
 extern void jumpToWifiRunning();
 
 static int handle(void)
 {
-    is_screen_flipped = gsensor.isFlipped();
-
-    if ((is_screen_flipped == true) && (is_pre_screen_flipped == false))
-    {
-        display->doScreenBackLight(SCREEN_BACKLIGHT_OFF);
-    }
-    else if ((is_screen_flipped == false) && (is_pre_screen_flipped == true))
-    {
-        display->doScreenBackLight(SCREEN_BACKLIGHT_ON);
-        state_machine.start(millis(), STATE_IDLE);
-    }
-    is_pre_screen_flipped = is_screen_flipped;
-    if (is_screen_flipped)
-    {
-        return 100; // no need to check as often if the screen is off!
-    }
     uint32_t now = millis();
 
     if (state_machine.getParentState() != STATE_WIFI_TX && connectionState == wifiUpdate)

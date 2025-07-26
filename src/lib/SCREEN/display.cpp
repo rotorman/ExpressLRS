@@ -141,11 +141,6 @@ static const char *ratio_curr_string[] = {
     "1:128"
 };
 
-static const char *powersaving_string[] = {
-    "OFF",
-    "ON"
-};
-
 static const char *smartfan_string[] = {
     "AUTO",
     "ON",
@@ -168,8 +163,6 @@ int Display::getValueCount(menu_item_t menu)
         return ARRAY_SIZE(antenna_mode);
     case STATE_TELEMETRY:
         return ARRAY_SIZE(ratio_string);
-    case STATE_POWERSAVE:
-        return ARRAY_SIZE(powersaving_string);
     case STATE_SMARTFAN:
         return ARRAY_SIZE(smartfan_string);
 
@@ -201,8 +194,6 @@ const char *Display::getValue(menu_item_t menu, uint8_t value_index)
         return ratio_string[value_index];
     case STATE_TELEMETRY_CURR:
         return ratio_curr_string[value_index];
-    case STATE_POWERSAVE:
-        return powersaving_string[value_index];
     case STATE_SMARTFAN:
         return smartfan_string[value_index];
 
