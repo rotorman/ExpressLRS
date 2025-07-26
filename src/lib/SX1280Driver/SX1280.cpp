@@ -1,13 +1,10 @@
 #include "SX1280_Regs.h"
 #include "SX1280_hal.h"
 #include "SX1280.h"
-#include "RFAMP_hal.h"
 #include <math.h>
 
 SX1280Hal hal;
 SX1280Driver *SX1280Driver::instance = NULL;
-
-RFAMP_hal RFAMP;
 
 /* Steps for startup
 
@@ -56,7 +53,6 @@ void SX1280Driver::End()
         SetMode(SX1280_MODE_SLEEP, SX12XX_Radio_All);
     }
     hal.end();
-    RFAMP.TXRXdisable();
     RemoveCallbacks();
     currFreq = (uint32_t)((double)2400000000 / (double)FREQ_STEP);
     PayloadLength = 8; // Dummy default value which is overwritten during setup.
@@ -69,7 +65,6 @@ bool SX1280Driver::Begin(uint32_t minimumFrequency, uint32_t maximumFrequency)
     hal.IsrCallback_2 = &SX1280Driver::IsrCallback_2;
 
     hal.reset();
-    RFAMP.init();
 
     SetMode(SX1280_MODE_STDBY_RC, SX12XX_Radio_All); // Put in STDBY_RC mode.  Must be SX1280_MODE_STDBY_RC for SX1280_RADIO_SET_REGULATORMODE to be set.
 
@@ -123,7 +118,6 @@ void SX1280Driver::startCWTest(uint32_t freq, SX12XX_Radio_Number_t radioNumber)
     uint8_t buffer;         // we just need a buffer for the write command
     SetFrequencyHz(freq, radioNumber);
     CommitOutputPower();
-    RFAMP.TXenable(radioNumber);
     hal.WriteCommand(SX1280_RADIO_SET_TXCONTINUOUSWAVE, &buffer, 0, radioNumber);
 }
 
@@ -473,7 +467,6 @@ void ICACHE_RAM_ATTR SX1280Driver::TXnb(uint8_t * data, uint8_t size, bool sendG
         }
     }
 
-    RFAMP.TXenable(radioNumber); // do first to allow PA stablise
     if (sendGeminiBuffer)
     {
         hal.WriteBuffer(0x00, data, size, SX12XX_Radio_1);
@@ -517,7 +510,6 @@ bool ICACHE_RAM_ATTR SX1280Driver::RXnbISR(uint16_t irqStatus, SX12XX_Radio_Numb
 
 void ICACHE_RAM_ATTR SX1280Driver::RXnb(SX1280_RadioOperatingModes_t rxMode, uint32_t incomingTimeout)
 {
-    RFAMP.RXenable();
     SetMode(rxMode, SX12XX_Radio_All, incomingTimeout);
 }
 
@@ -660,7 +652,6 @@ void ICACHE_RAM_ATTR SX1280Driver::IsrCallback(SX12XX_Radio_Number_t radioNumber
     uint16_t irqStatus = instance->GetIrqStatus(radioNumber);
     if (irqStatus & SX1280_IRQ_TX_DONE)
     {
-        RFAMP.TXRXdisable();
         instance->TXnbISR();
         irqClearRadio = SX12XX_Radio_All;
     }
