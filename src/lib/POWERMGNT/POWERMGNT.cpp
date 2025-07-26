@@ -61,12 +61,6 @@ PowerLevels_e crsfPowerToPower(uint8_t crsfpower)
  * - `POWER_OUTPUT_FIXED` which will provide the value to `Radio.SetOutputPower` function
  * - default is to use `Radio.SetOutputPower` function
  *
- * RX Targets
- * **********
- *
- * Can define `POWER_OUTPUT_FIXED` which will provide the value to `Radio.SetOutputPower` function.
- * If nothing is defined then the default method `Radio.SetOutputPowerMax` will be used, which sets the value to
- * 13 on SX1280 (~12.5dBm) or 15 on SX127x (~17dBm)
  */
 
 PowerLevels_e PowerLevelContainer::CurrentPower = PWR_COUNT; // default "undefined" initial value

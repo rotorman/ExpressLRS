@@ -18,11 +18,6 @@ function updateParams(data) {
   warn_offset = 90000;
   bad_offset = 180000;
 @@end
-@@if chip == 'SX127X':
-  xtalNominal = 32000000;
-  warn_offset = 100000;
-  bad_offset = 125000;
-@@end
   _('frequency').textContent = (cwFreq / 1000000).toString();
   _('start-cw').disabled = false;
 }

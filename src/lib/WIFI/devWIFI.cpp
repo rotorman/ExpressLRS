@@ -384,10 +384,6 @@ static void WebUpdateGetTarget(AsyncWebServerRequest *request)
   json["radio-type"] = "SX128X";
   json["has-sub-ghz"] = false;
 #endif
-#if defined(RADIO_SX127X)
-  json["radio-type"] = "SX127X";
-  json["has-sub-ghz"] = true;
-#endif
 
   AsyncResponseStream *response = request->beginResponseStream("application/json");
   serializeJson(json, *response);
@@ -644,9 +640,6 @@ static void HandleContinuousWave(AsyncWebServerRequest *request) {
     POWERMGNT::setPower(POWERMGNT::getMinPower());
 
     Radio.startCWTest(FHSSconfig->freq_center, radio);
-#if defined(RADIO_SX127X)
-    deferExecutionMillis(50, [radio](){ Radio.cwRepeat(radio); });
-#endif
   } else {
     int radios = (GPIO_PIN_NSS_2 == UNDEF_PIN) ? 1 : 2;
     request->send(200, "application/json", String("{\"radios\": ") + radios + ", \"center\": "+ FHSSconfig->freq_center + "}");

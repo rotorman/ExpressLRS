@@ -3,9 +3,7 @@
 #include "targets.h"
 #include "random.h"
 
-#if defined(RADIO_SX127X)
-#define FreqCorrectionMax ((int32_t)(100000/FREQ_STEP))
-#elif defined(RADIO_SX128X)
+#if defined(RADIO_SX128X)
 #define FreqCorrectionMax ((int32_t)(200000/FREQ_STEP))
 #endif
 #define FreqCorrectionMin (-FreqCorrectionMax)
@@ -23,8 +21,6 @@ typedef struct {
 } fhss_config_t;
 
 extern volatile uint8_t FHSSptr;
-extern int32_t FreqCorrection;      // Only used for the SX1276
-extern int32_t FreqCorrection_2;    // Only used for the SX1276
 
 // Primary Band
 extern uint16_t primaryBandCount;
@@ -62,7 +58,7 @@ static inline uint16_t FHSSgetSequenceCount()
 // get the initial frequency, which is also the sync channel
 static inline uint32_t FHSSgetInitialFreq()
 {
-    return FHSSconfig->freq_start + (sync_channel * freq_spread / FREQ_SPREAD_SCALE) - FreqCorrection;
+    return FHSSconfig->freq_start + (sync_channel * freq_spread / FREQ_SPREAD_SCALE);
 }
 
 // Get the current sequence pointer
@@ -88,26 +84,10 @@ static inline uint32_t FHSSgetNextFreq()
 {
     FHSSptr = (FHSSptr + 1) % FHSSgetSequenceCount();
 
-    return FHSSconfig->freq_start + (freq_spread * FHSSsequence[FHSSptr] / FREQ_SPREAD_SCALE) - FreqCorrection;
+    return FHSSconfig->freq_start + (freq_spread * FHSSsequence[FHSSptr] / FREQ_SPREAD_SCALE);
 }
 
 static inline const char *FHSSgetRegulatoryDomain()
 {
     return FHSSconfig->domain;
-}
-
-// Get frequency offset by half of the domain frequency range
-static inline uint32_t FHSSGeminiFreq(uint8_t FHSSsequenceIdx)
-{
-    uint32_t freq;
-    uint32_t numfhss = FHSSgetChannelCount();
-    uint8_t offSetIdx = (FHSSsequenceIdx + (numfhss / 2)) % numfhss; 
-
-    freq = FHSSconfig->freq_start + (freq_spread * offSetIdx / FREQ_SPREAD_SCALE) - FreqCorrection_2;
-    return freq;
-}
-
-static inline uint32_t FHSSgetGeminiFreq()
-{
-    return FHSSGeminiFreq(FHSSsequence[FHSSgetCurrIndex()]);
 }

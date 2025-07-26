@@ -6,9 +6,7 @@
 ///////////////////////////////////////
 // Even though we aren't using anything this keeps the PIO dependency analyzer happy!
 
-#if defined(RADIO_SX127X)
-#include "SX127xDriver.h"
-#elif defined(RADIO_SX128X)
+#if defined(RADIO_SX128X)
 #include "SX1280Driver.h"
 #else
 #error Invalid radio configuration!

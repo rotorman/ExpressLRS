@@ -12,7 +12,6 @@ class DeviceType(Enum):
     RX = 1
 
 class RadioType(Enum):
-    SX127X = 0
     SX1280 = 1
 
 class FirmwareOptions(NamedTuple):

@@ -43,9 +43,6 @@ def generateUID(phrase):
         uid = hashlib.md5(("-DMY_BINDING_PHRASE=\""+phrase+"\"").encode()).digest()[0:6]
     return uid
 
-def FREQ_HZ_TO_REG_VAL_SX127X(freq):
-    return int(freq/61.03515625)
-
 def FREQ_HZ_TO_REG_VAL_SX1280(freq):
     return int(freq/(52000000.0/pow(2,18)))
 
@@ -95,9 +92,9 @@ def patch_unified(args, options):
         args.file,
         JSONEncoder().encode(json_flags),
         args.target,
-        'tx' if options.deviceType is DeviceType.TX else 'rx',
-        '2400' if options.radioChip is RadioType.SX1280 else '900' if options.radioChip is RadioType.SX127X else 'dual',
-        '32' if options.mcuType is MCUType.ESP32 and options.deviceType is DeviceType.RX else '',
+        'tx',
+        '2400',
+        '',
         options.luaName,
         args.rx_as_tx
     )
@@ -185,8 +182,6 @@ def main():
     # TX Params
     parser.add_argument('--tlm-report', type=int, const=240, nargs='?', action='store', help='The interval (in milliseconds) between telemetry packets')
     parser.add_argument('--fan-min-runtime', type=int, const=30, nargs='?', action='store', help='The minimum amount of time the fan should run for (in seconds) if it turns on')
-    # Regulatory domain
-    parser.add_argument('--domain', type=RegulatoryDomain, choices=list(RegulatoryDomain), default=None, help='For SX127X based devices, which regulatory domain is being used')
     # Unified target
     parser.add_argument('--target', type=str, help='Unified target JSON path')
     # Flashing options
@@ -245,7 +240,7 @@ def main():
         options = FirmwareOptions(
             MCUType.ESP32,
             DeviceType.TX,
-            RadioType.SX127X if '_900.' in args.target else RadioType.SX1280,
+            RadioType.SX1280,
             config['lua_name'] if 'lua_name' in config else '',
             '',
             0,

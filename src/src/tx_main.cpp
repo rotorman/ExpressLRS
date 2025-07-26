@@ -157,7 +157,6 @@ bool ICACHE_RAM_ATTR ProcessTLMpacket(SX12xxDriverCommon::rx_status const status
   if (OtaIsFullRes)
   {
     OTA_Packet8_s * const ota8 = (OTA_Packet8_s * const)otaPktPtr;
-    OTA_Packet8_s * const ota8Second = (OTA_Packet8_s * const)otaPktPtrSecond;
     
     switch (otaPktPtr->std.type)
     {
@@ -914,9 +913,6 @@ void setup()
     config.Load(); // Load the stored values from eeprom
 
     Radio.currFreq = FHSSgetInitialFreq(); //set frequency first or an error will occur!!!
-    #if defined(RADIO_SX127X)
-    //Radio.currSyncWord = UID[3];
-    #endif
     bool init_success;
     if (GPIO_PIN_SCK != UNDEF_PIN)
     {

@@ -13,10 +13,7 @@
                                ";AUX7" LUASYM_ARROW_UP ";AUX7" LUASYM_ARROW_DN ";AUX8" LUASYM_ARROW_UP ";AUX8" LUASYM_ARROW_DN \
                                ";AUX9" LUASYM_ARROW_UP ";AUX9" LUASYM_ARROW_DN ";AUX10" LUASYM_ARROW_UP ";AUX10" LUASYM_ARROW_DN
 
-#if defined(RADIO_SX127X)
-#define STR_LUA_PACKETRATES \
-    "D50Hz(-112dBm);25Hz(-123dBm);50Hz(-120dBm);100Hz(-117dBm);100Hz Full(-112dBm);200Hz(-112dBm)"
-#elif defined(RADIO_SX128X)
+#if defined(RADIO_SX128X)
 #define STR_LUA_PACKETRATES \
     "50Hz(-115dBm);100Hz Full(-112dBm);150Hz(-112dBm);250Hz(-108dBm);333Hz Full(-105dBm);500Hz(-105dBm);" \
     "D250(-104dBm);D500(-104dBm);F500(-104dBm);F1000(-104dBm)"

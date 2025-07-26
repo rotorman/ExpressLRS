@@ -1,4 +1,4 @@
-@@require(PLATFORM, VERSION, isTX, hasSubGHz)
+@@require(PLATFORM, VERSION, isTX)
 <!DOCTYPE HTML>
 <html lang="en">
 
@@ -43,21 +43,6 @@
 							<span class="badge" id="uid-type"></span>
 							<input size='40' id='uid' name='uid' type='text' class='array' readonly/>
 						</div>
-@@if hasSubGHz:
-						<div class="mui-select">
-							<select id='domain' name='domain'>
-								<option value='0'>AU915</option>
-								<option value='1'>FCC915</option>
-								<option value='2'>EU868</option>
-								<option value='3'>IN866</option>
-								<option value='4'>AU433</option>
-								<option value='5'>EU433</option>
-								<option value='6'>US433</option>
-								<option value='7'>US433-Wide</option>
-							</select>
-							<label for="domain">Regulatory domain</label>
-						</div>
-@@end
 						<div class="mui-textfield">
 							<input size='3' id='wifi-on-interval' name='wifi-on-interval' type='text' placeholder="Disabled"/>
 							<label for="wifi-on-interval">WiFi "auto on" interval in seconds (leave blank to disable)</label>

@@ -3,9 +3,7 @@
 #include "targets.h"
 #include <device.h>
 
-#if defined(RADIO_SX127X)
-#include "SX127xDriver.h"
-#elif defined(RADIO_SX128X)
+#if defined(RADIO_SX128X)
 #include "SX1280Driver.h"
 #else
 #error "Radio configuration is not valid!"
@@ -112,7 +110,6 @@ typedef enum : uint8_t
 } expresslrs_RFrates_e;
 
 enum {
-    RADIO_TYPE_SX127x_LORA,
     RADIO_TYPE_SX128x_LORA,
     RADIO_TYPE_SX128x_FLRC,
 };
@@ -251,13 +248,7 @@ enum eAuxChannels : uint8_t
 #define ELRS_CRC_POLY 0x07 // 0x83
 #define ELRS_CRC14_POLY 0x2E57 // 0x372B
 
-#if defined(RADIO_SX127X)
-#define RATE_MAX 6
-#define RATE_BINDING RATE_LORA_900_50HZ
-
-extern SX127xDriver Radio;
-
-#elif defined(RADIO_SX128X)
+#if defined(RADIO_SX128X)
 #define RATE_MAX 10     // 2xFLRC + 2xDVDA + 4xLoRa + 2xFullRes
 #define RATE_BINDING RATE_LORA_2G4_50HZ
 

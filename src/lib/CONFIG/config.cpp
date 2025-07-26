@@ -39,17 +39,6 @@ template<class T> static const uint32_t Model_to_U32(T const * const model)
 
 static uint8_t RateV6toV7(uint8_t rateV6)
 {
-#if defined(RADIO_SX127X)
-    if (rateV6 == 0)
-    {
-        // 200Hz stays same
-        return 0;
-    }
-
-    // 100Hz, 50Hz, 25Hz all move up one
-    // to make room for 100Hz Full
-    return rateV6 + 1;
-#else // RADIO_2400
     switch (rateV6)
     {
         case 0: return 4; // 500Hz
@@ -58,7 +47,6 @@ static uint8_t RateV6toV7(uint8_t rateV6)
         case 3: return 9; // 50Hz
         default: return 4; // 500Hz
     }
-#endif // RADIO_2400
 }
 
 static uint8_t RatioV6toV7(uint8_t ratioV6)
@@ -397,9 +385,7 @@ TxConfig::SetDefaults(bool commit)
     for (unsigned i=0; i<CONFIG_TX_MODEL_CNT; i++)
     {
         SetModelId(i);
-        #if defined(RADIO_SX127X)
-            SetRate(enumRatetoIndex(RATE_LORA_900_200HZ));
-        #elif defined(RADIO_SX128X)
+        #if defined(RADIO_SX128X)
             SetRate(enumRatetoIndex(RATE_LORA_2G4_250HZ));
         #endif
         SetPower(POWERMGNT::getDefaultPower());

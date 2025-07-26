@@ -2,21 +2,7 @@
 #include "options.h"
 #include <string.h>
 
-#if defined(RADIO_SX127X)
-#include "SX127xDriver.h"
-
-const fhss_config_t domains[] = {
-    {"AU915",  FREQ_HZ_TO_REG_VAL(915500000), FREQ_HZ_TO_REG_VAL(926900000), 20, 921000000},
-    {"FCC915", FREQ_HZ_TO_REG_VAL(903500000), FREQ_HZ_TO_REG_VAL(926900000), 40, 915000000},
-    {"EU868",  FREQ_HZ_TO_REG_VAL(865275000), FREQ_HZ_TO_REG_VAL(869575000), 13, 868000000},
-    {"IN866",  FREQ_HZ_TO_REG_VAL(865375000), FREQ_HZ_TO_REG_VAL(866950000), 4, 866000000},
-    {"AU433",  FREQ_HZ_TO_REG_VAL(433420000), FREQ_HZ_TO_REG_VAL(434420000), 3, 434000000},
-    {"EU433",  FREQ_HZ_TO_REG_VAL(433100000), FREQ_HZ_TO_REG_VAL(434450000), 3, 434000000},
-    {"US433",  FREQ_HZ_TO_REG_VAL(433250000), FREQ_HZ_TO_REG_VAL(438000000), 8, 434000000},
-    {"US433W",  FREQ_HZ_TO_REG_VAL(423500000), FREQ_HZ_TO_REG_VAL(438000000), 20, 434000000},
-};
-
-#elif defined(RADIO_SX128X)
+#if defined(RADIO_SX128X)
 #include "SX1280Driver.h"
 
 const fhss_config_t domains[] = {
@@ -37,10 +23,6 @@ uint8_t volatile FHSSptr;
 
 // Channel for sync packets and initial connection establishment
 uint_fast8_t sync_channel;
-
-// Offset from the predefined frequency determined by AFC on Team900 (register units)
-int32_t FreqCorrection;
-int32_t FreqCorrection_2;
 
 // Frequency hop separation
 uint32_t freq_spread;

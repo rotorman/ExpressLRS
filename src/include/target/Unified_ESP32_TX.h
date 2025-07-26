@@ -17,7 +17,6 @@
 #define GPIO_PIN_RST_2 hardware_pin(HARDWARE_radio_rst_2)
 #define GPIO_PIN_SCK hardware_pin(HARDWARE_radio_sck)
 #define OPT_USE_HARDWARE_DCDC hardware_flag(HARDWARE_radio_dcdc)
-#define OPT_USE_SX1276_RFO_HF hardware_flag(HARDWARE_radio_rfo_hf)
 
 // Radio Antenna
 #define GPIO_PIN_ANT_CTRL hardware_pin(HARDWARE_ant_ctrl)
