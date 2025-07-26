@@ -53,7 +53,6 @@ void saveOptions(Stream &stream, bool customised)
         doc["wifi-password"] = firmwareOptions.home_wifi_password;
     }
     doc["tlm-interval"] = firmwareOptions.tlm_report_interval;
-    doc["airport-uart-baud"] = firmwareOptions.uart_baud;
     doc["domain"] = firmwareOptions.domain;
     doc["customised"] = customised;
     doc["flash-discriminator"] = firmwareOptions.flash_discriminator;
@@ -146,7 +145,6 @@ static void options_LoadFromFlashOrFile(EspFlashStream &strmFlash)
     strlcpy(firmwareOptions.home_wifi_ssid, doc["wifi-ssid"] | "", sizeof(firmwareOptions.home_wifi_ssid));
     strlcpy(firmwareOptions.home_wifi_password, doc["wifi-password"] | "", sizeof(firmwareOptions.home_wifi_password));
     firmwareOptions.tlm_report_interval = doc["tlm-interval"] | 240U;
-    firmwareOptions.uart_baud = doc["airport-uart-baud"] | 460800;
     firmwareOptions.domain = doc["domain"] | 0;
     firmwareOptions.flash_discriminator = doc["flash-discriminator"] | 0U;
 

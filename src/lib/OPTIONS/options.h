@@ -30,7 +30,6 @@ typedef struct _options {
     char        home_wifi_ssid[33];
     char        home_wifi_password[65];
     uint32_t    tlm_report_interval;
-    uint32_t    uart_baud;
 } __attribute__((packed)) firmware_options_t;
 
 // Layout is PRODUCTNAME DEVICENAME OPTIONS HARDWARE
