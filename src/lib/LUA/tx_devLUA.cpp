@@ -1,7 +1,12 @@
-#include "rxtx_devLua.h"
+#include "common.h"
+#include "device.h"
+#include "lua.h"
+#include "config.h"
 #include "CRSF.h"
 #include "CRSFHandset.h"
 #include "helpers.h"
+
+const char STR_EMPTYSPACE[] = { 0 };
 
 #define STR_LUA_ALLAUX         "AUX1;AUX2;AUX3;AUX4;AUX5;AUX6;AUX7;AUX8;AUX9;AUX10"
 
@@ -57,7 +62,6 @@ static struct luaItem_command luaWebUpdate = {
 static char luaBadGoodString[10];
 
 extern TxConfig config;
-extern uint8_t adjustPacketRateForBaud(uint8_t rate);
 extern unsigned long rebootTime;
 extern void setWifiUpdateMode();
 

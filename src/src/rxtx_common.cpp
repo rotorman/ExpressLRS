@@ -4,20 +4,6 @@
 #include <functional>
 #include <Wire.h>
 
-static const int maxDeferredFunctions = 3;
-
-struct deferred_t {
-    unsigned long started;
-    unsigned long timeout;
-    std::function<void()> function;
-};
-
-static deferred_t deferred[maxDeferredFunctions] = {
-    {0, 0, nullptr},
-    {0, 0, nullptr},
-    {0, 0, nullptr},
-};
-
 boolean i2c_enabled = false;
 
 static void setupWire()
@@ -38,32 +24,4 @@ static void setupWire()
 void setupTargetCommon()
 {
     setupWire();
-}
-
-void deferExecutionMicros(unsigned long us, std::function<void()> f)
-{
-    for (int i=0 ; i<maxDeferredFunctions ; i++)
-    {
-        if (deferred[i].function == nullptr)
-        {
-            deferred[i].started = micros();
-            deferred[i].timeout = us;
-            deferred[i].function = f;
-            return;
-        }
-    }
-    // Bail out, there are no slots available!
-}
-
-void executeDeferredFunction(unsigned long now)
-{
-    // execute deferred function if its time has elapsed
-    for (int i=0 ; i<maxDeferredFunctions ; i++)
-    {
-        if (deferred[i].function != nullptr && (now - deferred[i].started) > deferred[i].timeout)
-        {
-            deferred[i].function();
-            deferred[i].function = nullptr;
-        }
-    }
 }

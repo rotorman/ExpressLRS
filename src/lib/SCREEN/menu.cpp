@@ -5,12 +5,10 @@
 #include "config.h"
 #include "helpers.h"
 #include "handset.h"
-#include "deferred.h"
 
 extern FiniteStateMachine state_machine;
 
 extern void setWifiUpdateMode();
-extern uint8_t adjustPacketRateForBaud(uint8_t rate);
 
 extern Display *display;
 

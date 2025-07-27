@@ -44,21 +44,6 @@ expresslrs_rf_pref_params_s *get_elrs_RFperfParams(uint8_t index)
     return &ExpressLRS_AirRateRFperf[index];
 }
 
-uint8_t get_elrs_HandsetRate_max(uint8_t rateIndex, uint32_t minInterval)
-{
-    while (rateIndex < RATE_MAX)
-    {
-        expresslrs_mod_settings_s const * const ModParams = &ExpressLRS_AirRateConfig[rateIndex];
-        // Handset interval = time between packets from handset, which is expected to be air rate * number of times it is sent
-        uint32_t handsetInterval = ModParams->interval * ModParams->numOfSends;
-        if (handsetInterval >= minInterval && isSupportedRFRate(rateIndex))
-            break;
-        ++rateIndex;
-    }
-
-    return rateIndex;
-}
-
 uint8_t ICACHE_RAM_ATTR enumRatetoIndex(expresslrs_RFrates_e const eRate)
 { // convert enum_rate to index
     expresslrs_mod_settings_s const * ModParams;
@@ -81,8 +66,6 @@ bool connectionHasModelMatch = false;
 bool InBindingMode = false;
 uint8_t ExpressLRS_currTlmDenom = 1;
 connectionState_e connectionState = disconnected;
-expresslrs_mod_settings_s *ExpressLRS_currAirRate_Modparams = nullptr;
-expresslrs_rf_pref_params_s *ExpressLRS_currAirRate_RFperfParams = nullptr;
 
 // Current state of channels, CRSF format
 uint32_t ChannelData[CRSF_NUM_CHANNELS];

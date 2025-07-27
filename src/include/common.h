@@ -245,7 +245,6 @@ enum eAuxChannels : uint8_t
 
 expresslrs_mod_settings_s *get_elrs_airRateConfig(uint8_t index);
 expresslrs_rf_pref_params_s *get_elrs_RFperfParams(uint8_t index);
-uint8_t get_elrs_HandsetRate_max(uint8_t rateIndex, uint32_t minInterval);
 
 uint8_t TLMratioEnumToValue(expresslrs_tlm_ratio_e const enumval);
 uint8_t TLMBurstMaxForRateRatio(uint16_t const rateHz, uint8_t const ratioDiv);
@@ -255,8 +254,6 @@ extern uint8_t UID[UID_LEN];
 extern bool connectionHasModelMatch;
 extern bool InBindingMode;
 extern uint8_t ExpressLRS_currTlmDenom;
-extern expresslrs_mod_settings_s *ExpressLRS_currAirRate_Modparams;
-extern expresslrs_rf_pref_params_s *ExpressLRS_currAirRate_RFperfParams;
 extern uint32_t ChannelData[CRSF_NUM_CHANNELS]; // Current state of channels, CRSF format
 
 extern connectionState_e connectionState;

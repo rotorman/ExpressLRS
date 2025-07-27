@@ -371,18 +371,18 @@ static int timeout()
     {
     case connected:
         // Set the color and we're done!
-        blinkyColor.h = ExpressLRS_currAirRate_Modparams->index * 256 / RATE_MAX;
+        blinkyColor.h = 10;
         blinkyColor.v = 10;
         WS281BsetLED(HsvToRgb(blinkyColor));
         return DURATION_NEVER;
     case tentative:
         // Set the color and we're done!
-        blinkyColor.h = ExpressLRS_currAirRate_Modparams->index * 256 / RATE_MAX;
+        blinkyColor.h = 10;
         blinkyColor.v = 50;
         WS281BsetLED(HsvToRgb(blinkyColor));
         return DURATION_NEVER;
     case disconnected:
-        blinkyColor.h = ExpressLRS_currAirRate_Modparams->index * 256 / RATE_MAX;
+        blinkyColor.h = 10;
         brightnessFadeLED(blinkyColor, 0, 64);
         return NORMAL_UPDATE_INTERVAL;
     case wifiUpdate:

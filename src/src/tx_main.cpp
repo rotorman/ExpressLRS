@@ -1,17 +1,17 @@
-#include "rxtx_common.h"
-
+#include "targets.h"
+#include "common.h"
+#include "config.h"
+#include "CRSF.h"
+#include "helpers.h"
+#include "hwTimer.h"
 #include "CRSFHandset.h"
 #include "lua.h"
 #include "msp.h"
 #include "msptypes.h"
 #include "telemetry_protocol.h"
-#include "stubborn_receiver.h"
-#include "stubborn_sender.h"
-
 #include "devHandset.h"
 #include "devADC.h"
 #include "devLED.h"
-#include "devLUA.h"
 #include "devWIFI.h"
 #include "devButton.h"
 #include "devScreen.h"
@@ -23,19 +23,16 @@
 
 //// CONSTANTS ////
 #define MSP_PACKET_SEND_INTERVAL 10LU
+#define RF_RC_INTERVAL_US 20000U
 
 /// define some libs to use ///
 MSP msp;
 ELRS_EEPROM eeprom;
 TxConfig config;
 
+extern device_t LUA_device;
 unsigned long rebootTime = 0;
 extern bool webserverPreventAutoStart;
-//// MSP Data Handling ///////
-bool NextPacketIsMspData = false;  // if true the next packet will contain the msp data
-uint8_t packageIndexRadio1 = 0xFF;
-uint8_t packageIndexRadio2 = 0xFF;
-uint8_t tlmSenderDoubleBuffer[20] = {0};
 
 volatile uint32_t LastTLMpacketRecvMillis = 0;
 uint32_t TLMpacketReported = 0;
@@ -44,14 +41,8 @@ static bool commitInProgress = false;
 volatile bool busyTransmitting;
 static volatile bool ModelUpdatePending;
 
-uint8_t MSPDataPackage[5];
 #define BindingSpamAmount 25
 static uint8_t BindingSendCount;
-
-static TxTlmRcvPhase_e TelemetryRcvPhase = ttrpTransmitting;
-StubbornReceiver TelemetryReceiver;
-StubbornSender MspSender;
-uint8_t CRSFinBuffer[CRSF_MAX_PACKET_LEN+1];
 
 device_affinity_t ui_devices[] = {
   {&Handset_device, 1},
@@ -64,33 +55,7 @@ device_affinity_t ui_devices[] = {
   {&Screen_device, 0},
 };
 
-uint8_t adjustPacketRateForBaud(uint8_t rateIndex)
-{
-  return rateIndex = get_elrs_HandsetRate_max(rateIndex, handset->getMinPacketInterval());
-}
-
-void SetRFLinkRate(uint8_t index) // Set speed of RF link
-{
-  expresslrs_mod_settings_s *const ModParams = get_elrs_airRateConfig(index);
-  expresslrs_rf_pref_params_s *const RFperf = get_elrs_RFperfParams(index);
-  // Binding always uses invertIQ
-
-  if ((ModParams == ExpressLRS_currAirRate_Modparams)
-    && (RFperf == ExpressLRS_currAirRate_RFperfParams))
-    return;
-
-  uint32_t interval = ModParams->interval;
-  hwTimer::updateInterval(interval);
-
-  MspSender.setMaxPackageIndex(ELRS_MSP_MAX_PACKAGES);
-
-  ExpressLRS_currAirRate_Modparams = ModParams;
-  ExpressLRS_currAirRate_RFperfParams = RFperf;
-  CRSF::LinkStatistics.rf_Mode = ModParams->enum_rate;
-
-  handset->setPacketInterval(interval);
-  setConnectionState(disconnected);
-}
+extern void setupTargetCommon();
 
 void ICACHE_RAM_ATTR SendRCdataToRF()
 {
@@ -131,16 +96,6 @@ void ICACHE_RAM_ATTR timerCallback()
   if (connectionState == awaitingModelId)
     return;
 
-  // If HandleTLM has started Receive mode, TLM packet reception should begin shortly
-  // Skip transmitting on this slot
-  if (TelemetryRcvPhase == ttrpPreReceiveGap)
-  {
-    TelemetryRcvPhase = ttrpExpectingTelem;
-    return;
-  }
-
-  TelemetryRcvPhase = ttrpTransmitting;
-
   SendRCdataToRF();
 }
 
@@ -165,12 +120,6 @@ static void UARTconnected()
   hwTimer::resume();
 }
 
-static void ChangeRadioParams()
-{
-  ModelUpdatePending = false;
-  SetRFLinkRate(enumRatetoIndex(RATE_LORA_2G4_50HZ));
-}
-
 void ModelUpdateReq()
 {
   // Force synspam with the current rate parameters in case already have a connection established
@@ -189,45 +138,13 @@ void ModelUpdateReq()
   }
 }
 
-static void ConfigChangeCommit()
-{
-  // Write the uncommitted eeprom values (may block for a while)
-  uint32_t changes = config.Commit();
-  // Change params after the blocking finishes as a rate change will change the radio freq
-  ChangeRadioParams();
-  // Clear the commitInProgress flag so normal processing resumes
-  commitInProgress = false;
-  devicesTriggerEvent(changes);
-}
-
-static void CheckConfigChangePending()
-{
-  if (config.IsModified() || ModelUpdatePending)
-  {
-    // wait until no longer transmitting
-    while (busyTransmitting);
-    // Set the commitInProgress flag to prevent any other RF SPI traffic during the commit from RX or scheduled TX
-    commitInProgress = true;
-    // If telemetry expected in the next interval, the radio was in RX mode
-    // and will skip sending the next packet when the timer resumes.
-    // Return to normal send mode because if the skipped packet happened
-    // to be on the last slot of the FHSS the skip will prevent FHSS
-    if (TelemetryRcvPhase != ttrpTransmitting)
-    {
-      //Radio.SetTxIdleMode();
-      TelemetryRcvPhase = ttrpTransmitting;
-    }
-    ConfigChangeCommit();
-  }
-}
-
 static void UpdateConnectDisconnectStatus()
 {
   // Number of telemetry packets which can be lost in a row before going to disconnected state
   constexpr unsigned RX_LOSS_CNT = 5;
   // Must be at least 512ms and +2 to account for any rounding down and partial millis()
   const uint32_t msConnectionLostTimeout = std::max((uint32_t)512U,
-    (uint32_t)ExpressLRS_currTlmDenom * ExpressLRS_currAirRate_Modparams->interval / (1000U / RX_LOSS_CNT)
+    (uint32_t)ExpressLRS_currTlmDenom * RF_RC_INTERVAL_US / (1000U / RX_LOSS_CNT)
     ) + 2U;
   // Capture the last before now so it will always be <= now
   const uint32_t lastTlmMillis = LastTLMpacketRecvMillis;
@@ -255,10 +172,6 @@ static void EnterBindingMode()
   // Binding uses 50Hz, and InvertIQ
   InBindingMode = true;
 
-  // Start attempting to bind
-  // Lock the RF rate and freq while binding
-  SetRFLinkRate(enumRatetoIndex(RATE_LORA_2G4_50HZ)); // 50 Hz;
-
   // Start transmitting again
   hwTimer::resume();
 }
@@ -268,13 +181,8 @@ static void ExitBindingMode()
   if (!InBindingMode)
     return;
 
-  MspSender.ResetState();
-
-  InBindingMode = false; // Clear binding mode before SetRFLinkRate() for correct IQ
-
+  InBindingMode = false;
   UARTconnected();
-
-  SetRFLinkRate(enumRatetoIndex(RATE_LORA_2G4_50HZ)); //return to original rate -> 50 Hz
 }
 
 void EnterBindingModeSafely()
@@ -345,10 +253,9 @@ void setup()
     }
     else
     {
-      TelemetryReceiver.SetDataToReceive(CRSFinBuffer, sizeof(CRSFinBuffer));
-
-      // Set the pkt rate, TLM ratio, and power from the stored eeprom values
-      ChangeRadioParams();
+      hwTimer::updateInterval(RF_RC_INTERVAL_US);
+      handset->setPacketInterval(RF_RC_INTERVAL_US);
+      //setConnectionState(disconnected);
       hwTimer::init(nullptr, timerCallback);
       setConnectionState(noCrossfire);
     }
@@ -376,14 +283,12 @@ void loop()
     ESP.restart();
   }
 
-  executeDeferredFunction(micros());
+  //executeDeferredFunction(micros());
 
   if (connectionState > MODE_STATES)
   {
     return;
   }
-
-  CheckConfigChangePending();
 
   /* Send TLM updates to handset if connected + reporting period
    * is elapsed. This keeps handset happy dispite of the telemetry ratio */
@@ -397,6 +302,7 @@ void loop()
     TLMpacketReported = now;
   }
 
+  /*
   if (TelemetryReceiver.HasFinishedData())
   {
       if (CRSFinBuffer[0] != CRSF_ADDRESS_USB)
@@ -406,9 +312,9 @@ void loop()
       }
       TelemetryReceiver.Unlock();
   }
+  */
 
   // only send msp data when binding is not active
-  static bool mspTransferActive = false;
   if (InBindingMode)
   {
     // exit bind mode if package after some repeats
@@ -416,6 +322,7 @@ void loop()
       ExitBindingMode();
     }
   }
+  /*
   else if (!MspSender.IsActive())
   {
     // sending is done and we need to update our flag
@@ -439,5 +346,6 @@ void loop()
       }
     }
   }
+  */
   
 }

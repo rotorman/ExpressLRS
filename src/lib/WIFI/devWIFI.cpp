@@ -1,7 +1,5 @@
 #include "device.h"
 
-#include "deferred.h"
-
 #include <AsyncJson.h>
 #include <ArduinoJson.h>
 #include <SPIFFS.h>

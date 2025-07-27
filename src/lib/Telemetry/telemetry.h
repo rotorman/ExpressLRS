@@ -47,7 +47,7 @@ private:
     TelemetryFifo messagePayloads;
 
     bool processInternalTelemetryPackage(uint8_t *package);
-    uint8_t CRSFinBuffer[CRSF_MAX_PACKET_LEN];
+    //uint8_t CRSFinBuffer[CRSF_MAX_PACKET_LEN];
     telemetry_state_s telemetry_state;
     uint8_t currentTelemetryByte;
     uint8_t prioritizedCount;
