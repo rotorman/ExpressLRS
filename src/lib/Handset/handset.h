@@ -5,13 +5,6 @@
 /**
  * @brief Abstract class that is extended to provide an interface to a handset.
  *
- * There are three implementations of the Handset class
- *
- * - CRSFHandset - implements the CRSF protocol for communicating with the handset
- * - PPMHandset - PPM protocol, can be connected to the DSC/trainer port for simple non-CRSF handsets
- * - AutoDetect - this implementation uses an RMT channel to auto-detect a PPM or CRSF handset and swap the
- *   global `handset` variable to point to instance of the actual implementation. This allows a TX module
- *   to be moved between a CRSF capable handset and PPM only handset e.g. an EdgeTX radio and a surface radio.
  */
 class Handset
 {
@@ -89,13 +82,6 @@ public:
      * @return the time in microseconds when the last RC packet was received from the handset
      */
     uint32_t GetRCdataLastRecv() const { return RCdataLastRecv; }
-
-#if defined(DEBUG_TX_FREERUN)
-    /**
-     * @brief Can be used to force a connected callback for debugging
-     */
-    void forceConnection() { if (connected) connected(); }
-#endif
 
 protected:
     virtual ~Handset() = default;

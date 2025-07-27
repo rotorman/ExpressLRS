@@ -5,7 +5,6 @@ import shutil
 import os
 
 from elrs_helpers import ElrsUploadResult
-import BFinitPassthrough
 import ETXinitPassthrough
 import serials_find
 from firmware import DeviceType, FirmwareOptions, MCUType

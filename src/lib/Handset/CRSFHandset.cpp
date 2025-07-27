@@ -632,7 +632,6 @@ uint32_t CRSFHandset::autobaud()
 bool CRSFHandset::UARTwdt()
 {
     bool retval = false;
-#if !defined(DEBUG_TX_FREERUN)
     uint32_t now = millis();
     if (now - UARTwdtLastChecked > UARTwdtInterval)
     {
@@ -675,6 +674,5 @@ bool CRSFHandset::UARTwdt()
         BadPktsCount = 0;
         GoodPktsCount = 0;
     }
-#endif
     return retval;
 }
