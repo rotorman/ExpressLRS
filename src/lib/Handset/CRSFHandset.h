@@ -15,7 +15,6 @@ public:
     void Begin() override;
     void End() override;
 
-    bool IsArmed() override { return armCmd; } // AUX1/CH5 (CH5 mode) or extra byte in RC channels message (Switch mode)
     void handleInput() override;
     void handleOutput(int receivedBytes);
 
@@ -67,8 +66,6 @@ private:
     static uint8_t UARTcurrentBaudIdx;
     static uint32_t UARTrequestedBaud;
 
-    bool armCmd = false;           // Arm command from handset either via ch5 or arm message
-    bool lastArmCmd = false;
     bool UARTinverted = false;
 
     void sendSyncPacketToTX();

@@ -18,25 +18,13 @@ from external.esptool import esptool
 sys.path.append(dirname(__file__) + "/external")
 
 class UploadMethod(Enum):
-    wifi = 'wifi'
     uart = 'uart'
-    betaflight = 'bf'
     edgetx = 'etx'
-    stlink = 'stlink'
     stock = 'stock'
     dir = 'dir'
 
     def __str__(self):
         return self.value
-
-def upload_wifi(args, options, upload_addr):
-    wifi_mode = 'upload'
-    if args.force == True:
-        wifi_mode = 'uploadforce'
-    elif args.confirm == True:
-        wifi_mode = 'uploadconfirm'
-    if args.port:
-        upload_addr = [args.port]
 
 def upload_esp32_uart(args):
     if args.port == None:
@@ -67,21 +55,6 @@ def upload_esp32_etx(args):
         return ElrsUploadResult.ErrorGeneral
     return ElrsUploadResult.Success
 
-def upload_esp32_bf(args, options):
-    if args.port == None:
-        args.port = serials_find.get_serial_port()
-    mode = 'upload'
-    if args.force == True:
-        mode = 'uploadforce'
-    retval = BFinitPassthrough.main(['-p', args.port, '-b', str(args.baud), '-r', options.firmware, '-a', mode])
-    if retval != ElrsUploadResult.Success:
-        return retval
-    try:
-        esptool.main(['--passthrough', '--chip', args.platform.replace('-', ''), '--port', args.port, '--baud', str(args.baud), '--before', 'no_reset', '--after', 'hard_reset', 'write_flash', '-z', '--flash_mode', 'dio', '--flash_freq', '40m', '--flash_size', 'detect', '0x10000', args.file.name])
-    except:
-        return ElrsUploadResult.ErrorGeneral
-    return ElrsUploadResult.Success
-
 def upload_dir(mcuType, args):
     if mcuType == MCUType.ESP32:
         shutil.copy2(args.file.name, args.out)
@@ -89,8 +62,6 @@ def upload_dir(mcuType, args):
 def upload(options: FirmwareOptions, args):
     if args.baud == 0:
         args.baud = 460800
-        if args.flash == UploadMethod.betaflight:
-            args.baud = 420000
 
     if args.flash == UploadMethod.dir or args.flash == UploadMethod.stock:
         return upload_dir(options.mcuType, args)
@@ -100,7 +71,5 @@ def upload(options: FirmwareOptions, args):
                 return upload_esp32_etx(args)
             elif args.flash == UploadMethod.uart:
                 return upload_esp32_uart(args)
-            elif args.flash == UploadMethod.wifi:
-                return upload_wifi(args, options, ['elrs_tx', 'elrs_tx.local'])
     print("Invalid upload method for firmware")
     return ElrsUploadResult.ErrorGeneral

@@ -10,7 +10,6 @@
 enum deviceEvent_t {
     EVENT_NONE = 0,
 
-    EVENT_ARM_FLAG_CHANGED = 1 << 0,
     EVENT_POWER_CHANGED = 1 << 1,
     EVENT_ENTER_BIND_MODE = 1 << 3,
     EVENT_EXIT_BIND_MODE = 1 << 4,
@@ -19,11 +18,7 @@ enum deviceEvent_t {
 
     EVENT_CONFIG_MODEL_CHANGED = 1 << 8,
     EVENT_CONFIG_MAIN_CHANGED = 1 << 10, // catch-all for global config item
-    EVENT_CONFIG_BUTTON_CHANGED = 1 << 13,
     EVENT_CONFIG_UID_CHANGED = 1 << 14,
-    EVENT_CONFIG_POWER_COUNT_CHANGED = 1 << 15,
-    EVENT_CONFIG_PWM_CHANGE = 1 << 16,
-    EVENT_CONFIG_SERIAL_CHANGE = 1 << 17,
 
     EVENT_ALL = 0xFFFFFFFF
 };

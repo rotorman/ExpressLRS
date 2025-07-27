@@ -8,11 +8,6 @@ const uint8_t target_name_size = sizeof(target_name);
 const char commit[] {LATEST_COMMIT, 0};
 const char version[] = {LATEST_VERSION, 0};
 
-const char *wifi_hostname = "elrs_tx";
-const char *wifi_ap_ssid = "ExpressLRS TX";
-const char *wifi_ap_password = "expresslrs";
-const char *wifi_ap_address = "10.0.0.1";
-
 #include <ArduinoJson.h>
 #include <StreamString.h>
 #include <SPIFFS.h>
@@ -21,7 +16,6 @@ const char *wifi_ap_address = "10.0.0.1";
 
 char product_name[ELRSOPTS_PRODUCTNAME_SIZE+1];
 char device_name[ELRSOPTS_DEVICENAME_SIZE+1];
-uint32_t logo_image;
 
 firmware_options_t firmwareOptions;
 
@@ -40,20 +34,10 @@ void saveOptions(Stream &stream, bool customised)
 
     if (firmwareOptions.hasUID)
     {
-        JsonArray uid = doc.createNestedArray("uid");
+        //JsonArray uid = doc.createNestedArray("uid");
+        JsonArray uid = doc["uid"].to<JsonArray>();
         copyArray(firmwareOptions.uid, sizeof(firmwareOptions.uid), uid);
     }
-    if (firmwareOptions.wifi_auto_on_interval != -1)
-    {
-        doc["wifi-on-interval"] = firmwareOptions.wifi_auto_on_interval / 1000;
-    }
-    if (firmwareOptions.home_wifi_ssid[0])
-    {
-        doc["wifi-ssid"] = firmwareOptions.home_wifi_ssid;
-        doc["wifi-password"] = firmwareOptions.home_wifi_password;
-    }
-    doc["tlm-interval"] = firmwareOptions.tlm_report_interval;
-    doc["domain"] = firmwareOptions.domain;
     doc["customised"] = customised;
     doc["flash-discriminator"] = firmwareOptions.flash_discriminator;
 
@@ -140,12 +124,6 @@ static void options_LoadFromFlashOrFile(EspFlashStream &strmFlash)
     {
         firmwareOptions.hasUID = false;
     }
-    int32_t wifiInterval = doc["wifi-on-interval"] | -1;
-    firmwareOptions.wifi_auto_on_interval = wifiInterval == -1 ? -1 : wifiInterval * 1000;
-    strlcpy(firmwareOptions.home_wifi_ssid, doc["wifi-ssid"] | "", sizeof(firmwareOptions.home_wifi_ssid));
-    strlcpy(firmwareOptions.home_wifi_password, doc["wifi-password"] | "", sizeof(firmwareOptions.home_wifi_password));
-    firmwareOptions.tlm_report_interval = doc["tlm-interval"] | 240U;
-    firmwareOptions.domain = doc["domain"] | 0;
     firmwareOptions.flash_discriminator = doc["flash-discriminator"] | 0U;
 
     builtinOptions.clear();
@@ -159,7 +137,6 @@ void options_SetTrueDefaults()
 {
     JsonDocument doc;
     // The Regulatory Domain is retained, as there is no sensible default
-    doc["domain"] = firmwareOptions.domain;
     doc["flash-discriminator"] = firmwareOptions.flash_discriminator;
 
     File options = SPIFFS.open("/options.json", "w");
@@ -212,12 +189,6 @@ bool options_init()
     options_LoadFromFlashOrFile(strmFlash);
     // hardware.json
     bool hasHardware = hardware_init(strmFlash);
-    // flash location of logo image in RGB565 format
-    logo_image = baseAddr + ESP.getSketchSize() +
-        ELRSOPTS_PRODUCTNAME_SIZE +
-        ELRSOPTS_DEVICENAME_SIZE +
-        ELRSOPTS_OPTIONS_SIZE +
-        ELRSOPTS_HARDWARE_SIZE;
 
     return hasHardware;
 }

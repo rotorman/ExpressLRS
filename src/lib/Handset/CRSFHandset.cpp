@@ -239,19 +239,6 @@ void CRSFHandset::RcPacketToChannelsData() // data is packed as 11 bits per chan
 
     // Call the registered RCdataCallback, if there is one, so it can modify the channel data if it needs to.
     if (RCdataCallback) RCdataCallback();
-
-    //
-    // sends channel data and also communicates commanded armed status in arming mode Switch.
-    // frame len 24 -> arming mode CH5: use channel 5 value
-    // frame len 25 -> arming mode Switch: use commanded arming status in extra byte
-    //
-    armCmd = inBuffer.asUint8_t[1] == 24 ? CRSF_to_BIT(ChannelData[4]) : payload[readByteIndex];
-
-    // monitoring arming state
-    if (lastArmCmd != armCmd) {
-        devicesTriggerEvent(EVENT_ARM_FLAG_CHANGED);
-        lastArmCmd = armCmd;
-    }
 }
 
 
@@ -320,14 +307,6 @@ bool CRSFHandset::ProcessPacket()
     else if (packetType >= CRSF_FRAMETYPE_DEVICE_PING &&
             (SerialInBuffer[3] == CRSF_ADDRESS_FLIGHT_CONTROLLER || SerialInBuffer[3] == CRSF_ADDRESS_BROADCAST || SerialInBuffer[3] == CRSF_ADDRESS_CRSF_RECEIVER))
     {
-        // Some types trigger telemburst to attempt a connection even with telm off
-        // but for pings (which are sent when the user loads Lua) do not forward
-        // unless connected
-        if (ForwardDevicePings || packetType != CRSF_FRAMETYPE_DEVICE_PING)
-        {
-            const uint8_t length = inBuffer.asRCPacket_t.header.frame_size + 2;
-            CRSF::AddMspMessage(length, SerialInBuffer);
-        }
         packetReceived = true;
     }
 
@@ -657,10 +636,8 @@ bool CRSFHandset::UARTwdt()
     uint32_t now = millis();
     if (now - UARTwdtLastChecked > UARTwdtInterval)
     {
-        // If no packets or more bad than good packets, rate cycle/autobaud the UART but
-        // do not adjust the parameters while in wifi mode. If a firmware is being
-        // uploaded, it will cause tons of serial errors during the flash writes
-        if ((connectionState != wifiUpdate) && (BadPktsCount >= GoodPktsCount || !controllerConnected))
+        // If no packets or more bad than good packets, rate cycle/autobaud the UART
+        if (BadPktsCount >= GoodPktsCount || !controllerConnected)
         {
             if (controllerConnected)
             {

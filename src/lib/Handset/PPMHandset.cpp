@@ -32,12 +32,6 @@ void PPMHandset::End()
     rmt_driver_uninstall(PPM_RMT_CHANNEL);
 }
 
-bool PPMHandset::IsArmed()
-{
-    bool maybeArmed = numChannels < 5 || CRSF_to_BIT(ChannelData[4]);
-    return maybeArmed && lastPPM;
-}
-
 void PPMHandset::handleInput()
 {
     const auto now = millis();

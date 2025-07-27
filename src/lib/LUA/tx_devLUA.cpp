@@ -47,71 +47,14 @@ static struct luaItem_string luaELRSversion = {
     commit
 };
 
-//---------------------------- WiFi -----------------------------
-static struct luaItem_folder luaWiFiFolder = {
-    {"WiFi Connectivity", CRSF_FOLDER}
-};
-
-static struct luaItem_command luaWebUpdate = {
-    {"Enable WiFi", CRSF_COMMAND},
-    lcsIdle, // step
-    STR_EMPTYSPACE
-};
-//---------------------------- WiFi -----------------------------
-
 static char luaBadGoodString[10];
 
 extern TxConfig config;
 extern unsigned long rebootTime;
-extern void setWifiUpdateMode();
 
 static void luadevUpdateModelID() {
   itoa(CRSFHandset::getModelID(), modelMatchUnit+6, 10);
   strcat(modelMatchUnit, ")");
-}
-
-static void luahandWifiBle(struct luaPropertiesCommon *item, uint8_t arg)
-{
-  struct luaItem_command *cmd = (struct luaItem_command *)item;
-  void (*setTargetState)();
-  connectionState_e targetState;
-  const char *textConfirm;
-  const char *textRunning;
-  if ((void *)item == (void *)&luaWebUpdate)
-  {
-    setTargetState = &setWifiUpdateMode;
-    textConfirm = "Enter WiFi mode?";
-    textRunning = "WiFi Running...";
-    targetState = wifiUpdate;
-  }
-
-  switch ((luaCmdStep_e)arg)
-  {
-    case lcsClick:
-      if (connectionState == connected)
-      {
-        sendLuaCommandResponse(cmd, lcsAskConfirm, textConfirm);
-        return;
-      }
-      // fallthrough (clicking while not connected goes right to exectute)
-
-    case lcsConfirmed:
-      sendLuaCommandResponse(cmd, lcsExecuting, textRunning);
-      setTargetState();
-      break;
-
-    case lcsCancel:
-      sendLuaCommandResponse(cmd, lcsIdle, STR_EMPTYSPACE);
-      if (connectionState == targetState)
-      {
-        rebootTime = millis() + 400;
-      }
-      break;
-
-    default: // LUACMDSTEP_NONE on load, LUACMDSTEP_EXECUTING (our lua) or LUACMDSTEP_QUERY (Crossfire Config)
-      sendLuaCommandResponse(cmd, cmd->step, cmd->info);
-      break;
-  }
 }
 
 static void luahandSimpleSendCmd(struct luaPropertiesCommon *item, uint8_t arg)
@@ -124,7 +67,7 @@ static void luahandSimpleSendCmd(struct luaPropertiesCommon *item, uint8_t arg)
     if ((void *)item == (void *)&luaBind)
     {
       msg = "Binding...";
-      EnterBindingModeSafely();
+      EnterBindingMode();
     }
     sendLuaCommandResponse((struct luaItem_command *)item, lcsExecuting, msg);
   } /* if doExecute */
@@ -151,27 +94,11 @@ static void registerLuaParameters()
   registerLUAParameter(&luaModelMatch, [](struct luaPropertiesCommon *item, uint8_t arg) {
     bool newModelMatch = arg;
     config.SetModelMatch(newModelMatch);
-    if (connectionState == connected)
-    {
-      mspPacket_t msp;
-      msp.reset();
-      msp.makeCommand();
-      msp.function = MSP_SET_RX_CONFIG;
-      msp.addByte(MSP_ELRS_MODEL_ID);
-      msp.addByte(newModelMatch ? CRSFHandset::getModelID() : 0xff);
-      CRSF::AddMspMessage(&msp, CRSF_ADDRESS_CRSF_RECEIVER);
-    }
     luadevUpdateModelID();
   });
 
-  // WIFI folder
-  registerLUAParameter(&luaWiFiFolder);
-  registerLUAParameter(&luaWebUpdate, &luahandWifiBle, luaWiFiFolder.common.id);
+  registerLUAParameter(&luaBind, &luahandSimpleSendCmd);
   
-  if (HAS_RADIO) {
-    registerLUAParameter(&luaBind, &luahandSimpleSendCmd);
-  }
-
   registerLUAParameter(&luaInfo);
   if (strlen(version) < 21) {
     strlcpy(version_domain, version, 21);

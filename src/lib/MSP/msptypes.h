@@ -11,8 +11,6 @@
 #define MSP_ELRS_TLM_RATE                   0x08    // NOTIMPL
 #define MSP_ELRS_BIND                       0x09
 #define MSP_ELRS_MODEL_ID                   0x0A
-#define MSP_ELRS_SET_RX_WIFI_MODE           0x0E
-//#define MSP_ELRS_SET_RX_LOAN_MODE           0x0F // REMOVED
 
 #define MSP_ELRS_POWER_CALI_GET             0x20
 #define MSP_ELRS_POWER_CALI_SET             0x21

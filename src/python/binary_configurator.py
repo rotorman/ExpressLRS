@@ -68,18 +68,6 @@ def patch_unified(args, options):
     json_flags = {}
     if args.phrase is not None:
         json_flags['uid'] = [x for x in generateUID(args.phrase)]
-    if args.ssid is not None:
-        json_flags['wifi-ssid'] = args.ssid
-    if args.password is not None and args.ssid is not None:
-        json_flags['wifi-password'] = args.password
-    if args.auto_wifi is not None:
-        json_flags['wifi-on-interval'] = args.auto_wifi
-
-    if args.tlm_report is not None:
-        json_flags['tlm-interval'] = args.tlm_report
-
-    if args.domain is not None:
-        json_flags['domain'] = domain_number(args.domain)
 
     json_flags['flash-discriminator'] = randint(1,2**32-1)
 
@@ -164,25 +152,17 @@ def main():
     # Bind phrase
     parser.add_argument('--phrase', type=str, help='Your personal binding phrase')
     parser.add_argument('--flash-discriminator', type=int, default=randint(1,2**32-1), dest='flash_discriminator', help='Force a fixed flash-descriminator instead of random')
-    # WiFi Params
-    parser.add_argument('--ssid', type=length_check(32, "ssid"), required=False, help='Home network SSID')
-    parser.add_argument('--password', type=length_check(64, "password"), required=False, help='Home network password')
-    parser.add_argument('--auto-wifi', type=int, help='Interval (in seconds) before WiFi auto starts, if no connection is made')
-    parser.add_argument('--no-auto-wifi', action='store_true', help='Disables WiFi auto start if no connection is made')
-    # TX Params
-    parser.add_argument('--tlm-report', type=int, const=240, nargs='?', action='store', help='The interval (in milliseconds) between telemetry packets')
     # Unified target
     parser.add_argument('--target', type=str, help='Unified target JSON path')
     # Flashing options
     parser.add_argument("--flash", type=UploadMethod, choices=list(UploadMethod), help="Flashing Method")
     parser.add_argument("--erase", action='store_true', default=False, help="Full chip erase before flashing on ESP devices")
     parser.add_argument('--out', action=writeable_dir, default=None)
-    parser.add_argument("--port", type=str, help="SerialPort or WiFi address to flash firmware to")
+    parser.add_argument("--port", type=str, help="SerialPort to flash firmware to")
     parser.add_argument("--baud", type=int, default=0, help="Baud rate for serial communication")
     parser.add_argument("--force", action='store_true', default=False, help="Force upload even if target does not match")
     parser.add_argument("--confirm", action='store_true', default=False, help="Confirm upload if a mismatched target was previously uploaded")
     parser.add_argument("--tx", action='store_true', default=False, help="Flash a TX module, RX if not specified")
-    parser.add_argument("--lbt", action='store_true', default=False, help="Use LBT firmware, default is FCC (only for 2.4GHz firmware)")
     parser.add_argument('--rx-as-tx', type=TXType, choices=list(TXType), required=False, default=None, help="Flash an RX module with TX firmware, either internal (full-duplex) or external (half-duplex)")
     # Deprecated options, left for backward compatibility
     parser.add_argument('--uart-inverted', action=deprecate_action, nargs=0, help='Deprecated')
@@ -202,11 +182,10 @@ def main():
         try:
             file = config['firmware']
             if args.rx_as_tx is not None:
-                if config['platform'].startswith('esp32') or config['platform'].startswith('esp8285') and args.rx_as_tx == TXType.internal:
+                if config['platform'].startswith('esp32') and args.rx_as_tx == TXType.internal:
                     file = file.replace('_RX', '_TX')
                 else:
                     print("Selected device cannot operate as 'RX-as-TX' of this type.")
-                    print("ESP8285 only supports full-duplex internal RX as TX.")
                     exit(1)
             firmware_dir = '' if args.fdir is None else args.fdir + '/'
             srcdir = firmware_dir + ('LBT/' if args.lbt else 'FCC/') + file

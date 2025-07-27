@@ -6,11 +6,7 @@
 #include "hwTimer.h"
 #include "CRSFHandset.h"
 #include "lua.h"
-#include "msp.h"
-#include "msptypes.h"
-#include "telemetry_protocol.h"
 #include "devHandset.h"
-#include "devWIFI.h"
 
 #if defined(PLATFORM_ESP32_S3)
 #include "USB.h"
@@ -18,21 +14,26 @@
 #endif
 
 //// CONSTANTS ////
-#define MSP_PACKET_SEND_INTERVAL 10LU
 #define RF_RC_INTERVAL_US 20000U
 
 /// define some libs to use ///
-MSP msp;
 ELRS_EEPROM eeprom;
 TxConfig config;
 
+// Connection state information
+uint8_t UID[UID_LEN] = {0};  // "bind phrase" ID
+bool connectionHasModelMatch = false;
+bool InBindingMode = false;
+connectionState_e connectionState = disconnected;
+
+// Current state of channels, CRSF format
+uint32_t ChannelData[CRSF_NUM_CHANNELS];
+
 extern device_t LUA_device;
 unsigned long rebootTime = 0;
-extern bool webserverPreventAutoStart;
 
 volatile uint32_t LastTLMpacketRecvMillis = 0;
 uint32_t TLMpacketReported = 0;
-static bool commitInProgress = false;
 
 volatile bool busyTransmitting;
 static volatile bool ModelUpdatePending;
@@ -43,10 +44,7 @@ static uint8_t BindingSendCount;
 device_affinity_t ui_devices[] = {
   {&Handset_device, 1},
   {&LUA_device, 1},
-  {&WIFI_device, 0},
 };
-
-extern void setupTargetCommon();
 
 void ICACHE_RAM_ATTR SendRCdataToRF()
 {
@@ -74,12 +72,6 @@ void ICACHE_RAM_ATTR SendRCdataToRF()
  */
 void ICACHE_RAM_ATTR timerCallback()
 {
-  /* If we are busy writing to EEPROM (committing config changes) then we just advance the nonces, i.e. no SPI traffic */
-  if (commitInProgress)
-  {
-    return;
-  }
-
   // Sync EdgeTX to this point
   handset->JustSentRFpacket();
 
@@ -98,8 +90,6 @@ static void UARTdisconnected()
 
 static void UARTconnected()
 {
-  webserverPreventAutoStart = true;
-
   if (connectionState == noCrossfire || connectionState < MODE_STATES)
   {
     // When CRSF first connects, always go into a brief delay before
@@ -135,7 +125,7 @@ static void UpdateConnectDisconnectStatus()
   constexpr unsigned RX_LOSS_CNT = 5;
   // Must be at least 512ms and +2 to account for any rounding down and partial millis()
   const uint32_t msConnectionLostTimeout = std::max((uint32_t)512U,
-    (uint32_t)ExpressLRS_currTlmDenom * RF_RC_INTERVAL_US / (1000U / RX_LOSS_CNT)
+    (uint32_t)RF_RC_INTERVAL_US / (1000U / RX_LOSS_CNT)
     ) + 2U;
   // Capture the last before now so it will always be <= now
   const uint32_t lastTlmMillis = LastTLMpacketRecvMillis;
@@ -151,7 +141,7 @@ static void UpdateConnectDisconnectStatus()
   // TODO! Check for disconnection
 }
 
-static void EnterBindingMode()
+void EnterBindingMode()
 {
   if (InBindingMode)
       return;
@@ -176,32 +166,10 @@ static void ExitBindingMode()
   UARTconnected();
 }
 
-void EnterBindingModeSafely()
-{
-  // TX can always enter binding mode safely as the function handles stopping the transmitter
-  EnterBindingMode();
-}
-
-/**
- * Target-specific initialization code called early in setup()
- * Setup GPIOs or other hardware, config not yet loaded
- ***/
-static void setupTarget()
-{
-  setupTargetCommon();
-}
-
 bool setupHardwareFromOptions()
 {
   if (!options_init())
   {
-    // Register the WiFi with the framework
-    static device_affinity_t wifi_device[] = {
-        {&WIFI_device, 1}
-    };
-    devicesRegister(wifi_device, ARRAY_SIZE(wifi_device));
-    devicesInit();
-
     setConnectionState(hardwareUndefined);
     return false;
   }
@@ -212,13 +180,12 @@ void setup()
 {
   if (setupHardwareFromOptions())
   {
-    setupTarget();
     // Register the devices with the framework
     devicesRegister(ui_devices, ARRAY_SIZE(ui_devices));
     // Initialise the devices
     devicesInit();
 
-    handset->registerCallbacks(UARTconnected, UARTdisconnected, ModelUpdateReq, EnterBindingModeSafely);
+    handset->registerCallbacks(UARTconnected, UARTdisconnected, ModelUpdateReq, EnterBindingMode);
 
     eeprom.Begin(); // Init the eeprom
     config.SetStorageProvider(&eeprom); // Pass pointer to the Config class for access to storage
@@ -268,7 +235,7 @@ void loop()
   /* Send TLM updates to handset if connected + reporting period
    * is elapsed. This keeps handset happy dispite of the telemetry ratio */
   if ((connectionState == connected) && (LastTLMpacketRecvMillis != 0) &&
-      (now >= (uint32_t)(firmwareOptions.tlm_report_interval + TLMpacketReported)))
+      (now >= (uint32_t)(240U + TLMpacketReported)))
   {
     uint8_t linkStatisticsFrame[CRSF_FRAME_NOT_COUNTED_BYTES + CRSF_FRAME_SIZE(sizeof(crsfLinkStatistics_t))];
 

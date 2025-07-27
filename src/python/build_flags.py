@@ -33,38 +33,8 @@ def dequote(str):
         return str[1:-1]
     return str
 
-def process_json_flag(define):
-    parts = re.search(r"-D(.*)\s*=\s*(.*)$", define)
-    if parts and define.startswith("-D"):
-        if parts.group(1) == "MY_BINDING_PHRASE":
-            json_flags['uid'] = [x for x in hashlib.md5(define.encode()).digest()[0:6]]
-        if parts.group(1) == "HOME_WIFI_SSID":
-            json_flags['wifi-ssid'] = dequote(parts.group(2))
-        if parts.group(1) == "HOME_WIFI_PASSWORD":
-            json_flags['wifi-password'] = dequote(parts.group(2))
-        if parts.group(1) == "AUTO_WIFI_ON_INTERVAL":
-            parts = re.search(r"-D(.*)\s*=\s*\"?([0-9]+).*\"?$", define)
-            json_flags['wifi-on-interval'] = int(dequote(parts.group(2)))
-        if parts.group(1) == "TLM_REPORT_INTERVAL_MS"  and not isRX:
-            parts = re.search(r"-D(.*)\s*=\s*\"?([0-9]+).*\"?$", define)
-            json_flags['tlm-interval'] = int(dequote(parts.group(2)))
-
 def process_build_flag(define):
     if define.startswith("-D") or define.startswith("!-D"):
-        if "MY_BINDING_PHRASE" in define:
-            bindingPhraseHash = hashlib.md5(define.encode()).digest()
-            UIDbytes = ",".join(list(map(str, bindingPhraseHash))[0:6])
-            define = "-DMY_UID=" + UIDbytes
-            sys.stdout.write("\u001b[32mUID bytes: " + UIDbytes + "\n")
-            sys.stdout.flush()
-        if "HOME_WIFI_SSID=" in define:
-            parts = re.search(r"(.*)=\w*\"(.*)\"$", define)
-            if parts and parts.group(2):
-                define = "-DHOME_WIFI_SSID=" + string_to_ascii(parts.group(2))
-        if "HOME_WIFI_PASSWORD=" in define:
-            parts = re.search(r"(.*)=\w*\"(.*)\"$", define)
-            if parts and parts.group(2):
-                define = "-DHOME_WIFI_PASSWORD=" + string_to_ascii(parts.group(2))
         if "DEVICE_NAME=" in define:
             parts = re.search(r"(.*)=\w*'?\"(.*)\"'?$", define)
             if parts and parts.group(2):
@@ -80,7 +50,6 @@ def parse_flags(path):
             for define in _f:
                 define = define.strip()
                 process_build_flag(define)
-                process_json_flag(define)
 
     except IOError:
         print("File '%s' does not exist" % path)
@@ -114,10 +83,7 @@ def get_version():
     return string_to_ascii(env.get('GIT_VERSION'))
 
 json_flags['flash-discriminator'] = randint(1,2**32-1)
-json_flags['wifi-on-interval'] = -1
 
-process_flags("user_defines.txt")
-process_flags("super_defines.txt") # allow secret super_defines to override user_defines
 version_to_env()
 build_flags.append("-DLATEST_COMMIT=" + get_git_sha())
 build_flags.append("-DLATEST_VERSION=" + get_version())
