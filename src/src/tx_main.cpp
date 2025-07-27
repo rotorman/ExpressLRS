@@ -10,11 +10,7 @@
 #include "msptypes.h"
 #include "telemetry_protocol.h"
 #include "devHandset.h"
-#include "devADC.h"
-#include "devLED.h"
 #include "devWIFI.h"
-#include "devButton.h"
-#include "devScreen.h"
 
 #if defined(PLATFORM_ESP32_S3)
 #include "USB.h"
@@ -46,13 +42,8 @@ static uint8_t BindingSendCount;
 
 device_affinity_t ui_devices[] = {
   {&Handset_device, 1},
-  {&LED_device, 0},
-  {&RGB_device, 0},
   {&LUA_device, 1},
-  {&ADC_device, 1},
   {&WIFI_device, 0},
-  {&Button_device, 0},
-  {&Screen_device, 0},
 };
 
 extern void setupTargetCommon();
@@ -191,18 +182,6 @@ void EnterBindingModeSafely()
   EnterBindingMode();
 }
 
-void ParseMSPData(uint8_t *buf, uint8_t size)
-{
-  for (uint8_t i = 0; i < size; ++i)
-  {
-    if (msp.processReceivedByte(buf[i]))
-    {
-      msp.getReceivedPacket();
-      msp.markPacketReceived();
-    }
-  }
-}
-
 /**
  * Target-specific initialization code called early in setup()
  * Setup GPIOs or other hardware, config not yet loaded
@@ -260,9 +239,7 @@ void setup()
       setConnectionState(noCrossfire);
     }
   }
-  
-  registerButtonFunction(ACTION_BIND, EnterBindingMode);
-  
+
   devicesStart();
 }
 
@@ -283,8 +260,6 @@ void loop()
     ESP.restart();
   }
 
-  //executeDeferredFunction(micros());
-
   if (connectionState > MODE_STATES)
   {
     return;
@@ -302,18 +277,6 @@ void loop()
     TLMpacketReported = now;
   }
 
-  /*
-  if (TelemetryReceiver.HasFinishedData())
-  {
-      if (CRSFinBuffer[0] != CRSF_ADDRESS_USB)
-      {
-        // Send all other tlm to handset
-        handset->sendTelemetryToTX(CRSFinBuffer);
-      }
-      TelemetryReceiver.Unlock();
-  }
-  */
-
   // only send msp data when binding is not active
   if (InBindingMode)
   {
@@ -322,30 +285,4 @@ void loop()
       ExitBindingMode();
     }
   }
-  /*
-  else if (!MspSender.IsActive())
-  {
-    // sending is done and we need to update our flag
-    if (mspTransferActive)
-    {
-      // unlock buffer for msp messages
-      CRSF::UnlockMspMessage();
-      mspTransferActive = false;
-    }
-    // we are not sending so look for next msp package
-    else
-    {
-      uint8_t* mspData;
-      uint8_t mspLen;
-      CRSF::GetMspMessage(&mspData, &mspLen);
-      // if we have a new msp package start sending
-      if (mspData != nullptr)
-      {
-        MspSender.SetDataToTransmit(mspData, mspLen);
-        mspTransferActive = true;
-      }
-    }
-  }
-  */
-  
 }

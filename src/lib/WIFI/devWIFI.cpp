@@ -23,13 +23,11 @@
 #include "hwTimer.h"
 #include "options.h"
 #include "helpers.h"
-#include "devButton.h"
 #include "WebContent.h"
 
 #include "config.h"
 
 extern TxConfig config;
-extern void setButtonColors(uint8_t b1, uint8_t b2);
 
 extern unsigned long rebootTime;
 
@@ -248,24 +246,6 @@ static void GetConfiguration(AsyncWebServerRequest *request)
   JsonArray uid = json["config"]["uid"].to<JsonArray>();
   copyArray(UID, UID_LEN, uid);
 
-  int button_count = 0;
-  if (GPIO_PIN_BUTTON != UNDEF_PIN)
-    button_count = 1;
-  if (GPIO_PIN_BUTTON2 != UNDEF_PIN)
-    button_count = 2;
-  for (int button=0 ; button<button_count ; button++)
-  {
-    const tx_button_color_t *buttonColor = config.GetButtonActions(button);
-    if (hardware_int(button == 0 ? HARDWARE_button_led_index : HARDWARE_button2_led_index) != -1) {
-      json["config"]["button-actions"][button]["color"] = buttonColor->val.color;
-    }
-    for (int pos=0 ; pos<button_GetActionCnt() ; pos++)
-    {
-      json["config"]["button-actions"][button]["action"][pos]["is-long-press"] = buttonColor->val.actions[pos].pressType ? true : false;
-      json["config"]["button-actions"][button]["action"][pos]["count"] = buttonColor->val.actions[pos].count;
-      json["config"]["button-actions"][button]["action"][pos]["action"] = buttonColor->val.actions[pos].action;
-    }
-  }
   if (exportMode)
   {
     for (int model = 0 ; model < CONFIG_TX_MODEL_CNT ; model++)
@@ -292,21 +272,6 @@ static void GetConfiguration(AsyncWebServerRequest *request)
 
 static void UpdateConfiguration(AsyncWebServerRequest *request, JsonVariant &json)
 {
-  if (json.containsKey("button-actions")) {
-    const JsonArray &array = json["button-actions"].as<JsonArray>();
-    for (size_t button=0 ; button<array.size() ; button++)
-    {
-      tx_button_color_t action;
-      for (int pos=0 ; pos<button_GetActionCnt() ; pos++)
-      {
-        action.val.actions[pos].pressType = array[button]["action"][pos]["is-long-press"];
-        action.val.actions[pos].count = array[button]["action"][pos]["count"];
-        action.val.actions[pos].action = array[button]["action"][pos]["action"];
-      }
-      action.val.color = array[button]["color"];
-      config.SetButtonActions(button, &action);
-    }
-  }
   config.Commit();
   request->send(200, "text/plain", "Import/update complete");
 }
@@ -333,14 +298,6 @@ static void ImportConfiguration(AsyncWebServerRequest *request, JsonVariant &jso
   }
 
   UpdateConfiguration(request, json);
-}
-
-static void WebUpdateButtonColors(AsyncWebServerRequest *request, JsonVariant &json)
-{
-  int button1Color = json[0].as<int>();
-  int button2Color = json[1].as<int>();
-  setButtonColors(button1Color, button2Color);
-  request->send(200);
 }
 
 static void WebUpdateGetTarget(AsyncWebServerRequest *request)
@@ -597,9 +554,6 @@ static bool initialize()
   wifiStarted = false;
   WiFi.disconnect(true);
   WiFi.mode(WIFI_OFF);
-  registerButtonFunction(ACTION_START_WIFI, [](){
-    setWifiUpdateMode();
-  });
   return true;
 }
 
@@ -716,7 +670,6 @@ static void startServices()
 
   server.addHandler(new AsyncCallbackJsonWebHandler("/config", UpdateConfiguration));
   server.addHandler(new AsyncCallbackJsonWebHandler("/options.json", UpdateSettings));
-  server.addHandler(new AsyncCallbackJsonWebHandler("/buttons", WebUpdateButtonColors));
   server.addHandler(new AsyncCallbackJsonWebHandler("/import", ImportConfiguration, 32768U));
 
   addCaptivePortalHandlers();
