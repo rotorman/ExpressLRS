@@ -14,10 +14,6 @@
 #undef ICACHE_RAM_ATTR //fix to allow both esp32 and esp8266 to use ICACHE_RAM_ATTR for mapping to IRAM
 #define ICACHE_RAM_ATTR IRAM_ATTR
 
-#if !defined(RADIO_SX128X)
-#error "RADIO_SX128X must be defined!"
-#endif
-
 #include <soc/uart_pins.h>
 #if !defined(U0RXD_GPIO_NUM)
 #define U0RXD_GPIO_NUM (3)

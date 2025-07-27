@@ -16,7 +16,6 @@ enum fsm_state_s {
     STATE_POWER_DYNAMIC,
 
     STATE_WIFI_TX,
-    STATE_WIFI_RX,
 
     // These do not have menu text or icons
     STATE_SPLASH = 100,

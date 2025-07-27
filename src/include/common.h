@@ -3,12 +3,6 @@
 #include "targets.h"
 #include <device.h>
 
-#if defined(RADIO_SX128X)
-#include "SX1280Driver.h"
-#else
-#error "Radio configuration is not valid!"
-#endif
-
 // Used to XOR with OtaCrcInitializer and macSeed to reduce compatibility with previous versions.
 // It should be incremented when the OTA packet structure is modified.
 #define OTA_VERSION_ID      4
@@ -116,8 +110,8 @@ enum {
 
 // Value used for expresslrs_rf_pref_params_s.DynpowerUpThresholdSnr if SNR should not be used
 #define DYNPOWER_SNR_THRESH_NONE -127
-#define SNR_SCALE(snr) ((int8_t)((float)snr * RADIO_SNR_SCALE))
-#define SNR_DESCALE(snrScaled) (snrScaled / RADIO_SNR_SCALE)
+#define SNR_SCALE(snr) ((int8_t)((float)snr * 4))
+#define SNR_DESCALE(snrScaled) (snrScaled / 4)
 // Bound is any of the last 4 bytes nonzero (unbound is all zeroes)
 #define UID_IS_BOUND(uid) (uid[2] != 0 || uid[3] != 0 || uid[4] != 0 || uid[5] != 0)
 
@@ -247,13 +241,7 @@ enum eAuxChannels : uint8_t
 //Koopman formatting https://users.ece.cmu.edu/~koopman/crc/
 #define ELRS_CRC_POLY 0x07 // 0x83
 #define ELRS_CRC14_POLY 0x2E57 // 0x372B
-
-#if defined(RADIO_SX128X)
 #define RATE_MAX 10     // 2xFLRC + 2xDVDA + 4xLoRa + 2xFullRes
-#define RATE_BINDING RATE_LORA_2G4_50HZ
-
-extern SX1280Driver Radio;
-#endif
 
 expresslrs_mod_settings_s *get_elrs_airRateConfig(uint8_t index);
 expresslrs_rf_pref_params_s *get_elrs_RFperfParams(uint8_t index);
@@ -265,7 +253,6 @@ uint8_t enumRatetoIndex(expresslrs_RFrates_e const eRate);
 
 extern uint8_t UID[UID_LEN];
 extern bool connectionHasModelMatch;
-extern bool teamraceHasModelMatch;
 extern bool InBindingMode;
 extern uint8_t ExpressLRS_currTlmDenom;
 extern expresslrs_mod_settings_s *ExpressLRS_currAirRate_Modparams;

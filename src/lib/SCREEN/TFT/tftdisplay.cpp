@@ -186,8 +186,6 @@ void TFTDisplay::displayIdleScreen(uint8_t changed, uint8_t rate_index, uint8_t 
     }
 
     // The Radio Params right half of the screen
-    uint16_t text_color = (message_index == MSG_ARMED) ? DARKGREY : BLACK;
-
     if (connectionState == radioFailed)
     {
         displayFontCenter(IDLE_PAGE_STAT_START_X, SCREEN_X, MAIN_PAGE_WORD_START_Y1,  SCREEN_NORMAL_FONT_SIZE, SCREEN_NORMAL_FONT,
@@ -202,32 +200,6 @@ void TFTDisplay::displayIdleScreen(uint8_t changed, uint8_t rate_index, uint8_t 
         displayFontCenter(IDLE_PAGE_STAT_START_X, SCREEN_X, MAIN_PAGE_WORD_START_Y2,  SCREEN_NORMAL_FONT_SIZE, SCREEN_NORMAL_FONT,
             "HANDSET", BLACK, WHITE);
     }
-    else
-    {
-        if (changed & CHANGED_RATE)
-        {
-            displayFontCenter(IDLE_PAGE_STAT_START_X, SCREEN_X, IDLE_PAGE_RATE_START_Y,  SCREEN_NORMAL_FONT_SIZE, SCREEN_NORMAL_FONT,
-                                getValue(STATE_PACKET, rate_index), text_color, WHITE);
-        }
-
-        if (changed & CHANGED_POWER)
-        {
-            String power = getValue(STATE_POWER, running_power_index);
-            if (dynamic || power_index != running_power_index)
-            {
-                power += " *";
-            }
-            displayFontCenter(IDLE_PAGE_STAT_START_X, SCREEN_X, IDLE_PAGE_POWER_START_Y, SCREEN_NORMAL_FONT_SIZE, SCREEN_NORMAL_FONT,
-                                power, text_color, WHITE);
-        }
-
-        if (changed & CHANGED_TELEMETRY)
-        {
-            displayFontCenter(IDLE_PAGE_STAT_START_X, SCREEN_X, IDLE_PAGE_RATIO_START_Y,  SCREEN_NORMAL_FONT_SIZE, SCREEN_NORMAL_FONT,
-                                getValue(STATE_TELEMETRY_CURR, ratio_index), text_color, WHITE);
-        }
-    }
-
 }
 
 void TFTDisplay::displayMainMenu(menu_item_t menu)
@@ -245,7 +217,7 @@ void TFTDisplay::displayValue(menu_item_t menu, uint8_t value_index)
 {
     gfx->fillScreen(WHITE);
 
-    String val = String(getValue(menu, value_index));
+    String val = "";
     val.replace("!+", "\xA0");
     val.replace("!-", "\xA1");
 

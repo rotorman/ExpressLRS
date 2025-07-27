@@ -6,12 +6,6 @@
 ///////////////////////////////////////
 // Even though we aren't using anything this keeps the PIO dependency analyzer happy!
 
-#if defined(RADIO_SX128X)
-#include "SX1280Driver.h"
-#else
-#error Invalid radio configuration!
-#endif
-
 #include <soc/soc_caps.h>
 #define MULTICORE (SOC_CPU_CORES_NUM > 1)
 
@@ -117,7 +111,7 @@ static int _devicesUpdate(unsigned long now)
     const int32_t core = CURRENT_CORE;
     const int32_t coreMulti = (core == -1) ? 0 : core;
 
-    bool newModelMatch = connectionHasModelMatch && teamraceHasModelMatch;
+    bool newModelMatch = connectionHasModelMatch;
     uint32_t events = eventFired[coreMulti];
     eventFired[coreMulti] = 0;
     bool handleEvents = events != 0 || lastModelMatch[coreMulti] != newModelMatch;

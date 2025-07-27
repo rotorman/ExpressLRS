@@ -3,7 +3,6 @@
 #include "devLED.h"
 #include "config.h"
 #include "crsf_protocol.h"
-#include "POWERMGNT.h"
 
 static uint8_t pixelCount;
 static uint8_t *statusLEDs;
@@ -373,13 +372,13 @@ static int timeout()
     case connected:
         // Set the color and we're done!
         blinkyColor.h = ExpressLRS_currAirRate_Modparams->index * 256 / RATE_MAX;
-        blinkyColor.v = fmap(POWERMGNT::currPower(), 0, PWR_COUNT-1, 10, 128);
+        blinkyColor.v = 10;
         WS281BsetLED(HsvToRgb(blinkyColor));
         return DURATION_NEVER;
     case tentative:
         // Set the color and we're done!
         blinkyColor.h = ExpressLRS_currAirRate_Modparams->index * 256 / RATE_MAX;
-        blinkyColor.v = fmap(POWERMGNT::currPower(), 0, PWR_COUNT-1, 10, 50);
+        blinkyColor.v = 50;
         WS281BsetLED(HsvToRgb(blinkyColor));
         return DURATION_NEVER;
     case disconnected:

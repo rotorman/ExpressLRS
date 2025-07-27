@@ -100,9 +100,6 @@ public:
     // Getters
     uint8_t GetRate() const { return m_model->rate; }
     uint8_t GetTlm() const { return m_model->tlm; }
-    uint8_t GetPower() const { return m_model->power; }
-    bool GetDynamicPower() const { return m_model->dynamicPower; }
-    uint8_t GetBoostChannel() const { return m_model->boostChannel; }
     uint8_t GetSwitchMode() const { return m_model->switchMode; }
     bool GetModelMatch() const { return m_model->modelMatch; }
     bool     IsModified() const { return m_modified != 0; }
@@ -114,9 +111,6 @@ public:
     // Setters
     void SetRate(uint8_t rate);
     void SetTlm(uint8_t tlm);
-    void SetPower(uint8_t power);
-    void SetDynamicPower(bool dynamicPower);
-    void SetBoostChannel(uint8_t boostChannel);
     void SetSwitchMode(uint8_t switchMode);
     void SetModelMatch(bool modelMatch);
     void SetDefaults(bool commit);

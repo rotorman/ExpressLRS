@@ -2,8 +2,6 @@
 #include "config_legacy.h"
 #include "common.h"
 #include "device.h"
-#include "POWERMGNT.h"
-#include "OTA.h"
 #include "helpers.h"
 
 #define ALL_CHANGED         (EVENT_CONFIG_MODEL_CHANGED | EVENT_CONFIG_MAIN_CHANGED | EVENT_CONFIG_BUTTON_CHANGED)
@@ -37,58 +35,14 @@ template<class T> static const uint32_t Model_to_U32(T const * const model)
     return converter.u32;
 }
 
-static uint8_t RateV6toV7(uint8_t rateV6)
-{
-    switch (rateV6)
-    {
-        case 0: return 4; // 500Hz
-        case 1: return 6; // 250Hz
-        case 2: return 7; // 150Hz
-        case 3: return 9; // 50Hz
-        default: return 4; // 500Hz
-    }
-}
-
-static uint8_t RatioV6toV7(uint8_t ratioV6)
-{
-    // All shifted up for Std telem
-    return ratioV6 + 1;
-}
-
-static uint8_t SwitchesV6toV7(uint8_t switchesV6)
-{
-    // 0 was removed, Wide(2) became 0, Hybrid(1) became 1
-    switch (switchesV6)
-    {
-        case 1: return (uint8_t)smHybridOr16ch;
-        case 2:
-        default:
-            return (uint8_t)smWideOr8ch;
-    }
-}
-
 static void ModelV6toV7(v6_model_config_t const * const v6, model_config_t * const v7)
 {
-    v7->rate = RateV6toV7(v6->rate);
-    v7->tlm = RatioV6toV7(v6->tlm);
-    v7->power = v6->power;
-    v7->switchMode = SwitchesV6toV7(v6->switchMode);
     v7->modelMatch = v6->modelMatch;
-    v7->dynamicPower = v6->dynamicPower;
-    v7->boostChannel = v6->boostChannel;
 }
 
 static void ModelV7toV8(v7_model_config_t const * const v7, model_config_t * const v8)
 {
-    v8->rate = v7->rate;
-    v8->tlm = v7->tlm;
-    v8->power = v7->power;
-    v8->switchMode = v7->switchMode;
-    v8->boostChannel = v7->boostChannel;
-    v8->dynamicPower = v7->dynamicPower;
     v8->modelMatch = v7->modelMatch;
-    v8->ptrStartChannel = v7->ptrStartChannel;
-    v8->ptrEnableChannel = v7->ptrEnableChannel;
 }
 
 TxConfig::TxConfig() :
@@ -203,66 +157,6 @@ TxConfig::Commit()
 
 // Setters
 void
-TxConfig::SetRate(uint8_t rate)
-{
-    if (GetRate() != rate)
-    {
-        m_model->rate = rate;
-        m_modified |= EVENT_CONFIG_MODEL_CHANGED;
-    }
-}
-
-void
-TxConfig::SetTlm(uint8_t tlm)
-{
-    if (GetTlm() != tlm)
-    {
-        m_model->tlm = tlm;
-        m_modified |= EVENT_CONFIG_MODEL_CHANGED;
-    }
-}
-
-void
-TxConfig::SetPower(uint8_t power)
-{
-    if (GetPower() != power)
-    {
-        m_model->power = power;
-        m_modified |= EVENT_CONFIG_MODEL_CHANGED;
-    }
-}
-
-void
-TxConfig::SetDynamicPower(bool dynamicPower)
-{
-    if (GetDynamicPower() != dynamicPower)
-    {
-        m_model->dynamicPower = dynamicPower;
-        m_modified |= EVENT_CONFIG_MODEL_CHANGED;
-    }
-}
-
-void
-TxConfig::SetBoostChannel(uint8_t boostChannel)
-{
-    if (GetBoostChannel() != boostChannel)
-    {
-        m_model->boostChannel = boostChannel;
-        m_modified |= EVENT_CONFIG_MODEL_CHANGED;
-    }
-}
-
-void
-TxConfig::SetSwitchMode(uint8_t switchMode)
-{
-    if (GetSwitchMode() != switchMode)
-    {
-        m_model->switchMode = switchMode;
-        m_modified |= EVENT_CONFIG_MODEL_CHANGED;
-    }
-}
-
-void
 TxConfig::SetModelMatch(bool modelMatch)
 {
     if (GetModelMatch() != modelMatch)
@@ -287,24 +181,6 @@ TxConfig::SetButtonActions(uint8_t button, tx_button_color_t *action)
     if (m_config.buttonColors[button].raw != action->raw) {
         m_config.buttonColors[button].raw = action->raw;
         m_modified |= EVENT_CONFIG_BUTTON_CHANGED;
-    }
-}
-
-void
-TxConfig::SetPTRStartChannel(uint8_t ptrStartChannel)
-{
-    if (ptrStartChannel != m_model->ptrStartChannel) {
-        m_model->ptrStartChannel = ptrStartChannel;
-        m_modified |= EVENT_CONFIG_MODEL_CHANGED;
-    }
-}
-
-void
-TxConfig::SetPTREnableChannel(uint8_t ptrEnableChannel)
-{
-    if (ptrEnableChannel != m_model->ptrEnableChannel) {
-        m_model->ptrEnableChannel = ptrEnableChannel;
-        m_modified |= EVENT_CONFIG_MODEL_CHANGED;
     }
 }
 
@@ -349,10 +225,6 @@ TxConfig::SetDefaults(bool commit)
     for (unsigned i=0; i<CONFIG_TX_MODEL_CNT; i++)
     {
         SetModelId(i);
-        #if defined(RADIO_SX128X)
-            SetRate(enumRatetoIndex(RATE_LORA_2G4_250HZ));
-        #endif
-        SetPower(POWERMGNT::getDefaultPower());
         // ESP32 nvs needs to commit every model
         if (commit)
         {

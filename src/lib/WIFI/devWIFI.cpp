@@ -22,8 +22,6 @@
 #include <ESPAsyncWebServer.h>
 
 #include "common.h"
-#include "POWERMGNT.h"
-#include "FHSS.h"
 #include "hwTimer.h"
 #include "options.h"
 #include "helpers.h"
@@ -121,8 +119,6 @@ static struct {
   {"/elrs.css", "text/css", (uint8_t *)ELRS_CSS, sizeof(ELRS_CSS)},
   {"/hardware.html", "text/html", (uint8_t *)HARDWARE_HTML, sizeof(HARDWARE_HTML)},
   {"/hardware.js", "text/javascript", (uint8_t *)HARDWARE_JS, sizeof(HARDWARE_JS)},
-  {"/cw.html", "text/html", (uint8_t *)CW_HTML, sizeof(CW_HTML)},
-  {"/cw.js", "text/javascript", (uint8_t *)CW_JS, sizeof(CW_JS)},
 };
 
 static void WebUpdateSendContent(AsyncWebServerRequest *request)
@@ -279,12 +275,6 @@ static void GetConfiguration(AsyncWebServerRequest *request)
       const model_config_t &modelConfig = config.GetModelConfig(model);
       String strModel(model);
       JsonObject modelJson = json["config"]["model"][strModel].to<JsonObject>();
-      modelJson["packet-rate"] = modelConfig.rate;
-      modelJson["telemetry-ratio"] = modelConfig.tlm;
-      modelJson["switch-mode"] = modelConfig.switchMode;
-      modelJson["power"]["max-power"] = modelConfig.power;
-      modelJson["power"]["dynamic-power"] = modelConfig.dynamicPower;
-      modelJson["power"]["boost-channel"] = modelConfig.boostChannel;
       modelJson["model-match"] = modelConfig.modelMatch;
     }
   }
@@ -295,7 +285,6 @@ static void GetConfiguration(AsyncWebServerRequest *request)
     json["config"]["mode"] = wifiMode == WIFI_STA ? "STA" : "AP";
     json["config"]["product_name"] = product_name;
     json["config"]["lua_name"] = device_name;
-    json["config"]["reg_domain"] = FHSSgetRegulatoryDomain();
     json["config"]["uidtype"] = GetConfigUidType(json);
   }
 
@@ -339,15 +328,6 @@ static void ImportConfiguration(AsyncWebServerRequest *request, JsonVariant &jso
       JsonObject modelJson = kv.value();
 
       config.SetModelId(model);
-      if (modelJson.containsKey("packet-rate")) config.SetRate(modelJson["packet-rate"]);
-      if (modelJson.containsKey("telemetry-ratio")) config.SetTlm(modelJson["telemetry-ratio"]);
-      if (modelJson.containsKey("switch-mode")) config.SetSwitchMode(modelJson["switch-mode"]);
-      if (modelJson.containsKey("power"))
-      {
-        if (modelJson["power"].containsKey("max-power")) config.SetPower(modelJson["power"]["max-power"]);
-        if (modelJson["power"].containsKey("dynamic-power")) config.SetDynamicPower(modelJson["power"]["dynamic-power"]);
-        if (modelJson["power"].containsKey("boost-channel")) config.SetBoostChannel(modelJson["power"]["boost-channel"]);
-      }
       if (modelJson.containsKey("model-match")) config.SetModelMatch(modelJson["model-match"]);
       // have to commmit after each model is updated
       config.Commit();
@@ -372,13 +352,8 @@ static void WebUpdateGetTarget(AsyncWebServerRequest *request)
   json["version"] = VERSION;
   json["product_name"] = product_name;
   json["lua_name"] = device_name;
-  json["reg_domain"] = FHSSgetRegulatoryDomain();
   json["git-commit"] = commit;
   json["module-type"] = "TX";
-#if defined(RADIO_SX128X)
-  json["radio-type"] = "SX128X";
-  json["has-sub-ghz"] = false;
-#endif
 
   AsyncResponseStream *response = request->beginResponseStream("application/json");
   serializeJson(json, *response);
@@ -619,28 +594,6 @@ static void WebUpdateGetFirmware(AsyncWebServerRequest *request) {
   request->send(response);
 }
 
-static void HandleContinuousWave(AsyncWebServerRequest *request) {
-  if (request->hasArg("radio")) {
-    SX12XX_Radio_Number_t radio = request->arg("radio").toInt() == 1 ? SX12XX_Radio_1 : SX12XX_Radio_2;
-
-    AsyncWebServerResponse *response = request->beginResponse(204);
-    response->addHeader("Connection", "close");
-    request->send(response);
-    request->client()->close();
-
-    Radio.TXdoneCallback = [](){};
-    Radio.Begin(FHSSgetMinimumFreq(), FHSSgetMaximumFreq());
-
-    POWERMGNT::init();
-    POWERMGNT::setPower(POWERMGNT::getMinPower());
-
-    Radio.startCWTest(FHSSconfig->freq_center, radio);
-  } else {
-    int radios = (GPIO_PIN_NSS_2 == UNDEF_PIN) ? 1 : 2;
-    request->send(200, "application/json", String("{\"radios\": ") + radios + ", \"center\": "+ FHSSconfig->freq_center + "}");
-  }
-}
-
 static bool initialize()
 {
   wifiStarted = false;
@@ -661,11 +614,7 @@ static void startWiFi(unsigned long now)
   if (connectionState < FAILURE_STATES) {
     hwTimer::stop();
 
-    // Set transmit power to minimum
-    POWERMGNT::setPower(MinPower);
-
     setWifiUpdateMode();
-    Radio.End();
   }
 
   WiFi.persistent(false);
@@ -754,10 +703,7 @@ static void startServices()
   server.on("/update", HTTP_OPTIONS, corsPreflightResponse);
   server.on("/forceupdate", WebUploadForceUpdateHandler);
   server.on("/forceupdate", HTTP_OPTIONS, corsPreflightResponse);
-  server.on("/cw.html", WebUpdateSendContent);
-  server.on("/cw.js", WebUpdateSendContent);
-  server.on("/cw", HandleContinuousWave);
-
+  
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
   DefaultHeaders::Instance().addHeader("Access-Control-Max-Age", "600");
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "POST,GET,OPTIONS");

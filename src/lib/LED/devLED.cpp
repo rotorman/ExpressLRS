@@ -1,7 +1,6 @@
 #include "targets.h"
 #include "common.h"
 #include "devLED.h"
-#include "POWERMGNT.h"
 
 constexpr uint8_t LEDSEQ_RADIO_FAILED[] = { 20, 100 }; // 200ms on, 1000ms off
 constexpr uint8_t LEDSEQ_DISCONNECTED[] = { 50, 50 };  // 500ms on, 500ms off
@@ -85,35 +84,8 @@ static int timeout()
     return updateLED();
 }
 
-static void setPowerLEDs()
-{
-    if (hasGBLeds)
-    {
-        switch (POWERMGNT::currPower())
-        {
-        case PWR_250mW:
-            digitalWrite(GPIO_PIN_LED_BLUE, HIGH);
-            digitalWrite(GPIO_PIN_LED_GREEN, HIGH);
-            break;
-        case PWR_500mW:
-            digitalWrite(GPIO_PIN_LED_BLUE, LOW);
-            digitalWrite(GPIO_PIN_LED_GREEN, HIGH);
-            break;
-        case PWR_10mW:
-        case PWR_25mW:
-        case PWR_50mW:
-        case PWR_100mW:
-        default:
-            digitalWrite(GPIO_PIN_LED_BLUE, HIGH);
-            digitalWrite(GPIO_PIN_LED_GREEN, LOW);
-            break;
-        }
-    }
-}
-
 static int event()
 {
-    setPowerLEDs();
     switch (connectionState)
     {
     case connected:
@@ -129,7 +101,7 @@ static int event()
         }
         if (GPIO_PIN_LED_RED != UNDEF_PIN)
         {
-            if (!connectionHasModelMatch || !teamraceHasModelMatch)
+            if (!connectionHasModelMatch)
             {
                 return flashLED(GPIO_PIN_LED_RED, GPIO_LED_RED_INVERTED, LEDSEQ_MODEL_MISMATCH, sizeof(LEDSEQ_MODEL_MISMATCH));
             }

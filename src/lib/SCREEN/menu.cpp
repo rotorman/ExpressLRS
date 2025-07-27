@@ -4,17 +4,12 @@
 #include "common.h"
 #include "config.h"
 #include "helpers.h"
-#include "POWERMGNT.h"
 #include "handset.h"
-#include "OTA.h"
 #include "deferred.h"
 
 extern FiniteStateMachine state_machine;
 
-extern bool RxWiFiReadyToSend;
-extern void ResetPower();
 extern void setWifiUpdateMode();
-extern void SetSyncSpam();
 extern uint8_t adjustPacketRateForBaud(uint8_t rate);
 
 extern Display *display;
@@ -61,26 +56,14 @@ static void displayIdleScreen(bool init)
     }
 
     // compute log2(ExpressLRS_currTlmDenom) (e.g. 128=7, 64=6, etc)
-    uint8_t tlmIdx = __builtin_ffs(ExpressLRS_currTlmDenom) - 1;
     if (changed == 0)
     {
         changed |= last_message != disp_message ? CHANGED_ALL : 0;
-        changed |= last_rate != config.GetRate() ? CHANGED_RATE : 0;
-        changed |= last_power != config.GetPower() ? CHANGED_POWER : 0;
-        changed |= last_dynamic != config.GetDynamicPower() ? CHANGED_POWER : 0;
-        changed |= last_run_power != (uint8_t)(POWERMGNT::currPower()) ? CHANGED_POWER : 0;
-        changed |= last_tlm != tlmIdx ? CHANGED_TELEMETRY : 0;
     }
 
     if (changed)
     {
         last_message = disp_message;
-        last_rate = config.GetRate();
-        last_power = config.GetPower();
-        last_tlm = tlmIdx;
-        last_dynamic = config.GetDynamicPower();
-        last_run_power = (uint8_t)(POWERMGNT::currPower());
-
         display->displayIdleScreen(changed, last_rate, last_power, last_tlm, last_dynamic, last_run_power, last_message);
     }
 }
@@ -94,34 +77,6 @@ static void displayMenuScreen(bool init)
 static int values_min;
 static int values_max;
 static int values_index;
-
-static void setupValueIndex(bool init)
-{
-    switch (state_machine.getParentState())
-    {
-    case STATE_PACKET:
-        values_min = 0;
-        values_max = display->getValueCount((menu_item_t)state_machine.getParentState())-1;
-        values_index = config.GetRate();
-        break;
-    case STATE_TELEMETRY:
-        values_min = 0;
-        values_max = display->getValueCount((menu_item_t)state_machine.getParentState())-1;
-        values_index = config.GetTlm();
-        break;
-
-    case STATE_POWER_MAX:
-        values_min = MinPower;
-        values_max = POWERMGNT::getMaxPower();
-        values_index = config.GetPower();
-        break;
-    case STATE_POWER_DYNAMIC:
-        values_min = 0;
-        values_max = display->getValueCount((menu_item_t)state_machine.getParentState())-1;
-        values_index = config.GetDynamicPower() ? config.GetBoostChannel() + 1 : 0;
-        break;
-    }
-}
 
 static void displayValueIndex(bool init)
 {
@@ -154,38 +109,6 @@ static void decrementValueIndex(bool init)
     }
 }
 
-static void saveValueIndex(bool init)
-{
-    auto val = values_index;
-    switch (state_machine.getParentState())
-    {
-        case STATE_PACKET: {
-            adjustPacketRateForBaud(val);
-            break;
-        }
-        case STATE_TELEMETRY:
-            deferExecutionMillis(100, [val](){
-                config.SetTlm(val);
-                SetSyncSpam();
-            });
-            break;
-
-        case STATE_POWER_MAX:
-            config.SetPower(values_index);
-            if (!config.IsModified())
-            {
-                ResetPower();
-            }
-            break;
-        case STATE_POWER_DYNAMIC:
-            config.SetDynamicPower(values_index > 0);
-            config.SetBoostChannel((values_index - 1) > 0 ? values_index - 1 : 0);
-            break;
-        default:
-            break;
-    }
-}
-
 // WiFi
 static void displayWiFiConfirm(bool init)
 {
@@ -209,9 +132,6 @@ static void executeWiFi(bool init)
             case STATE_WIFI_TX:
                 setWifiUpdateMode();
                 break;
-            case STATE_WIFI_RX:
-                RxWiFiReadyToSend = true;
-                break;
         }
         if (state_machine.getParentState() == STATE_WIFI_TX)
         {
@@ -231,9 +151,6 @@ static void executeWiFi(bool init)
             {
                 display->displayWiFiStatus();
             }
-            break;
-        case STATE_WIFI_RX:
-            running = RxWiFiReadyToSend;
             break;
         default:
             running = false;
@@ -295,11 +212,11 @@ fsm_state_event_t const value_decrement_events[] = {{EVENT_IMMEDIATE, GOTO(STATE
 fsm_state_event_t const value_save_events[] = {{EVENT_IMMEDIATE, ACTION_POP}};
 
 fsm_state_entry_t const value_select_fsm[] = {
-    {STATE_VALUE_INIT, nullptr, setupValueIndex, 0, value_init_events, ARRAY_SIZE(value_init_events)},
+    {STATE_VALUE_INIT, nullptr, nullptr, 0, value_init_events, ARRAY_SIZE(value_init_events)},
     {STATE_VALUE_SELECT, nullptr, displayValueIndex, 20000, value_select_events, ARRAY_SIZE(value_select_events)},
     {STATE_VALUE_INC, nullptr, incrementValueIndex, 0, value_increment_events, ARRAY_SIZE(value_increment_events)},
     {STATE_VALUE_DEC, nullptr, decrementValueIndex, 0, value_decrement_events, ARRAY_SIZE(value_decrement_events)},
-    {STATE_VALUE_SAVE, nullptr, saveValueIndex, 0, value_save_events, ARRAY_SIZE(value_save_events)},
+    {STATE_VALUE_SAVE, nullptr, nullptr, 0, value_save_events, ARRAY_SIZE(value_save_events)},
     {STATE_LAST}
 };
 
@@ -336,7 +253,6 @@ fsm_state_entry_t const wifi_ext_menu_fsm[] = {
 fsm_state_event_t const wifi_ext_menu_events[] = {MENU_EVENTS(wifi_ext_menu_fsm)};
 fsm_state_entry_t const wifi_menu_fsm[] = {
     {STATE_WIFI_TX, nullptr, displayMenuScreen, 20000, wifi_menu_update_events, ARRAY_SIZE(wifi_menu_update_events)},
-    {STATE_WIFI_RX, nullptr, displayMenuScreen, 20000, wifi_ext_menu_events, ARRAY_SIZE(wifi_ext_menu_events)},
     {STATE_LAST}
 };
 

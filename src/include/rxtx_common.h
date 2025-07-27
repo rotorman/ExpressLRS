@@ -4,12 +4,8 @@
 #include "common.h"
 #include "config.h"
 #include "CRSF.h"
-#include "FHSS.h"
 #include "helpers.h"
 #include "hwTimer.h"
-#include "LQCALC.h"
-#include "OTA.h"
-#include "POWERMGNT.h"
 #include "deferred.h"
 
 void setupTargetCommon();

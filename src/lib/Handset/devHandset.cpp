@@ -1,7 +1,6 @@
 #include "targets.h"
 #include "CRSF.h"
 #include "CRSFHandset.h"
-#include "POWERMGNT.h"
 #include "devHandset.h"
 #include "AutoDetect.h"
 
@@ -35,8 +34,6 @@ static int timeout()
 
 static int event()
 {
-    // An event should be generated every time the TX power changes
-    CRSF::LinkStatistics.uplink_TX_Power = powerToCrsfPower(PowerLevelContainer::currPower());
     return DURATION_IGNORE;
 }
 

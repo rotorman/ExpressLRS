@@ -82,7 +82,7 @@ void OLEDDisplay::displaySplashScreen()
 void OLEDDisplay::displayIdleScreen(uint8_t changed, uint8_t rate_index, uint8_t power_index, uint8_t ratio_index, bool dynamic, uint8_t running_power_index, message_index_t message_index)
 {
     u8g2->clearBuffer();
-    String power = getValue(STATE_POWER, running_power_index);
+    String power = "";
     if (dynamic || power_index != running_power_index)
     {
         power += " *";
@@ -101,16 +101,12 @@ void OLEDDisplay::displayIdleScreen(uint8_t changed, uint8_t rate_index, uint8_t
     }
     else if (OPT_HAS_OLED_SPI_SMALL)
     {
-        u8g2->drawStr(0, 15, getValue(STATE_PACKET, rate_index));
-        u8g2->drawStr(70, 15, getValue(STATE_TELEMETRY_CURR, ratio_index));
         u8g2->drawStr(0, 32, power.c_str());
         u8g2->drawStr(70, 32, version);
     }
     else
     {
         u8g2->drawStr(0, 13, message_string[message_index]);
-        u8g2->drawStr(0, 45, getValue(STATE_PACKET, rate_index));
-        u8g2->drawStr(70, 45, getValue(STATE_TELEMETRY_CURR, ratio_index));
         u8g2->drawStr(0, 60, power.c_str());
         u8g2->setFont(u8g2_font_profont10_mr);
         u8g2->drawStr(70, 56, "TLM");
@@ -142,7 +138,7 @@ void OLEDDisplay::displayValue(menu_item_t menu, uint8_t value_index)
 {
     u8g2->clearBuffer();
     u8g2->setFont(u8g2_font_9x15_t_symbols);
-    String val = String(getValue(menu, value_index));
+    String val = "";
     val.replace("!+", "\u2191");
     val.replace("!-", "\u2193");
     if (OPT_HAS_OLED_SPI_SMALL)
@@ -372,9 +368,6 @@ static void helperDrawImage(menu_item_t menu)
             case STATE_WIFI_TX:
                 u8g2->drawXBM(x_pos, y_pos, 24, 22, wifi_img32);
                 break;
-            case STATE_WIFI_RX:
-                u8g2->drawXBM(x_pos, y_pos-5, 32, 32, rxwifi_img32);
-                break;
             default:
                 break;
         }
@@ -409,9 +402,6 @@ static void helperDrawImage(menu_item_t menu)
 
             case STATE_WIFI_TX:
                 u8g2->drawXBM(x_pos, y_pos, 48, 44, wifi_img64);
-                break;
-            case STATE_WIFI_RX:
-                u8g2->drawXBM(x_pos, y_pos-5, 64, 64, rxwifi_img64);
                 break;
             default:
                 break;
