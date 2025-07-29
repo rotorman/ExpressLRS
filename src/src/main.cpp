@@ -27,7 +27,7 @@ bool InBindingMode = false;
 connectionState_e connectionState = disconnected;
 
 // Current state of channels, CRSF format
-uint32_t ChannelData[CRSF_NUM_CHANNELS];
+volatile uint16_t ChannelData[CRSF_NUM_CHANNELS];
 
 extern device_t LUA_device;
 unsigned long rebootTime = 0;
@@ -50,10 +50,9 @@ void ICACHE_RAM_ATTR SendRCdataToRF()
 {
   // Do not send a stale channels packet to the RX if one has not been received from the handset
   // *Do* send data if a packet has never been received from handset and the timer is running
-  // this is the case when bench testing and TXing without a handset
-  //bool dontSendChannelData = false;
-  uint32_t lastRcData = handset->GetRCdataLastRecv();
-  if (lastRcData && (micros() - lastRcData > 1000000))
+  // this is the case when bench testing
+  uint32_t lastRcDataUS = handset->GetRCdataLastRecvUS();
+  if (lastRcDataUS && (micros() - lastRcDataUS > 1000000))
   {
     // Do not send stale or fake zero packet RC!
     return;
@@ -97,7 +96,7 @@ static void UARTconnected()
     // right behind it
     setConnectionState(awaitingModelId);
   }
-  // But start the timer to get OpenTX sync going and a ModelID update sent
+  // But start the timer to get EdgeTX sync going and a ModelID update sent
   hwTimer::resume();
 }
 
@@ -200,7 +199,7 @@ void setup()
     else
     {
       hwTimer::updateInterval(RF_RC_INTERVAL_US);
-      handset->setPacketInterval(RF_RC_INTERVAL_US);
+      handset->setPacketIntervalUS(RF_RC_INTERVAL_US);
       //setConnectionState(disconnected);
       hwTimer::init(nullptr, timerCallback);
       setConnectionState(noCrossfire);

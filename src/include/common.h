@@ -10,7 +10,6 @@
 typedef enum
 {
     connected,
-    tentative,        // RX only
     awaitingModelId,  // TX only
     disconnected,
     MODE_STATES,
@@ -51,7 +50,7 @@ enum eAuxChannels : uint8_t
 extern uint8_t UID[UID_LEN];
 extern bool connectionHasModelMatch;
 extern bool InBindingMode;
-extern uint32_t ChannelData[CRSF_NUM_CHANNELS]; // Current state of channels, CRSF format
+extern volatile uint16_t ChannelData[CRSF_NUM_CHANNELS]; // Current state of channels, CRSF format
 
 extern connectionState_e connectionState;
 inline void setConnectionState(connectionState_e newState) {

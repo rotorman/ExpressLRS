@@ -51,9 +51,9 @@ public:
     /**
      * Called to set the expected packet interval from the handset.
      * This can be used to synchronise the packets from the handset.
-     * @param PacketInterval in microseconds
+     * @param PacketIntervalUS in microseconds
      */
-    virtual void setPacketInterval(int32_t PacketInterval) { RequestedRCpacketInterval = PacketInterval; }
+    virtual void setPacketIntervalUS(int32_t PacketIntervalUS) { RequestedRCpacketIntervalUS = PacketIntervalUS; }
 
     /**
      * @return the maximum number of bytes that the protocol can send to the handset in a single message
@@ -81,7 +81,7 @@ public:
     /**
      * @return the time in microseconds when the last RC packet was received from the handset
      */
-    uint32_t GetRCdataLastRecv() const { return RCdataLastRecv; }
+    uint32_t GetRCdataLastRecvUS() const { return RCdataLastRecvUS; }
 
 protected:
     virtual ~Handset() = default;
@@ -94,8 +94,8 @@ protected:
     void (*RecvParameterUpdate)(uint8_t type, uint8_t index, uint8_t arg) = nullptr; // called when recv parameter update req, ie from LUA
     void (*OnBindingCommand)() = nullptr; // Called when a binding command is received
 
-    volatile uint32_t RCdataLastRecv = 0;
-    int32_t RequestedRCpacketInterval = 5000; // default to 200hz as per 'normal'
+    volatile uint32_t RCdataLastRecvUS = 0;
+    int32_t RequestedRCpacketIntervalUS = 5000; // default to 200 Hz as per 'normal'
 };
 
 extern Handset *handset;

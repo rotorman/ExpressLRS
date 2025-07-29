@@ -32,7 +32,7 @@ public:
 
     static void packetQueueExtended(uint8_t type, void *data, uint8_t len);
 
-    void setPacketInterval(int32_t PacketInterval) override;
+    void setPacketIntervalUS(int32_t PacketIntervalUS) override;
     void JustSentRFpacket() override;
     void sendTelemetryToTX(uint8_t *data) override;
 
@@ -46,12 +46,12 @@ public:
 private:
     inBuffer_U inBuffer = {};
 
-    /// OpenTX mixer sync ///
+    /// EdgeTX mixer sync ///
     volatile uint32_t dataLastRecv = 0;
-    volatile int32_t OpenTXsyncOffset = 0;
-    volatile int32_t OpenTXsyncWindow = 0;
-    volatile int32_t OpenTXsyncWindowSize = 0;
-    uint32_t OpenTXsyncLastSent = 0;
+    volatile int32_t EdgeTXsyncOffset100NS = 0;
+    volatile int32_t EdgeTXsyncWindowUS = 0;
+    volatile int32_t EdgeTXsyncWindowSizeUS = 0;
+    uint32_t EdgeTXsyncLastSentMS = 0;
 
     /// UART Handling ///
     uint8_t SerialInPacketPtr = 0; // index where we are reading/writing

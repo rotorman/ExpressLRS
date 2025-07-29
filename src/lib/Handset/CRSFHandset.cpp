@@ -29,9 +29,9 @@ bool CRSFHandset::ForwardDevicePings = false;
 bool CRSFHandset::elrsLUAmode = false;
 bool CRSFHandset::halfDuplex = false;
 
-/// OpenTX mixer sync ///
-static const int32_t OpenTXsyncPacketInterval = 200; // in ms
-static const int32_t OpenTXsyncOffsetSafeMargin = 1000; // 100us
+/// EdgeTX mixer sync ///
+static const int32_t EdgeTXsyncPacketIntervalMS = 200; // in ms
+static const int32_t EdgeTXsyncOffsetSafeMargin100NS = 1000; // 100us
 
 /// UART Handling ///
 static const int32_t TxToHandsetBauds[] = {400000, 115200, 5250000, 3750000, 1870000, 921600, 2250000};
@@ -151,13 +151,13 @@ void CRSFHandset::sendTelemetryToTX(uint8_t *data)
     }
 }
 
-void ICACHE_RAM_ATTR CRSFHandset::setPacketInterval(int32_t PacketInterval)
+void ICACHE_RAM_ATTR CRSFHandset::setPacketIntervalUS(int32_t PacketIntervalUS)
 {
-    RequestedRCpacketInterval = PacketInterval;
-    OpenTXsyncOffset = 0;
-    OpenTXsyncWindow = 0;
-    OpenTXsyncWindowSize = std::max((int32_t)1, (int32_t)(20000/RequestedRCpacketInterval));
-    OpenTXsyncLastSent -= OpenTXsyncPacketInterval;
+    RequestedRCpacketIntervalUS = PacketIntervalUS;
+    EdgeTXsyncOffset100NS = 0;
+    EdgeTXsyncWindowUS = 0;
+    EdgeTXsyncWindowSizeUS = std::max((int32_t)1, (int32_t)(20000/RequestedRCpacketIntervalUS));
+    EdgeTXsyncLastSentMS -= EdgeTXsyncPacketIntervalMS;
     adjustMaxPacketSize();
 }
 
@@ -168,46 +168,46 @@ void ICACHE_RAM_ATTR CRSFHandset::JustSentRFpacket()
     uint32_t m = micros();
     auto delta = (int32_t)(m - last);
 
-    if (delta >= (int32_t)RequestedRCpacketInterval)
+    if (delta >= (int32_t)RequestedRCpacketIntervalUS)
     {
         // missing/late packet, force resync
-        OpenTXsyncOffset = -(delta % RequestedRCpacketInterval) * 10;
-        OpenTXsyncWindow = 0;
-        OpenTXsyncLastSent -= OpenTXsyncPacketInterval;
+        EdgeTXsyncOffset100NS = -(delta % RequestedRCpacketIntervalUS) * 10;
+        EdgeTXsyncWindowUS = 0;
+        EdgeTXsyncLastSentMS -= EdgeTXsyncPacketIntervalMS;
     }
     else
     {
         // The number of packets in the sync window is how many will fit in 20ms.
         // This gives quite quite coarse changes for 50Hz, but more fine grained changes at 1000Hz.
-        OpenTXsyncWindow = std::min(OpenTXsyncWindow + 1, (int32_t)OpenTXsyncWindowSize);
-        OpenTXsyncOffset = ((OpenTXsyncOffset * (OpenTXsyncWindow-1)) + delta * 10) / OpenTXsyncWindow;
+        EdgeTXsyncWindowUS = std::min(EdgeTXsyncWindowUS + 1, (int32_t)EdgeTXsyncWindowSizeUS);
+        EdgeTXsyncOffset100NS = ((EdgeTXsyncOffset100NS * (EdgeTXsyncWindowUS-1)) + delta * 10) / EdgeTXsyncWindowUS;
     }
 }
 
-void CRSFHandset::sendSyncPacketToTX() // in values in us.
+void CRSFHandset::sendSyncPacketToTX()
 {
     uint32_t now = millis();
-    if (controllerConnected && (now - OpenTXsyncLastSent) >= OpenTXsyncPacketInterval)
+    if (controllerConnected && (now - EdgeTXsyncLastSentMS) >= EdgeTXsyncPacketIntervalMS)
     {
-        int32_t packetRate = RequestedRCpacketInterval * 10; //convert from us to right format
-        int32_t offset = OpenTXsyncOffset - OpenTXsyncOffsetSafeMargin; // offset so that opentx always has some headroom
+        int32_t packetRate100US = RequestedRCpacketIntervalUS * 10; //convert from us to right format
+        int32_t offset = EdgeTXsyncOffset100NS - EdgeTXsyncOffsetSafeMargin100NS; // offset so that EdgeTX always has some headroom
 
-        struct otxSyncData {
+        struct etxSyncData {
             uint8_t subType; // CRSF_HANDSET_SUBCMD_TIMING
             uint32_t rate; // Big-Endian
             uint32_t offset; // Big-Endian
         } PACKED;
 
-        uint8_t buffer[sizeof(otxSyncData)];
-        auto * const sync = (struct otxSyncData * const)buffer;
+        uint8_t buffer[sizeof(etxSyncData)];
+        auto * const sync = (struct etxSyncData * const)buffer;
 
         sync->subType = CRSF_HANDSET_SUBCMD_TIMING;
-        sync->rate = htobe32(packetRate);
+        sync->rate = htobe32(packetRate100US);
         sync->offset = htobe32(offset);
 
         packetQueueExtended(CRSF_FRAMETYPE_HANDSET, buffer, sizeof(buffer));
 
-        OpenTXsyncLastSent = now;
+        EdgeTXsyncLastSentMS = now;
     }
 }
 
@@ -223,7 +223,7 @@ void CRSFHandset::RcPacketToChannelsData() // data is packed as 11 bits per chan
     uint8_t bitsMerged = 0;
     uint32_t readValue = 0;
     unsigned readByteIndex = 0;
-    for (uint32_t & n : ChannelData)
+    for (volatile uint16_t & n : ChannelData)
     {
         while (bitsMerged < srcBits)
         {
@@ -231,8 +231,7 @@ void CRSFHandset::RcPacketToChannelsData() // data is packed as 11 bits per chan
             readValue |= ((uint32_t) readByte) << bitsMerged;
             bitsMerged += 8;
         }
-        //printf("rv=%x(%x) bm=%u\n", readValue, (readValue & inputChannelMask), bitsMerged);
-        n = (readValue & inputChannelMask) << precisionShift;
+        n = (uint16_t)((readValue & inputChannelMask) << precisionShift);
         readValue >>= srcBits;
         bitsMerged -= srcBits;
     }
@@ -299,7 +298,7 @@ bool CRSFHandset::ProcessPacket()
 
     if (packetType == CRSF_FRAMETYPE_RC_CHANNELS_PACKED)
     {
-        RCdataLastRecv = micros();
+        RCdataLastRecvUS = micros();
         RcPacketToChannelsData();
         packetReceived = true;
     }
@@ -528,8 +527,8 @@ void ICACHE_RAM_ATTR CRSFHandset::adjustMaxPacketSize()
     // involved from RX -> TX and vice-versa. The maxPacketBytes is used as the Lua chunk size so each chunk can be returned
     // to the handset and not be broken across time-slots as there can be issues with spurious glitches on the s.port pin
     // which switching direction. It also appears that the absolute minimum packet size should be 15 bytes as this will fit
-    // the LinkStatistics and OpenTX sync packets.
-    maxPeriodBytes = std::min((int)(UARTrequestedBaud / 10 / (1000000/RequestedRCpacketInterval) * 87 / 100), HANDSET_TELEMETRY_FIFO_SIZE);
+    // the LinkStatistics and EdgeTX sync packets.
+    maxPeriodBytes = std::min((int)(UARTrequestedBaud / 10 / (1000000/RequestedRCpacketIntervalUS) * 87 / 100), HANDSET_TELEMETRY_FIFO_SIZE);
     // Maximum number of bytes we can send in a single window, half the period bytes, upto one full CRSF packet.
     maxPacketBytes = std::min(maxPeriodBytes - max(maxPeriodBytes / 2, LUA_CHUNK_QUERY_SIZE), CRSF_MAX_PACKET_LEN);
 }
