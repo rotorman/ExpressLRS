@@ -7,6 +7,9 @@
 #include "CRSFHandset.h"
 #include "lua.h"
 #include "devHandset.h"
+#include <esp_now.h>
+#include <esp_wifi.h>
+#include <WiFi.h>
 
 #if defined(PLATFORM_ESP32_S3)
 #include "USB.h"
@@ -14,6 +17,24 @@
 #endif
 
 //// CONSTANTS ////
+
+/***** TODO! Adjust the values in this section to YOUR setup! *****/
+
+// Model receiver's MAC address(es) - replace with YOUR CyberBrick receiver Core MAC address(es)!
+// The example below lists 3 models. If you wish to control only one model, remove the bottom two lines (models 1 and 2).
+// You can control/add up to 20 models to the list below (limitation of ESP32 ESP-NOW peer address table).
+uint8_t cyberbrickRxMAC[][6] =
+  {
+    {0xa1, 0xb1, 0xc1, 0xd1, 0xe1, 0xf1}, // Model 0 receiver MAC address
+    {0xa2, 0xb2, 0xc2, 0xd2, 0xe2, 0xf2}, // Model 1 receiver MAC address
+    {0xa3, 0xb3, 0xc3, 0xd3, 0xe3, 0xf3}  // Model 2 receiver MAC address
+  };
+// You can pick a model to control in EdgeTX under:
+// MODEL -> Internal RF or External RF -> Receiver <number>
+// where the number matches the model number in the above list.
+
+/******************************************************************/
+
 #define RF_RC_INTERVAL_US 20000U
 
 /// define some libs to use ///
@@ -41,6 +62,8 @@ static volatile bool ModelUpdatePending;
 #define BindingSpamAmount 25
 static uint8_t BindingSendCount;
 
+esp_now_peer_info_t peerInfo;
+
 device_affinity_t ui_devices[] = {
   {&Handset_device, 1},
   {&LUA_device, 1},
@@ -58,12 +81,14 @@ void ICACHE_RAM_ATTR SendRCdataToRF()
     return;
   }
 
-  busyTransmitting = true;
-  // TODO! Remove fake:
-  busyTransmitting = false;
-  connectionHasModelMatch = true;
-  uint32_t const now = millis();
-  LastTLMpacketRecvMillis = now;
+    // Send message via ESP-NOW
+  uint8_t modelid = CRSFHandset::getModelID();
+  if (modelid <= sizeof(cyberbrickRxMAC)/6) // Plausibility check that we are not accessing cyberbrickRxMAC array out of bounds
+  {
+    busyTransmitting = true;
+    esp_now_send(cyberbrickRxMAC[modelid], (uint8_t *) &ChannelData, sizeof(ChannelData));
+    connectionHasModelMatch = true;
+  }
 }
 
 /*
@@ -165,6 +190,54 @@ static void ExitBindingMode()
   UARTconnected();
 }
 
+// ESP-NOW callback, called when data is sent
+void ESPNOW_OnDataSentCB(const uint8_t *mac_addr, esp_now_send_status_t status) {
+  if (status == ESP_NOW_SEND_SUCCESS)
+  {
+    uint32_t const now = millis();
+    LastTLMpacketRecvMillis = now;
+  }
+  busyTransmitting = false;
+}
+
+bool initESPNOW()
+{
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
+  WiFi.mode(WIFI_STA);
+  WiFi.setTxPower(WIFI_POWER_19_5dBm);
+  esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G | WIFI_PROTOCOL_11N | WIFI_PROTOCOL_LR);
+  WiFi.begin("network-name", "pass-to-network", 1);
+  WiFi.disconnect();
+
+  // Init ESP-NOW
+  if (esp_now_init() != ESP_OK)
+  {
+    ESP.restart();
+  }
+
+  // Register peers
+  memset(&peerInfo, 0, sizeof(esp_now_peer_info_t));
+  peerInfo.channel = 0;
+  peerInfo.encrypt = false;  
+  bool bResult = true;
+  for (int i = 0; i < sizeof(cyberbrickRxMAC)/6; i++)
+  { 
+    // Iterate through the peer addresses
+    memcpy(peerInfo.peer_addr, cyberbrickRxMAC[i], 6);
+    if (esp_now_add_peer(&peerInfo) != ESP_OK)
+    {
+      bResult = false;
+    }
+  }
+  
+  // Register callback to get the status of the transmitted ESP-NOW packet
+  if (esp_now_register_send_cb(ESPNOW_OnDataSentCB) != ESP_OK)
+    bResult = false;
+  
+  return bResult;
+}
+
 bool setupHardwareFromOptions()
 {
   if (!options_init())
@@ -172,6 +245,10 @@ bool setupHardwareFromOptions()
     setConnectionState(hardwareUndefined);
     return false;
   }
+
+  // TODO! Add timeout or bailout
+  while (!initESPNOW()) {}
+
   return true;
 }
 
