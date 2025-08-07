@@ -25,7 +25,6 @@ uint32_t CRSFHandset::GoodPktsCountResult = 0;
 uint32_t CRSFHandset::BadPktsCountResult = 0;
 
 uint8_t CRSFHandset::modelId = 0;
-bool CRSFHandset::ForwardDevicePings = false;
 bool CRSFHandset::elrsLUAmode = false;
 bool CRSFHandset::halfDuplex = false;
 
@@ -262,7 +261,7 @@ bool CRSFHandset::processInternalCrsfPackage(uint8_t *package)
         (header->dest_addr == CRSF_ADDRESS_CRSF_TRANSMITTER || header->dest_addr == CRSF_ADDRESS_BROADCAST) &&
         (header->orig_addr == CRSF_ADDRESS_RADIO_TRANSMITTER || header->orig_addr == CRSF_ADDRESS_ELRS_LUA))
     {
-        elrsLUAmode = header->orig_addr == CRSF_ADDRESS_ELRS_LUA;
+        elrsLUAmode = header->orig_addr == CRSF_ADDRESS_ELRS_LUA; // 0xEF
 
         if (packetType == CRSF_FRAMETYPE_COMMAND && header->payload[0] == CRSF_COMMAND_SUBCMD_RX && header->payload[1] == CRSF_COMMAND_MODEL_SELECT_ID)
         {
@@ -533,7 +532,6 @@ void ICACHE_RAM_ATTR CRSFHandset::adjustMaxPacketSize()
     maxPacketBytes = std::min(maxPeriodBytes - max(maxPeriodBytes / 2, LUA_CHUNK_QUERY_SIZE), CRSF_MAX_PACKET_LEN);
 }
 
-#if defined(PLATFORM_ESP32_S3)
 uint32_t CRSFHandset::autobaud()
 {
     static enum { INIT, MEASURED, INVERTED } state;
@@ -550,55 +548,20 @@ uint32_t CRSFHandset::autobaud()
         state = INIT;
     }
 
+#if defined(PLATFORM_ESP32_S3)
     if (REG_GET_BIT(UART_CONF0_REG(0), UART_AUTOBAUD_EN) == 0)
+#else
+    if (REG_GET_BIT(UART_AUTOBAUD_REG(0), UART_AUTOBAUD_EN) == 0)
+#endif	
     {
+#if defined(PLATFORM_ESP32_S3)
         REG_WRITE(UART_RX_FILT_REG(0), (4 << UART_GLITCH_FILT_S) | UART_GLITCH_FILT_EN); // enable, glitch filter 4
         REG_WRITE(UART_LOWPULSE_REG(0), 4095); // reset register to max value
         REG_WRITE(UART_HIGHPULSE_REG(0), 4095); // reset register to max value
         REG_SET_BIT(UART_CONF0_REG(0), UART_AUTOBAUD_EN); // enable autobaud
-        return 400000;
-    }
-    if (REG_GET_BIT(UART_CONF0_REG(0), UART_AUTOBAUD_EN) && REG_READ(UART_RXD_CNT_REG(0)) < 300)
-    {
-        return 400000;
-    }
-
-    state = MEASURED;
-
-    const uint32_t low_period  = REG_READ(UART_LOWPULSE_REG(0));
-    const uint32_t high_period = REG_READ(UART_HIGHPULSE_REG(0));
-    REG_CLR_BIT(UART_CONF0_REG(0), UART_AUTOBAUD_EN); // disable autobaud
-    REG_CLR_BIT(UART_RX_FILT_REG(0), UART_GLITCH_FILT_EN); // disable glitch filtering
-
-    // According to the tecnnical reference
-    const int32_t calulatedBaud = UART_CLK_FREQ / (low_period + high_period + 2);
-    int32_t bestBaud = TxToHandsetBauds[0];
-    for(int i=0 ; i<ARRAY_SIZE(TxToHandsetBauds) ; i++)
-    {
-        if (abs(calulatedBaud - bestBaud) > abs(calulatedBaud - TxToHandsetBauds[i]))
-        {
-            bestBaud = TxToHandsetBauds[i];
-        }
-    }
-    return bestBaud;
-}
-#else
-uint32_t CRSFHandset::autobaud()
-{
-    static enum { INIT, MEASURED, INVERTED } state;
-
-    if (state == MEASURED) {
-        UARTinverted = !UARTinverted;
-        state = INVERTED;
-        return UARTrequestedBaud;
-    }
-    if (state == INVERTED) {
-        UARTinverted = !UARTinverted;
-        state = INIT;
-    }
-
-    if (REG_GET_BIT(UART_AUTOBAUD_REG(0), UART_AUTOBAUD_EN) == 0) {
-        REG_WRITE(UART_AUTOBAUD_REG(0), 4 << UART_GLITCH_FILT_S | UART_AUTOBAUD_EN);    // enable, glitch filter 4
+#else	
+        REG_WRITE(UART_AUTOBAUD_REG(0), 4 << UART_GLITCH_FILT_S | UART_AUTOBAUD_EN); // enable, glitch filter 4
+#endif		
         return 400000;
     }
     if (REG_GET_BIT(UART_AUTOBAUD_REG(0), UART_AUTOBAUD_EN) && REG_READ(UART_RXD_CNT_REG(0)) < 300)
@@ -608,14 +571,25 @@ uint32_t CRSFHandset::autobaud()
 
     state = MEASURED;
 
+#if defined(PLATFORM_ESP32_S3)
+    const uint32_t low_period  = REG_READ(UART_LOWPULSE_REG(0));
+    const uint32_t high_period = REG_READ(UART_HIGHPULSE_REG(0));
+    REG_CLR_BIT(UART_CONF0_REG(0), UART_AUTOBAUD_EN); // disable autobaud
+    REG_CLR_BIT(UART_RX_FILT_REG(0), UART_GLITCH_FILT_EN); // disable glitch filtering
+
+    // According to the technical reference
+    const int32_t calculatedBaud = UART_CLK_FREQ / (low_period + high_period + 2);
+#else
     auto low_period  = (int32_t)REG_READ(UART_LOWPULSE_REG(0));
     auto high_period = (int32_t)REG_READ(UART_HIGHPULSE_REG(0));
-    REG_CLR_BIT(UART_AUTOBAUD_REG(0), UART_AUTOBAUD_EN);   // disable autobaud
+    REG_CLR_BIT(UART_AUTOBAUD_REG(0), UART_AUTOBAUD_EN); // disable autobaud
+																					  
 
     // sample code at https://github.com/espressif/esp-idf/issues/3336
     // says baud rate = 80000000/min(UART_LOWPULSE_REG, UART_HIGHPULSE_REG);
     // Based on testing use max and add 2 for lowest deviation
     int32_t calculatedBaud = 80000000 / (max(low_period, high_period) + 3);
+#endif	
     auto bestBaud = TxToHandsetBauds[0];
     for(int TxToHandsetBaud : TxToHandsetBauds)
     {
@@ -626,7 +600,6 @@ uint32_t CRSFHandset::autobaud()
     }
     return bestBaud;
 }
-#endif
 
 bool CRSFHandset::UARTwdt()
 {

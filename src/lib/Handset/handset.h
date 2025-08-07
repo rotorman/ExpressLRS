@@ -25,7 +25,7 @@ public:
      */
     void setRCDataCallback(void (*callback)()) { RCdataCallback = callback; }
     /**
-     * @brief register a function to be called when a request to update a parameter is send from the handset
+     * @brief register a function to be called when a request to update a parameter is sent from the handset
      * @param callback
      */
     void registerParameterUpdateCallback(void (*callback)(uint8_t type, uint8_t index, uint8_t arg)) { RecvParameterUpdate = callback; }

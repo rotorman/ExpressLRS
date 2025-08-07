@@ -11,13 +11,9 @@ class DeviceType(Enum):
     TX = 0
     RX = 1
 
-class RadioType(Enum):
-    SX1280 = 1
-
 class FirmwareOptions(NamedTuple):
     mcuType: MCUType
     deviceType: DeviceType
-    radioChip: RadioType
     luaName: str
     bootloader: str
     offset: int

@@ -25,13 +25,6 @@ struct luaPropertiesCommon {
     uint8_t parent;     // id of parent folder
 } PACKED;
 
-struct tagLuaDeviceProperties {
-    uint32_t serialNo;
-    uint32_t hardwareVer;
-    uint32_t softwareVer;
-    uint8_t fieldCnt; //number of field of params this device has
-}PACKED;
-
 struct luaItem_selection {
     struct luaPropertiesCommon common;
     uint8_t value;
@@ -131,7 +124,6 @@ struct tagLuaElrsParams {
 } PACKED;
 
 void setLuaWarningFlag(lua_Flags flag, bool value);
-uint8_t getLuaWarningFlags(void);
 
 void luaRegisterDevicePingCallback(void (*callback)());
 

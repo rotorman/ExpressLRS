@@ -61,11 +61,11 @@
 
 // Lighting
 #define GPIO_PIN_LED_BLUE hardware_pin(HARDWARE_led_blue)
-#define GPIO_LED_BLUE_INVERTED hardware_pin(HARDWARE_led_blue_invert)
+#define GPIO_LED_BLUE_INVERTED hardware_flag(HARDWARE_led_blue_invert)
 #define GPIO_PIN_LED_GREEN hardware_pin(HARDWARE_led_green)
 #define GPIO_LED_GREEN_INVERTED hardware_flag(HARDWARE_led_green_invert)
 #define GPIO_PIN_LED_RED (hardware_pin(HARDWARE_led_red) == UNDEF_PIN ? hardware_pin(HARDWARE_led) : hardware_pin(HARDWARE_led_red))
-#define GPIO_LED_RED_INVERTED hardware_pin(HARDWARE_led_red_invert)
+#define GPIO_LED_RED_INVERTED hardware_flag(HARDWARE_led_red_invert)
 
 #define GPIO_PIN_LED_WS2812 hardware_pin(HARDWARE_led_rgb)
 #define OPT_WS2812_IS_GRB hardware_flag(HARDWARE_led_rgb_isgrb)
@@ -90,6 +90,15 @@
 #define GPIO_PIN_SCREEN_BL hardware_pin(HARDWARE_screen_bl)         // Backlight
 #define OPT_SCREEN_REVERSED hardware_flag(HARDWARE_screen_reversed)
 
+// Backpack
+#define OPT_USE_TX_BACKPACK hardware_flag(HARDWARE_use_backpack)
+#define BACKPACK_LOGGING_BAUD hardware_int(HARDWARE_debug_backpack_baud)
+#define GPIO_PIN_DEBUG_RX hardware_pin(HARDWARE_debug_backpack_rx)
+#define GPIO_PIN_DEBUG_TX hardware_pin(HARDWARE_debug_backpack_tx)
+#define GPIO_PIN_BACKPACK_BOOT hardware_pin(HARDWARE_backpack_boot)
+#define GPIO_PIN_BACKPACK_EN hardware_pin(HARDWARE_backpack_en)
+#define PASSTHROUGH_BAUD hardware_int(HARDWARE_passthrough_baud)
+
 // I2C
 #define GPIO_PIN_SCL hardware_pin(HARDWARE_i2c_scl)
 #define GPIO_PIN_SDA hardware_pin(HARDWARE_i2c_sda)
@@ -100,3 +109,5 @@
 #define GPIO_PIN_FAN_TACHO hardware_pin(HARDWARE_misc_fan_tacho)
 #define GPIO_PIN_FAN_SPEEDS hardware_u16_array(HARDWARE_misc_fan_speeds)
 #define GPIO_PIN_FAN_SPEEDS_COUNT hardware_int(HARDWARE_misc_fan_speeds_count)
+
+#define GPIO_PIN_GSENSOR_INT hardware_pin(HARDWARE_misc_gsensor_int)

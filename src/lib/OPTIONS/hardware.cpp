@@ -192,6 +192,260 @@ static void hardware_LoadFieldsFromDoc(JsonDocument &doc)
     }
 }
 
+void init_unused_peripherals()
+{
+// Radio
+#if defined(GPIO_PIN_BUSY)
+    pinMode(GPIO_PIN_BUSY, INPUT);
+#endif
+
+#if defined(GPIO_PIN_BUSY_2)
+    pinMode(GPIO_PIN_BUSY_2, INPUT);
+#endif
+
+#if defined(GPIO_PIN_DIO0)
+    pinMode(GPIO_PIN_DIO0, INPUT);
+#endif
+
+#if defined(GPIO_PIN_DIO0_2)
+    pinMode(GPIO_PIN_DIO0_2, INPUT);
+#endif
+
+#if defined(GPIO_PIN_DIO1)
+    pinMode(GPIO_PIN_DIO1, INPUT);
+#endif
+
+#if defined(GPIO_PIN_DIO1_2)
+    pinMode(GPIO_PIN_DIO1_2, INPUT);
+#endif
+
+#if defined(GPIO_PIN_MISO)
+    pinMode(GPIO_PIN_MISO, INPUT);
+#endif
+
+#if defined(GPIO_PIN_MOSI)
+    pinMode(GPIO_PIN_MOSI, OUTPUT);
+    digitalWrite(GPIO_PIN_MOSI, LOW);
+#endif
+
+#if defined(GPIO_PIN_NSS)
+    pinMode(GPIO_PIN_NSS, OUTPUT);
+    digitalWrite(GPIO_PIN_NSS, HIGH); // RF chip ChipSelect is low active, keep inactive
+#endif
+
+#if defined(GPIO_PIN_NSS_2)
+    pinMode(GPIO_PIN_NSS_2, OUTPUT);
+    digitalWrite(GPIO_PIN_NSS_2, HIGH); // RF chip ChipSelect is low active, keep inactive
+#endif
+
+#if defined(GPIO_PIN_RST)
+    pinMode(GPIO_PIN_RST, OUTPUT);
+    digitalWrite(GPIO_PIN_RST, LOW); // Keep radio in reset
+#endif
+
+#if defined(GPIO_PIN_RST_2)
+    pinMode(GPIO_PIN_RST_2, OUTPUT);
+    digitalWrite(GPIO_PIN_RST_2, LOW); // Keep radio in reset
+#endif
+
+#if defined(GPIO_PIN_SCK)
+    pinMode(GPIO_PIN_SCK, OUTPUT);
+    digitalWrite(GPIO_PIN_SCK, LOW); // SPI mode 0 (CPOL=0, CPHA=0) default state is low
+#endif
+
+// Radio Antenna
+#if defined(GPIO_PIN_ANT_CTRL)
+    pinMode(GPIO_PIN_ANT_CTRL, OUTPUT);
+    digitalWrite(GPIO_PIN_ANT_CTRL, HIGH); // Select first antenna by default
+#endif
+
+#if defined(GPIO_PIN_ANT_CTRL_COMPL)
+    pinMode(GPIO_PIN_ANT_CTRL_COMPL, OUTPUT);
+    digitalWrite(GPIO_PIN_ANT_CTRL_COMPL, LOW); // Select first antenna by default
+#endif
+
+// Radio power
+#if defined(GPIO_PIN_PA_ENABLE)
+    pinMode(GPIO_PIN_PA_ENABLE, OUTPUT);
+    digitalWrite(GPIO_PIN_PA_ENABLE, LOW); // Keep RF PA off
+#endif
+
+#if defined(GPIO_PIN_RFamp_APC2) && not defined(PLATFORM_ESP32_S3) // ESP32-S3 does not have a DAC
+    dacWrite(GPIO_PIN_RFamp_APC2, 0);
+#endif
+
+#if defined(GPIO_PIN_RX_ENABLE)
+    pinMode(GPIO_PIN_RX_ENABLE, OUTPUT);
+    digitalWrite(GPIO_PIN_RX_ENABLE, LOW); // Keep RF PA receive off
+#endif
+
+#if defined(GPIO_PIN_TX_ENABLE)
+    pinMode(GPIO_PIN_TX_ENABLE, OUTPUT);
+    digitalWrite(GPIO_PIN_TX_ENABLE, LOW); // Keep RF PA transmit off
+#endif
+
+#if defined(GPIO_PIN_RX_ENABLE_2)
+    pinMode(GPIO_PIN_RX_ENABLE_2, OUTPUT);
+    digitalWrite(GPIO_PIN_RX_ENABLE_2, LOW); // Keep RF PA receive off
+#endif
+
+#if defined(GPIO_PIN_TX_ENABLE_2)
+    pinMode(GPIO_PIN_TX_ENABLE_2, OUTPUT);
+    digitalWrite(GPIO_PIN_TX_ENABLE_2, LOW); // Keep RF PA transmit off
+#endif
+
+#if defined(GPIO_PIN_PA_PDET)
+    analogSetPinAttenuation(GPIO_PIN_PA_PDET, ADC_0db);
+    analogRead(GPIO_PIN_PA_PDET);
+#endif
+
+// Input
+#if defined(GPIO_PIN_JOYSTICK)
+    analogRead(GPIO_PIN_JOYSTICK);
+#endif
+
+#if defined(GPIO_PIN_FIVE_WAY_INPUT1)
+    pinMode(GPIO_PIN_FIVE_WAY_INPUT1, INPUT);
+#endif
+
+#if defined(GPIO_PIN_FIVE_WAY_INPUT2)
+    pinMode(GPIO_PIN_FIVE_WAY_INPUT2, INPUT);
+#endif
+
+#if defined(GPIO_PIN_FIVE_WAY_INPUT3)
+    pinMode(GPIO_PIN_FIVE_WAY_INPUT3, INPUT);
+#endif
+
+#if defined(GPIO_PIN_BUTTON)
+    pinMode(GPIO_PIN_BUTTON, INPUT);
+#endif
+
+#if defined(USER_BUTTON_LED)
+    pinMode(USER_BUTTON_LED, OUTPUT);
+    digitalWrite(USER_BUTTON_LED, LOW);
+#endif
+
+#if defined(GPIO_PIN_BUTTON2)
+    pinMode(GPIO_PIN_BUTTON2, INPUT);
+#endif
+
+#if defined(USER_BUTTON2_LED)
+    pinMode(USER_BUTTON2_LED, OUTPUT);
+    digitalWrite(USER_BUTTON2_LED, LOW);
+#endif
+
+// Lighting
+#if defined(GPIO_PIN_LED_BLUE)
+    pinMode(GPIO_PIN_LED_BLUE, OUTPUT);
+    digitalWrite(GPIO_PIN_LED_BLUE, LOW ^ GPIO_LED_BLUE_INVERTED);
+#endif
+
+#if defined(GPIO_PIN_LED_GREEN)
+    pinMode(GPIO_PIN_LED_GREEN, OUTPUT);
+    digitalWrite(GPIO_PIN_LED_GREEN, LOW ^ GPIO_LED_GREEN_INVERTED);
+#endif
+
+#if defined(GPIO_PIN_LED_RED)
+    pinMode(GPIO_PIN_LED_RED, OUTPUT);
+    digitalWrite(GPIO_PIN_LED_RED, LOW ^ GPIO_LED_RED_INVERTED);
+#endif
+
+#if defined(GPIO_PIN_LED_WS2812)
+    pinMode(GPIO_PIN_LED_WS2812, OUTPUT);
+    digitalWrite(GPIO_PIN_LED_WS2812, LOW);
+#endif
+
+// OLED/TFT
+#if defined(GPIO_PIN_SCREEN_CS)
+    pinMode(GPIO_PIN_SCREEN_CS, OUTPUT);
+    digitalWrite(GPIO_PIN_SCREEN_CS, HIGH); // SCREEN ChipSelect is low active, keep inactive
+#endif
+
+#if defined(GPIO_PIN_SCREEN_DC)
+    pinMode(GPIO_PIN_SCREEN_DC, OUTPUT);
+    digitalWrite(GPIO_PIN_SCREEN_DC, HIGH); // Default to data mode (data/control)
+#endif
+
+#if defined(GPIO_PIN_SCREEN_MOSI)
+    pinMode(GPIO_PIN_SCREEN_MOSI, OUTPUT);
+    digitalWrite(GPIO_PIN_SCREEN_MOSI, LOW);
+#endif
+
+#if defined(GPIO_PIN_BUTTON2)
+    pinMode(GPIO_PIN_BUTTON2, INPUT);
+#endif
+
+#if defined(GPIO_PIN_SCREEN_RST)
+    pinMode(GPIO_PIN_SCREEN_RST, OUTPUT);
+    digitalWrite(GPIO_PIN_SCREEN_RST, HIGH); // Set display into reset state
+#endif
+
+#if defined(GPIO_PIN_SCREEN_SCK)
+    pinMode(GPIO_PIN_SCREEN_SCK, OUTPUT_OPEN_DRAIN | PULLUP);
+    digitalWrite(GPIO_PIN_SCREEN_SCK, HIGH); // Default safe state for SPI CLK and I2C SCL
+#endif
+
+#if defined(GPIO_PIN_SCREEN_SDA)
+    pinMode(GPIO_PIN_SCREEN_SDA, OUTPUT_OPEN_DRAIN | PULLUP);
+    digitalWrite(GPIO_PIN_SCREEN_SDA, HIGH); // Default safe state for I2C SDA
+#endif
+
+#if defined(GPIO_PIN_SCREEN_BL) // Backlight
+    pinMode(GPIO_PIN_SCREEN_BL, OUTPUT);
+    digitalWrite(GPIO_PIN_SCREEN_BL, HIGH); // OFF = HIGH
+#endif
+
+// I2C
+#if defined(GPIO_PIN_SCL)
+    pinMode(GPIO_PIN_SCL, OUTPUT_OPEN_DRAIN | PULLUP);
+    digitalWrite(GPIO_PIN_SCL, HIGH); // Default safe state for I2C SCL
+#endif
+
+#if defined(GPIO_PIN_SDA)
+    pinMode(GPIO_PIN_SDA, OUTPUT_OPEN_DRAIN | PULLUP);
+    digitalWrite(GPIO_PIN_SDA, HIGH); // Default safe state for I2C SDA
+#endif
+
+// Backpack
+#if defined(GPIO_PIN_DEBUG_RX)
+    pinMode(GPIO_PIN_DEBUG_RX, INPUT);
+#endif
+
+#if defined(GPIO_PIN_DEBUG_TX)
+    pinMode(GPIO_PIN_DEBUG_TX, OUTPUT);
+    digitalWrite(GPIO_PIN_DEBUG_TX, LOW);
+#endif
+
+#if defined(GPIO_PIN_BACKPACK_BOOT)
+    pinMode(GPIO_PIN_BACKPACK_BOOT, OUTPUT);		
+    digitalWrite(GPIO_PIN_BACKPACK_BOOT, LOW); // Do not put Backpack into bootloader mode
+#endif
+
+#if defined(GPIO_PIN_BACKPACK_EN)
+    pinMode(GPIO_PIN_BACKPACK_EN, OUTPUT);
+    digitalWrite(GPIO_PIN_BACKPACK_EN, LOW); // Turn backpack off
+#endif
+
+// Misc sensors & things
+#if defined(GPIO_PIN_FAN_EN)
+    pinMode(GPIO_PIN_FAN_EN, OUTPUT);
+    digitalWrite(GPIO_PIN_FAN_EN, LOW);
+#endif
+
+#if defined(GPIO_PIN_FAN_PWM)
+    pinMode(GPIO_PIN_FAN_PWM, OUTPUT);
+    digitalWrite(GPIO_PIN_FAN_PWM, LOW);
+#endif
+
+#if defined(GPIO_PIN_FAN_TACHO)
+    pinMode(GPIO_PIN_FAN_TACHO, INPUT);
+#endif
+
+#if defined(GPIO_PIN_GSENSOR_INT)
+    pinMode(GPIO_PIN_GSENSOR_INT, INPUT_PULLUP);
+#endif
+}
+
 bool hardware_init(EspFlashStream &strmFlash)
 {
     hardware_ClearAllFields();
@@ -221,9 +475,8 @@ bool hardware_init(EspFlashStream &strmFlash)
         return false;
     }
     serializeJson(doc, builtinHardwareConfig);
-
     hardware_LoadFieldsFromDoc(doc);
-
+    init_unused_peripherals();
     return true;
 }
 

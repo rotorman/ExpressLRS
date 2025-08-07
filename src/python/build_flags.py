@@ -10,7 +10,6 @@ import elrs_helpers
 
 build_flags = env.get('BUILD_FLAGS', [])
 json_flags = {}
-UIDbytes = ""
 define = ""
 target_name = env.get('PIOENV', '').upper()
 

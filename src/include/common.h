@@ -3,19 +3,16 @@
 #include "targets.h"
 #include <device.h>
 
-// Used to XOR with OtaCrcInitializer and macSeed to reduce compatibility with previous versions.
-// It should be incremented when the OTA packet structure is modified.
-#define UID_LEN             6
+#define BINDINGTIMEOUTMS 5000
 
 typedef enum
 {
-    connected,
-    awaitingModelId,  // TX only
-    disconnected,
+    RECEIVERCONNECTED,
+    AWAITINGMODELIDFROMHANDSET,
+    RECEIVERDISCONNECTED,
     MODE_STATES,
     // States below here are special mode states
-    noCrossfire,
-    NO_CONFIG_SAVE_STATES,
+    noHandsetCommunication,
     // Failure states go below here to display immediately
     FAILURE_STATES,
     radioFailed,
@@ -47,7 +44,6 @@ enum eAuxChannels : uint8_t
     CRSF_NUM_CHANNELS = 16
 };
 
-extern uint8_t UID[UID_LEN];
 extern bool connectionHasModelMatch;
 extern bool InBindingMode;
 extern volatile uint16_t ChannelData[CRSF_NUM_CHANNELS]; // Current state of channels, CRSF format

@@ -98,6 +98,15 @@ typedef enum {
     HARDWARE_screen_reversed,
     HARDWARE_screen_bl,
 
+    // Backpack
+    HARDWARE_use_backpack,
+    HARDWARE_debug_backpack_baud,
+    HARDWARE_debug_backpack_rx,
+    HARDWARE_debug_backpack_tx,
+    HARDWARE_backpack_boot,
+    HARDWARE_backpack_en,
+    HARDWARE_passthrough_baud,
+
     // I2C & Misc devices
     HARDWARE_i2c_scl,
     HARDWARE_i2c_sda,

@@ -32,12 +32,6 @@ void saveOptions(Stream &stream, bool customised)
 {
     JsonDocument doc;
 
-    if (firmwareOptions.hasUID)
-    {
-        //JsonArray uid = doc.createNestedArray("uid");
-        JsonArray uid = doc["uid"].to<JsonArray>();
-        copyArray(firmwareOptions.uid, sizeof(firmwareOptions.uid), uid);
-    }
     doc["customised"] = customised;
     doc["flash-discriminator"] = firmwareOptions.flash_discriminator;
 
@@ -67,16 +61,13 @@ bool options_HasStringInFlash(EspFlashStream &strmFlash)
 }
 
 /**
- * @brief:  Internal read options from either the flash stream at the end of the sketch or the options.json file
+ * @brief:  Internal read options from the flash stream at the end of the sketch
  *          Fills the firmwareOptions variable
  * @return: true if either was able to be parsed
  */
 static void options_LoadFromFlashOrFile(EspFlashStream &strmFlash)
 {
     JsonDocument flashDoc;
-    JsonDocument spiffsDoc;
-    bool hasFlash = false;
-    bool hasSpiffs = false;
 
     // Try OPTIONS JSON at the end of the firmware, after PRODUCTNAME DEVICENAME
     constexpr size_t optionConfigOffset = ELRSOPTS_PRODUCTNAME_SIZE + ELRSOPTS_DEVICENAME_SIZE;
@@ -88,60 +79,14 @@ static void options_LoadFromFlashOrFile(EspFlashStream &strmFlash)
         {
             return;
         }
-        hasFlash = true;
-    }
-
-    // load options.json from the SPIFFS partition
-    File file = SPIFFS.open("/options.json", "r");
-    if (file && !file.isDirectory())
-    {
-        DeserializationError error = deserializeJson(spiffsDoc, file);
-        if (!error)
-        {
-            hasSpiffs = true;
-        }
     }
 
     JsonDocument &doc = flashDoc;
-    if (hasFlash && hasSpiffs)
-    {
-        if (flashDoc["flash-discriminator"] == spiffsDoc["flash-discriminator"])
-        {
-            doc = spiffsDoc;
-        }
-    }
-    else if (hasSpiffs)
-    {
-        doc = spiffsDoc;
-    }
 
-    if (doc["uid"].is<JsonArray>())
-    {
-        copyArray(doc["uid"], firmwareOptions.uid, sizeof(firmwareOptions.uid));
-        firmwareOptions.hasUID = true;
-    }
-    else
-    {
-        firmwareOptions.hasUID = false;
-    }
     firmwareOptions.flash_discriminator = doc["flash-discriminator"] | 0U;
 
     builtinOptions.clear();
     saveOptions(builtinOptions, doc["customised"] | false);
-}
-
-/**
- * @brief: Put a blank options.json into SPIFFS to force all options to the coded defaults in options_LoadFromFlashOrFile()
-*/
-void options_SetTrueDefaults()
-{
-    JsonDocument doc;
-    // The Regulatory Domain is retained, as there is no sensible default
-    doc["flash-discriminator"] = firmwareOptions.flash_discriminator;
-
-    File options = SPIFFS.open("/options.json", "w");
-    serializeJson(doc, options);
-    options.close();
 }
 
 /**

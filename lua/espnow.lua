@@ -1,12 +1,12 @@
--- TNS|ExpressLRS|TNE
+-- TNS|ESP-NOW|TNE
 ---- #########################################################################
 ---- #                                                                       #
----- # Copyright (C) OpenTX, adapted for ExpressLRS                          #
+---- # Copyright (C) OpenTX and ExpressLRS, adapted for ESP-NOW              #
 -----#                                                                       #
 ---- # License GPLv2: http://www.gnu.org/licenses/gpl-2.0.html               #
 ---- #                                                                       #
 ---- #########################################################################
-local EXITVER = "-- EXIT (Lua r15) --"
+local EXITVER = "-- EXIT (Lua ver.1) --"
 local deviceId = 0xEE
 local handsetId = 0xEF
 local deviceName = "Loading..."
@@ -28,11 +28,12 @@ local devicesRefreshTimeout = 50
 local currentFolderId = nil
 local commandRunningIndicator = 1
 local expectChunksRemain = -1
-local deviceIsELRS_TX = nil
+local deviceIsCRSF_TX = nil
 local linkstatTimeout = 100
 local titleShowWarn = nil
 local titleShowWarnTimeout = 100
 local exitscript = 0
+local RefreshAfterBind = false
 
 local COL1
 local COL2
@@ -321,7 +322,6 @@ local function fieldFolderOpen(field)
 end
 
 local function fieldFolderDeviceOpen(field)
-  -- crossfireTelemetryPush(0x28, { 0x00, 0xEA }) --broadcast with standard handset ID to get all node respond correctly
   -- Make sure device fields are in the folder when it opens
   createDeviceFields()
   return fieldFolderOpen(field)
@@ -382,8 +382,8 @@ local function changeDeviceId(devId) --change to selected device ID
   currentFolderId = nil
   deviceName = device.name
   fields_count = device.fldcnt
-  deviceIsELRS_TX = device.isElrs and devId == 0xEE or nil -- ELRS and ID is TX module
-  handsetId = deviceIsELRS_TX and 0xEF or 0xEA -- Address ELRS_LUA vs RADIO_TRANSMITTER
+  deviceIsCRSF_TX = device.isESPNOW and devId == 0xEE or nil -- ESPNOW and ID is TX module
+  handsetId = deviceIsCRSF_TX and 0xEF or 0xEA -- Address ESPNOW/ELRS_LUA vs RADIO_TRANSMITTER
 
   allocateFields()
   reloadAllField()
@@ -403,7 +403,7 @@ local function parseDeviceInfoMessage(data)
   end
   device.name = newName
   device.fldcnt = data[offset + 12]
-  device.isElrs = fieldGetValue(data, offset, 4) == 0x454C5253 -- SerialNumber = 'E L R S'
+  device.isESPNOW = fieldGetValue(data, offset, 4) == 0x454E5458 -- SerialNumber = 'E N T X'
 
   if deviceId == id then
     changeDeviceId(id)
@@ -514,18 +514,6 @@ local function parseElrsInfoMessage(data)
   goodBadPkt = string.format("%u/%u   %s", badPkt, goodPkt, state)
 end
 
-local function parseElrsV1Message(data)
-  if (data[1] ~= 0xEA) or (data[2] ~= 0xEE) then
-    return
-  end
-
-  -- local badPkt = data[9]
-  -- local goodPkt = (data[10]*256) + data[11]
-  -- goodBadPkt = string.format("%u/%u   X", badPkt, goodPkt)
-  fieldPopup = {id = 0, status = 2, timeout = 0xFF, info = "ERROR: 1.x firmware"}
-  fieldTimeout = getTime() + 0xFFFF
-end
-
 local function refreshNext(skipPush)
   local command, data, forceRedraw
   repeat
@@ -541,8 +529,6 @@ local function refreshNext(skipPush)
       elseif fieldPopup then
         fieldTimeout = getTime() + fieldPopup.timeout
       end
-    elseif command == 0x2D then
-      parseElrsV1Message(data)
     elseif command == 0x2E then
       parseElrsInfoMessage(data)
       forceRedraw = true
@@ -563,7 +549,7 @@ local function refreshNext(skipPush)
     devicesRefreshTimeout = time + 100 -- 1s
     crossfireTelemetryPush(0x28, { 0x00, 0xEA })
   elseif time > linkstatTimeout then
-    if deviceIsELRS_TX then
+    if deviceIsCRSF_TX then
       crossfireTelemetryPush(0x2D, { deviceId, handsetId, 0x0, 0x0 }) --request linkstat
     else
       goodBadPkt = ""
@@ -591,19 +577,19 @@ local function lcd_title_color()
   lcd.clear()
 
   local EBLUE = lcd.RGB(0x43, 0x61, 0xAA)
-  local EGREEN = lcd.RGB(0x9f, 0xc7, 0x6f)
-  local EGREY1 = lcd.RGB(0x91, 0xb2, 0xc9)
-  local EGREY2 = lcd.RGB(0x6f, 0x62, 0x7f)
+  local COLOR_TITLE = lcd.RGB(0x69, 0x83, 0xC3)
+  local COLOR_TOP_RIGHT = lcd.RGB(0x99, 0xAF, 0xC2)
+  local COLOR_RECTANGLE = lcd.RGB(0x02, 0x2B, 0xE6)
 
   -- Field display area (white w/ 2px green border)
-  lcd.setColor(CUSTOM_COLOR, EGREEN)
+  lcd.setColor(CUSTOM_COLOR, COLOR_TITLE)
   lcd.drawRectangle(0, 0, LCD_W, LCD_H, CUSTOM_COLOR)
   lcd.drawRectangle(1, 0, LCD_W - 2, LCD_H - 1, CUSTOM_COLOR)
   -- title bar
   lcd.drawFilledRectangle(0, 0, LCD_W, barHeight, CUSTOM_COLOR)
-  lcd.setColor(CUSTOM_COLOR, EGREY1)
+  lcd.setColor(CUSTOM_COLOR, COLOR_TOP_RIGHT)
   lcd.drawFilledRectangle(LCD_W - textSize, 0, textSize, barHeight, CUSTOM_COLOR)
-  lcd.setColor(CUSTOM_COLOR, EGREY2)
+  lcd.setColor(CUSTOM_COLOR, COLOR_RECTANGLE)
   lcd.drawRectangle(LCD_W - textSize, 0, textSize, barHeight - 1, CUSTOM_COLOR)
   lcd.drawRectangle(LCD_W - textSize, 1 , textSize - 1, barHeight - 2, CUSTOM_COLOR) -- left and bottom line only 1px, make it look bevelled
   lcd.setColor(CUSTOM_COLOR, BLACK)
@@ -699,7 +685,7 @@ local function handleDevicePageEvent(event)
         else
           reloadAllField()
         end
-        crossfireTelemetryPush(0x28, { 0x00, 0xEA })
+        crossfireTelemetryPush(0x28, { 0x00, 0xEA }) -- Send CRSF parameter ping to broadcast address 0x00 from handset 0xEA
       else
         fieldBackExec(fields[#fields])
       end
@@ -707,7 +693,7 @@ local function handleDevicePageEvent(event)
   elseif event == EVT_VIRTUAL_ENTER then -- toggle editing/selecting current field
     if elrsFlags > 0x1F then
       elrsFlags = 0
-      crossfireTelemetryPush(0x2D, { deviceId, handsetId, 0x2E, 0x00 })
+      crossfireTelemetryPush(0x2D, { deviceId, handsetId, 0x2E, 0x00 }) -- Parameter value write, clear critical errors in Lua
     else
       local field = getField(lineIndex)
       if field and field.name then
@@ -802,6 +788,7 @@ local function runPopupPage(event)
       commandRunningIndicator = (commandRunningIndicator % 4) + 1
     end
     local result = popupCompat(fieldPopup.info .. " [" .. string.sub("|/-\\", commandRunningIndicator, commandRunningIndicator) .. "]", "Press [RTN] to exit", event)
+    RefreshAfterBind = true
     fieldPopup.lastStatus = fieldPopup.status
     if result == "CANCEL" then
       crossfireTelemetryPush(0x2D, { deviceId, handsetId, fieldPopup.id, 5 }) -- lcsCancel
@@ -878,18 +865,6 @@ local function setLCDvar()
   end
 end
 
-local function setMock()
-  -- Setup fields to display if running in Simulator
-  local _, rv = getVersion()
-  if string.sub(rv, -5) ~= "-simu" then return end
-  local mock = loadScript("mockup/elrsmock.lua")
-  if mock == nil then return end
-  fields, goodBadPkt, deviceName = mock()
-  fields_count = #fields - 1
-  loadQ = { fields_count }
-  deviceIsELRS_TX = true
-end
-
 local function checkCrsfModule()
   -- Loop through the modules and look for one set to CRSF (5)
   for modIdx = 0, 1 do
@@ -904,7 +879,7 @@ local function checkCrsfModule()
   -- No CRSF module found, save an error message for run()
   lcd.clear()
   local y = 0
-  lcd.drawText(2, y, "  No ExpressLRS", MIDSIZE)
+  lcd.drawText(2, y, "  No ESPNOW RF", MIDSIZE)
   y = y + (textSize * 2) - 2
   local msgs = {
     " Enable a CRSF Internal",
@@ -917,10 +892,6 @@ local function checkCrsfModule()
   for i, msg in ipairs(msgs) do
     lcd.drawText(2, y, msg)
     y = y + textSize
-    if i == 3 then
-      lcd.drawLine(0, y, LCD_W, y, SOLID, INVERS)
-      y = y + 2
-    end
   end
 
   return 0
@@ -929,9 +900,7 @@ end
 -- Init
 local function init()
   setLCDvar()
-  setMock()
   setLCDvar = nil
-  setMock = nil
 end
 
 -- Main
@@ -945,6 +914,9 @@ local function run(event, touchState)
 
   if fieldPopup ~= nil then
     runPopupPage(event)
+  elseif RefreshAfterBind == true then
+    RefreshAfterBind = false
+    runDevicePage(EVT_VIRTUAL_EXIT)
   elseif event ~= 0 or forceRedraw or edit then
     runDevicePage(event)
   end

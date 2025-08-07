@@ -11,64 +11,14 @@ from enum import Enum
 import shutil
 
 import firmware
-from firmware import DeviceType, FirmwareOptions, RadioType, MCUType, TXType
+from firmware import DeviceType, FirmwareOptions, MCUType, TXType
 import UnifiedConfiguration
 import binary_flash
 from binary_flash import UploadMethod
 from external import jmespath
 
-class RegulatoryDomain(Enum):
-    us_433 = 'us_433'
-    us_433_wide = 'us_433_wide'
-    eu_433 = 'eu_433'
-    au_433 = 'au_433'
-    in_866 = 'in_866'
-    eu_868 = 'eu_868'
-    au_915 = 'au_915'
-    fcc_915 = 'fcc_915'
-
-    def __str__(self):
-        return self.value
-
-def generateUID(phrase):
-    uid = [
-        int(item) if item.isdigit() else -1
-        for item in phrase.split(',')
-    ]
-    if (4 <= len(uid) <= 6) and all(ele >= 0 and ele < 256 for ele in uid):
-        # Extend the UID to 6 bytes, as only 4 are needed to bind
-        uid = [0] * (6 - len(uid)) + uid
-        uid = bytes(uid)
-    else:
-        uid = hashlib.md5(("-DMY_BINDING_PHRASE=\""+phrase+"\"").encode()).digest()[0:6]
-    return uid
-
-def FREQ_HZ_TO_REG_VAL_SX1280(freq):
-    return int(freq/(52000000.0/pow(2,18)))
-
-def domain_number(domain):
-    if domain == RegulatoryDomain.au_915:
-        return 0
-    elif domain == RegulatoryDomain.fcc_915:
-        return 1
-    elif domain == RegulatoryDomain.eu_868:
-        return 2
-    elif domain == RegulatoryDomain.in_866:
-        return 3
-    elif domain == RegulatoryDomain.au_433:
-        return 4
-    elif domain == RegulatoryDomain.eu_433:
-        return 5
-    elif domain == RegulatoryDomain.us_433:
-        return 6
-    elif domain == RegulatoryDomain.us_433_wide:
-        return 7
-
 def patch_unified(args, options):
     json_flags = {}
-    if args.phrase is not None:
-        json_flags['uid'] = [x for x in generateUID(args.phrase)]
-
     json_flags['flash-discriminator'] = randint(1,2**32-1)
 
     UnifiedConfiguration.doConfiguration(
@@ -149,8 +99,6 @@ def main():
     # firmware/targets directory
     parser.add_argument('--dir', action=readable_dir, default=None, help='The directory that contains the "hardware" and other firmware directories')
     parser.add_argument('--fdir', action=readable_dir, default=None, help='If specified, then the firmware files are loaded from this directory')
-    # Bind phrase
-    parser.add_argument('--phrase', type=str, help='Your personal binding phrase')
     parser.add_argument('--flash-discriminator', type=int, default=randint(1,2**32-1), dest='flash_discriminator', help='Force a fixed flash-descriminator instead of random')
     # Unified target
     parser.add_argument('--target', type=str, help='Unified target JSON path')
@@ -164,11 +112,7 @@ def main():
     parser.add_argument("--confirm", action='store_true', default=False, help="Confirm upload if a mismatched target was previously uploaded")
     parser.add_argument("--tx", action='store_true', default=False, help="Flash a TX module, RX if not specified")
     parser.add_argument('--rx-as-tx', type=TXType, choices=list(TXType), required=False, default=None, help="Flash an RX module with TX firmware, either internal (full-duplex) or external (half-duplex)")
-    # Deprecated options, left for backward compatibility
-    parser.add_argument('--uart-inverted', action=deprecate_action, nargs=0, help='Deprecated')
-    parser.add_argument('--no-uart-inverted', action=deprecate_action, nargs=0, help='Deprecated')
 
-    #
     # Firmware file to patch/configure
     parser.add_argument("file", nargs="?", type=argparse.FileType("r+b"))
 
@@ -188,7 +132,7 @@ def main():
                     print("Selected device cannot operate as 'RX-as-TX' of this type.")
                     exit(1)
             firmware_dir = '' if args.fdir is None else args.fdir + '/'
-            srcdir = firmware_dir + ('LBT/' if args.lbt else 'FCC/') + file
+            srcdir = firmware_dir + 'FCC/' + file
             dst = 'firmware.bin'
             shutil.copy2(srcdir + '/firmware.bin', ".")
             if os.path.exists(srcdir + '/bootloader.bin'): shutil.copy2(srcdir + '/bootloader.bin', ".")
@@ -208,7 +152,6 @@ def main():
         options = FirmwareOptions(
             MCUType.ESP32,
             DeviceType.TX,
-            RadioType.SX1280,
             config['lua_name'] if 'lua_name' in config else '',
             '',
             0,

@@ -20,15 +20,14 @@ const char STR_EMPTYSPACE[] = { 0 };
 #define HAS_RADIO (GPIO_PIN_SCK != UNDEF_PIN)
 
 static char version_domain[20+1+6+1];
-static char modelMatchUnit[] = " (ID: 00)";
 static const char folderNameSeparator[2] = {' ',':'};
 static const char luastrOffOn[] = "Off;On";
+static char luaBadGoodString[10];
+char modelMACca[2*6+5+1];
 
-static struct luaItem_selection luaModelMatch = {
-    {"Model Match", CRSF_TEXT_SELECTION},
-    0, // value
-    luastrOffOn,
-    modelMatchUnit
+static struct luaItem_string luaModelMAC = {
+    {"Model MAC", CRSF_INFO},
+    modelMACca
 };
 
 static struct luaItem_command luaBind = {
@@ -47,15 +46,12 @@ static struct luaItem_string luaELRSversion = {
     commit
 };
 
-static char luaBadGoodString[10];
+void luaUpdateMAC();
+static void luadevUpdateStrings();
 
 extern TxConfig config;
-extern unsigned long rebootTime;
-
-static void luadevUpdateModelID() {
-  itoa(CRSFHandset::getModelID(), modelMatchUnit+6, 10);
-  strcat(modelMatchUnit, ")");
-}
+//extern unsigned long rebootTimeMS;
+extern void sendELRSstatus();
 
 static void luahandSimpleSendCmd(struct luaPropertiesCommon *item, uint8_t arg)
 {
@@ -71,31 +67,29 @@ static void luahandSimpleSendCmd(struct luaPropertiesCommon *item, uint8_t arg)
     }
     sendLuaCommandResponse((struct luaItem_command *)item, lcsExecuting, msg);
   } /* if doExecute */
-  else if(arg == lcsCancel || ((millis() - lastLcsPoll)> 2000))
+  else if(arg == lcsCancel || ((millis() - lastLcsPoll)> BINDINGTIMEOUTMS))
   {
+    luadevUpdateStrings();
     sendLuaCommandResponse((struct luaItem_command *)item, lcsIdle, STR_EMPTYSPACE);
   }
 }
 
 /***
- * @brief: Update the luaBadGoodString with the current bad/good count
- * This item is hidden on our Lua and only displayed in other systems that don't poll our status
+ * @brief: Update the display strings
+ * The bad/good item is hidden on our Lua and only displayed in other systems that don't poll our status
  * Called from luaRegisterDevicePingCallback
  ****/
-static void luadevUpdateBadGood()
+static void luadevUpdateStrings()
 {
   itoa(CRSFHandset::BadPktsCountResult, luaBadGoodString, 10);
   strcat(luaBadGoodString, "/");
   itoa(CRSFHandset::GoodPktsCountResult, luaBadGoodString + strlen(luaBadGoodString), 10);
+  luaUpdateMAC();
 }
 
 static void registerLuaParameters()
 {
-  registerLUAParameter(&luaModelMatch, [](struct luaPropertiesCommon *item, uint8_t arg) {
-    bool newModelMatch = arg;
-    config.SetModelMatch(newModelMatch);
-    luadevUpdateModelID();
-  });
+  registerLUAParameter(&luaModelMAC);
 
   registerLUAParameter(&luaBind, &luahandSimpleSendCmd);
   
@@ -118,9 +112,34 @@ static int event()
     return DURATION_NEVER;
   }
 
-  luadevUpdateModelID();
-  setLuaTextSelectionValue(&luaModelMatch, (uint8_t)config.GetModelMatch());
   return DURATION_IMMEDIATELY;
+}
+
+/***
+ * @brief: Update the dynamic strings
+ ***/
+void luaUpdateMAC()
+{
+  uint64_t mac = config.GetModelMAC();
+  if (mac == 0)
+  {
+    sprintf(modelMACca, "Model not bound");
+  }
+  else
+  {
+    uint8_t modelMAC[6];
+    modelMAC[0] = (uint8_t)((mac & 0x0000FF0000000000)>>40);
+    modelMAC[1] = (uint8_t)((mac & 0x000000FF00000000)>>32);
+    modelMAC[2] = (uint8_t)((mac & 0x00000000FF000000)>>24);
+    modelMAC[3] = (uint8_t)((mac & 0x0000000000FF0000)>>16);
+    modelMAC[4] = (uint8_t)((mac & 0x000000000000FF00)>>8);
+    modelMAC[5] = (uint8_t)(mac & 0x00000000000000FF);
+
+    snprintf(modelMACca, sizeof(modelMACca),
+      "%02X:%02X:%02X:%02X:%02X:%02X",
+      modelMAC[0], modelMAC[1], modelMAC[2], modelMAC[3], modelMAC[4], modelMAC[5]);
+  }
+  sendELRSstatus();
 }
 
 static int timeout()
@@ -139,7 +158,7 @@ static int start()
   registerLuaParameters();
 
   setLuaStringValue(&luaInfo, luaBadGoodString);
-  luaRegisterDevicePingCallback(&luadevUpdateBadGood);
+  luaRegisterDevicePingCallback(&luadevUpdateStrings);
 
   event();
   return DURATION_IMMEDIATELY;

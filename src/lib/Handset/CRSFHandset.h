@@ -22,7 +22,6 @@ public:
     static Stream *PortSecondary; // A second UART used to mirror telemetry out on the TX, not read from
 
     static uint8_t modelId;         // The model ID as received from the Transmitter
-    static bool ForwardDevicePings; // true if device pings should be forwarded OTA
     static bool elrsLUAmode;
 
     static uint32_t GoodPktsCountResult; // need to latch the results
